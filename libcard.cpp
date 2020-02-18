@@ -1739,8 +1739,13 @@ int32 scriptlib::card_register_effect(lua_State *L) {
 	if(peffect->owner == pduel->game_field->temp_card)
 		return 0;
 	if(!forced && pduel->game_field->core.reason_effect && !pcard->is_affect_by_effect(pduel->game_field->core.reason_effect)) {
-		pduel->game_field->core.reseted_effects.insert(peffect);
-		return 0;
+		if (pduel->game_field->core.reason_effect->get_active_effect()
+			&& pcard->is_affect_by_effect(pduel->game_field->core.reason_effect->get_active_effect())) {
+		}
+		else {
+			pduel->game_field->core.reseted_effects.insert(peffect);
+			return 0;
+		}
 	}
 	int32 id;
 	if (peffect->handler)
@@ -2429,7 +2434,7 @@ int32 scriptlib::card_is_releasable_by_effect(lua_State *L) {
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
 	uint32 p = pcard->pduel->game_field->core.reason_player;
-	effect* re = pcard->pduel->game_field->core.reason_effect;
+	effect* re = pcard->pduel->game_field->core.reason_effect->get_active_effect();
 	if(pcard->is_releasable_by_effect(p, re))
 		lua_pushboolean(L, 1);
 	else
@@ -2441,7 +2446,7 @@ int32 scriptlib::card_is_discardable(lua_State *L) {
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
 	uint32 p = pcard->pduel->game_field->core.reason_player;
-	effect* pe = pcard->pduel->game_field->core.reason_effect;
+	effect* pe = pcard->pduel->game_field->core.reason_effect->get_active_effect();
 	uint32 reason = REASON_COST;
 	if(lua_gettop(L) > 1)
 		reason = (uint32)lua_tointeger(L, 2);
@@ -2757,7 +2762,7 @@ int32 scriptlib::card_add_counter(lua_State *L) {
 	uint8 singly = FALSE;
 	if(lua_gettop(L) > 3)
 		singly = lua_toboolean(L, 4);
-	if(pcard->is_affect_by_effect(pcard->pduel->game_field->core.reason_effect))
+	if(pcard->is_affect_by_effect(pcard->pduel->game_field->core.reason_effect->get_active_effect()))
 		lua_pushboolean(L, pcard->add_counter(pcard->pduel->game_field->core.reason_player, countertype, count, singly));
 	else lua_pushboolean(L, 0);
 	return 1;
@@ -3006,7 +3011,7 @@ int32 scriptlib::card_is_can_be_effect_target(lua_State *L) {
 	check_param(L, PARAM_TYPE_CARD, 1);
 	card* pcard = *(card**) lua_touserdata(L, 1);
 	duel* pduel = pcard->pduel;
-	effect* peffect = pduel->game_field->core.reason_effect;
+	effect* peffect = pduel->game_field->core.reason_effect->get_active_effect();
 	if(lua_gettop(L) > 1) {
 		check_param(L, PARAM_TYPE_EFFECT, 2);
 		peffect = *(effect**) lua_touserdata(L, 2);

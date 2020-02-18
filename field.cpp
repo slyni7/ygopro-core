@@ -527,7 +527,7 @@ void field::set_control(card* pcard, uint8 playerid, uint16 reset_phase, uint8 r
 		return;
 	effect* peffect = pduel->new_effect();
 	if(core.reason_effect)
-		peffect->owner = core.reason_effect->get_handler();
+		peffect->owner = core.reason_effect->get_active_effect()->get_handler();
 	else
 		peffect->owner = pcard;
 	peffect->handler = pcard;
@@ -1068,7 +1068,7 @@ void field::swap_deck_and_grave(uint8 playerid) {
 	for(auto& pcard : player[playerid].list_grave) {
 		pcard->current.location = LOCATION_GRAVE;
 		pcard->current.reason = REASON_EFFECT;
-		pcard->current.reason_effect = core.reason_effect;
+		pcard->current.reason_effect = core.reason_effect->get_active_effect();
 		pcard->current.reason_player = core.reason_player;
 		pcard->apply_field_effect();
 		pcard->enable_field_effect(true);
@@ -1077,7 +1077,7 @@ void field::swap_deck_and_grave(uint8 playerid) {
 	for(auto& pcard : player[playerid].list_main) {
 		pcard->current.location = LOCATION_DECK;
 		pcard->current.reason = REASON_EFFECT;
-		pcard->current.reason_effect = core.reason_effect;
+		pcard->current.reason_effect = core.reason_effect->get_active_effect();
 		pcard->current.reason_player = core.reason_player;
 		pcard->apply_field_effect();
 		pcard->enable_field_effect(true);
@@ -1086,7 +1086,7 @@ void field::swap_deck_and_grave(uint8 playerid) {
 	for(auto& pcard : ex) {
 		pcard->current.location = LOCATION_EXTRA;
 		pcard->current.reason = REASON_EFFECT;
-		pcard->current.reason_effect = core.reason_effect;
+		pcard->current.reason_effect = core.reason_effect->get_active_effect();
 		pcard->current.reason_player = core.reason_player;
 		pcard->apply_field_effect();
 		pcard->enable_field_effect(true);
@@ -1194,7 +1194,7 @@ void field::add_effect(effect* peffect, uint8 owner_player) {
 		if(peffect->is_disable_related())
 			update_disable_check_list(peffect);
 		if(peffect->is_flag(EFFECT_FLAG_OATH))
-			effects.oath.emplace(peffect, core.reason_effect);
+			effects.oath.emplace(peffect, core.reason_effect->get_active_effect());
 		if(peffect->reset_flag & RESET_PHASE)
 			effects.pheff.insert(peffect);
 		if(peffect->reset_flag & RESET_CHAIN)
@@ -1433,7 +1433,7 @@ int32 field::filter_matching_card(int32 findex, uint8 self, uint32 location1, ui
 				if(pcard && !pcard->get_status(STATUS_SUMMONING | STATUS_SUMMON_DISABLED | STATUS_SPSUMMON_STEP)
 						&& pcard != pexception && !(pexgroup && pexgroup->has_card(pcard))
 						&& pduel->lua->check_matching(pcard, findex, extraargs)
-						&& (!is_target || pcard->is_capable_be_effect_target(core.reason_effect, core.reason_player))) {
+						&& (!is_target || pcard->is_capable_be_effect_target(core.reason_effect->get_active_effect(), core.reason_player))) {
 					if(pret) {
 						*pret = pcard;
 						return TRUE;
@@ -1452,7 +1452,7 @@ int32 field::filter_matching_card(int32 findex, uint8 self, uint32 location1, ui
 				if(pcard && !pcard->is_status(STATUS_ACTIVATE_DISABLED)
 				        && pcard != pexception && !(pexgroup && pexgroup->has_card(pcard))
 				        && pduel->lua->check_matching(pcard, findex, extraargs)
-				        && (!is_target || pcard->is_capable_be_effect_target(core.reason_effect, core.reason_player))) {
+				        && (!is_target || pcard->is_capable_be_effect_target(core.reason_effect->get_active_effect(), core.reason_player))) {
 					if(pret) {
 						*pret = pcard;
 						return TRUE;
@@ -1471,7 +1471,7 @@ int32 field::filter_matching_card(int32 findex, uint8 self, uint32 location1, ui
 			if(pcard && !pcard->is_status(STATUS_ACTIVATE_DISABLED)
 			        && pcard != pexception && !(pexgroup && pexgroup->has_card(pcard))
 			        && pduel->lua->check_matching(pcard, findex, extraargs)
-			        && (!is_target || pcard->is_capable_be_effect_target(core.reason_effect, core.reason_player))) {
+			        && (!is_target || pcard->is_capable_be_effect_target(core.reason_effect->get_active_effect(), core.reason_player))) {
 				if(pret) {
 					*pret = pcard;
 					return TRUE;
@@ -1490,7 +1490,7 @@ int32 field::filter_matching_card(int32 findex, uint8 self, uint32 location1, ui
 				if(pcard && pcard->current.pzone && !pcard->is_status(STATUS_ACTIVATE_DISABLED)
 				        && pcard != pexception && !(pexgroup && pexgroup->has_card(pcard))
 				        && pduel->lua->check_matching(pcard, findex, extraargs)
-				        && (!is_target || pcard->is_capable_be_effect_target(core.reason_effect, core.reason_player))) {
+				        && (!is_target || pcard->is_capable_be_effect_target(core.reason_effect->get_active_effect(), core.reason_player))) {
 					if(pret) {
 						*pret = pcard;
 						return TRUE;
@@ -1508,7 +1508,7 @@ int32 field::filter_matching_card(int32 findex, uint8 self, uint32 location1, ui
 			for(auto cit = player[self].list_main.rbegin(); cit != player[self].list_main.rend(); ++cit) {
 				if(*cit != pexception && !(pexgroup && pexgroup->has_card(*cit))
 				        && pduel->lua->check_matching(*cit, findex, extraargs)
-				        && (!is_target || (*cit)->is_capable_be_effect_target(core.reason_effect, core.reason_player))) {
+				        && (!is_target || (*cit)->is_capable_be_effect_target(core.reason_effect->get_active_effect(), core.reason_player))) {
 					if(pret) {
 						*pret = *cit;
 						return TRUE;
@@ -1526,7 +1526,7 @@ int32 field::filter_matching_card(int32 findex, uint8 self, uint32 location1, ui
 			for(auto cit = player[self].list_extra.rbegin(); cit != player[self].list_extra.rend(); ++cit) {
 				if(*cit != pexception && !(pexgroup && pexgroup->has_card(*cit))
 				        && pduel->lua->check_matching(*cit, findex, extraargs)
-				        && (!is_target || (*cit)->is_capable_be_effect_target(core.reason_effect, core.reason_player))) {
+				        && (!is_target || (*cit)->is_capable_be_effect_target(core.reason_effect->get_active_effect(), core.reason_player))) {
 					if(pret) {
 						*pret = *cit;
 						return TRUE;
@@ -1544,7 +1544,7 @@ int32 field::filter_matching_card(int32 findex, uint8 self, uint32 location1, ui
 			for(auto& pcard : player[self].list_hand) {
 				if(pcard != pexception && !(pexgroup && pexgroup->has_card(pcard))
 				        && pduel->lua->check_matching(pcard, findex, extraargs)
-				        && (!is_target || pcard->is_capable_be_effect_target(core.reason_effect, core.reason_player))) {
+				        && (!is_target || pcard->is_capable_be_effect_target(core.reason_effect->get_active_effect(), core.reason_player))) {
 					if(pret) {
 						*pret = pcard;
 						return TRUE;
@@ -1562,7 +1562,7 @@ int32 field::filter_matching_card(int32 findex, uint8 self, uint32 location1, ui
 			for(auto cit = player[self].list_grave.rbegin(); cit != player[self].list_grave.rend(); ++cit) {
 				if(*cit != pexception && !(pexgroup && pexgroup->has_card(*cit))
 				        && pduel->lua->check_matching(*cit, findex, extraargs)
-				        && (!is_target || (*cit)->is_capable_be_effect_target(core.reason_effect, core.reason_player))) {
+				        && (!is_target || (*cit)->is_capable_be_effect_target(core.reason_effect->get_active_effect(), core.reason_player))) {
 					if(pret) {
 						*pret = *cit;
 						return TRUE;
@@ -1580,7 +1580,7 @@ int32 field::filter_matching_card(int32 findex, uint8 self, uint32 location1, ui
 			for(auto cit = player[self].list_remove.rbegin(); cit != player[self].list_remove.rend(); ++cit) {
 				if(*cit != pexception && !(pexgroup && pexgroup->has_card(*cit))
 				        && pduel->lua->check_matching(*cit, findex, extraargs)
-				        && (!is_target || (*cit)->is_capable_be_effect_target(core.reason_effect, core.reason_player))) {
+				        && (!is_target || (*cit)->is_capable_be_effect_target(core.reason_effect->get_active_effect(), core.reason_player))) {
 					if(pret) {
 						*pret = *cit;
 						return TRUE;
@@ -1716,7 +1716,7 @@ int32 field::get_release_list(uint8 playerid, card_set* release_list, card_set* 
 				effect* peffect = pcard->is_affected_by_effect(EFFECT_EXTRA_RELEASE_NONSUM);
 				if(!peffect || (peffect->is_flag(EFFECT_FLAG_COUNT_LIMIT) && peffect->count_limit == 0))
 					continue;
-				pduel->lua->add_param(core.reason_effect, PARAM_TYPE_EFFECT);
+				pduel->lua->add_param(core.reason_effect->get_active_effect(), PARAM_TYPE_EFFECT);
 				pduel->lua->add_param(REASON_COST, PARAM_TYPE_INT);
 				pduel->lua->add_param(core.reason_player, PARAM_TYPE_INT);
 				if(!peffect->check_value_condition(3))
@@ -1879,9 +1879,9 @@ void field::ritual_release(card_set* material) {
 		else
 			rel.insert(pcard);
 	}
-	release(&rel, core.reason_effect, REASON_RITUAL + REASON_EFFECT + REASON_MATERIAL, core.reason_player);
-	send_to(&tg, core.reason_effect, REASON_RITUAL + REASON_EFFECT + REASON_MATERIAL, core.reason_player, PLAYER_NONE, LOCATION_GRAVE, 0, POS_FACEUP);
-	send_to(&rem, core.reason_effect, REASON_RITUAL + REASON_EFFECT + REASON_MATERIAL, core.reason_player, PLAYER_NONE, LOCATION_REMOVED, 0, POS_FACEUP);
+	release(&rel, core.reason_effect->get_active_effect(), REASON_RITUAL + REASON_EFFECT + REASON_MATERIAL, core.reason_player);
+	send_to(&tg, core.reason_effect->get_active_effect(), REASON_RITUAL + REASON_EFFECT + REASON_MATERIAL, core.reason_player, PLAYER_NONE, LOCATION_GRAVE, 0, POS_FACEUP);
+	send_to(&rem, core.reason_effect->get_active_effect(), REASON_RITUAL + REASON_EFFECT + REASON_MATERIAL, core.reason_player, PLAYER_NONE, LOCATION_REMOVED, 0, POS_FACEUP);
 }
 void field::get_xyz_material(card* scard, int32 findex, uint32 lv, int32 maxc, group* mg) {
 	core.xmaterial_lst.clear();
@@ -2248,7 +2248,7 @@ int32 field::check_lp_cost(uint8 playerid, uint32 lp) {
 	int32 val = lp;
 	filter_player_effect(playerid, EFFECT_LPCOST_CHANGE, &eset);
 	for(int32 i = 0; i < eset.size(); ++i) {
-		pduel->lua->add_param(core.reason_effect, PARAM_TYPE_EFFECT);
+		pduel->lua->add_param(core.reason_effect->get_active_effect(), PARAM_TYPE_EFFECT);
 		pduel->lua->add_param(playerid, PARAM_TYPE_INT);
 		pduel->lua->add_param(val, PARAM_TYPE_INT);
 		val = eset[i]->get_value(3);
@@ -2260,7 +2260,7 @@ int32 field::check_lp_cost(uint8 playerid, uint32 lp) {
 	e.event_player = playerid;
 	e.event_value = lp;
 	e.reason = 0;
-	e.reason_effect = core.reason_effect;
+	e.reason_effect = core.reason_effect->get_active_effect();
 	e.reason_player = playerid;
 	if(effect_replace_check(EFFECT_LPCOST_REPLACE, e))
 		return TRUE;
@@ -3065,7 +3065,7 @@ int32 field::is_player_can_flipsummon(uint8 playerid, card * pcard) {
 }
 int32 field::is_player_can_spsummon_monster(uint8 playerid, uint8 toplayer, uint8 sumpos, uint32 sumtype, card_data* pdata) {
 	temp_card->data = *pdata;
-	int32 result = is_player_can_spsummon(core.reason_effect, sumtype, sumpos, playerid, toplayer, temp_card);
+	int32 result = is_player_can_spsummon(core.reason_effect->get_active_effect(), sumtype, sumpos, playerid, toplayer, temp_card);
 	temp_card->data.clear();
 	return result;
 }
@@ -3087,7 +3087,7 @@ int32 field::is_player_can_spsummon_count(uint8 playerid, uint32 count) {
 	effect_set eset;
 	filter_player_effect(playerid, EFFECT_LEFT_SPSUMMON_COUNT, &eset);
 	for(int32 i = 0; i < eset.size(); ++i) {
-		pduel->lua->add_param(core.reason_effect, PARAM_TYPE_EFFECT);
+		pduel->lua->add_param(core.reason_effect->get_active_effect(), PARAM_TYPE_EFFECT);
 		pduel->lua->add_param(playerid, PARAM_TYPE_INT);
 		int32 v = eset[i]->get_value(2);
 		if(v < (int32)count)
@@ -3118,7 +3118,7 @@ int32 field::is_player_can_remove_counter(uint8 playerid, card * pcard, uint8 s,
 	e.event_player = playerid;
 	e.event_value = count;
 	e.reason = reason;
-	e.reason_effect = core.reason_effect;
+	e.reason_effect = core.reason_effect->get_active_effect();
 	e.reason_player = playerid;
 	for(auto eit = pr.first; eit != pr.second;) {
 		effect* peffect = eit->second;
@@ -3133,7 +3133,7 @@ int32 field::is_player_can_remove_overlay_card(uint8 playerid, card * pcard, uin
 	effect_set eset;
 	filter_player_effect(playerid, EFFECT_OVERLAY_REMOVE_COST_CHANGE_KOISHI, &eset);
 	for(int32 i = 0; i < eset.size(); ++i) {
-		pduel->lua->add_param(core.reason_effect, PARAM_TYPE_EFFECT);
+		pduel->lua->add_param(core.reason_effect->get_active_effect(), PARAM_TYPE_EFFECT);
 		pduel->lua->add_param(playerid, PARAM_TYPE_INT);
 		pduel->lua->add_param(minc, PARAM_TYPE_INT);
 		pduel->lua->add_param(reason, PARAM_TYPE_INT);
@@ -3156,7 +3156,7 @@ int32 field::is_player_can_remove_overlay_card(uint8 playerid, card * pcard, uin
 	e.event_player = playerid;
 	e.event_value = minc;
 	e.reason = reason;
-	e.reason_effect = core.reason_effect;
+	e.reason_effect = core.reason_effect->get_active_effect();
 	e.reason_player = playerid;
 	for(auto eit = pr.first; eit != pr.second;) {
 		effect* peffect = eit->second;
@@ -3189,7 +3189,7 @@ int32 field::is_player_can_send_to_hand(uint8 playerid, card * pcard) {
 		pduel->lua->add_param(eset[i], PARAM_TYPE_EFFECT);
 		pduel->lua->add_param(pcard, PARAM_TYPE_CARD);
 		pduel->lua->add_param(playerid, PARAM_TYPE_INT);
-		pduel->lua->add_param(core.reason_effect, PARAM_TYPE_EFFECT);
+		pduel->lua->add_param(core.reason_effect->get_active_effect(), PARAM_TYPE_EFFECT);
 		if (pduel->lua->check_condition(eset[i]->target, 4))
 			return FALSE;
 	}
@@ -3221,7 +3221,7 @@ int32 field::is_player_can_remove(uint8 playerid, card * pcard, uint32 reason) {
 		pduel->lua->add_param(pcard, PARAM_TYPE_CARD);
 		pduel->lua->add_param(playerid, PARAM_TYPE_INT);
 		pduel->lua->add_param(reason, PARAM_TYPE_INT);
-		pduel->lua->add_param(core.reason_effect, PARAM_TYPE_EFFECT);
+		pduel->lua->add_param(core.reason_effect->get_active_effect(), PARAM_TYPE_EFFECT);
 		if(pduel->lua->check_condition(eset[i]->target, 5))
 			return FALSE;
 	}
@@ -3315,7 +3315,7 @@ int32 field::check_chain_target(uint8 chaincount, card * pcard) {
 	return pduel->lua->check_condition(peffect->target, 10);
 }
 chain* field::get_chain(uint32 chaincount) {
-	if(chaincount == 0 && core.continuous_chain.size() && (core.reason_effect->type & EFFECT_TYPE_CONTINUOUS))
+	if(chaincount == 0 && core.continuous_chain.size() && (core.reason_effect->get_active_effect()->type & EFFECT_TYPE_CONTINUOUS))
 		return &core.continuous_chain.back();
 	if(chaincount == 0 || chaincount > core.current_chain.size()) {
 		chaincount = (uint32)core.current_chain.size();

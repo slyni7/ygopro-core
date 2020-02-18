@@ -512,7 +512,7 @@ int32 field::process() {
 				|| (attacker->fieldid_r != core.pre_field[0])
 				|| (attacker->current.location != LOCATION_MZONE)
 				|| !attacker->is_capable_attack()
-				|| !attacker->is_affect_by_effect(core.reason_effect)) {
+				|| !attacker->is_affect_by_effect(core.reason_effect->get_active_effect())) {
 				returns.ivalue[0] = 0;
 				core.units.pop_front();
 			} else {
@@ -521,7 +521,7 @@ int32 field::process() {
 				peffect->type = EFFECT_TYPE_SINGLE;
 				attacker->add_effect(peffect);
 				attacker->set_status(STATUS_ATTACK_CANCELED, TRUE);
-				raise_event(attacker, EVENT_ATTACK_DISABLED, core.reason_effect, 0, core.reason_player, PLAYER_NONE, 0);
+				raise_event(attacker, EVENT_ATTACK_DISABLED, core.reason_effect->get_active_effect(), 0, core.reason_player, PLAYER_NONE, 0);
 				process_instant_event();
 				it->step++;
 			}
@@ -644,7 +644,7 @@ int32 field::process() {
 				cset.insert(pcard);
 			}
 			if(cset.size())
-				send_to(&cset, core.reason_effect, it->arg3, core.reason_player, it->arg1, LOCATION_GRAVE, 0, POS_FACEUP);
+				send_to(&cset, core.reason_effect->get_active_effect(), it->arg3, core.reason_player, it->arg1, LOCATION_GRAVE, 0, POS_FACEUP);
 			else
 				returns.ivalue[0] = 0;
 			it->step++;

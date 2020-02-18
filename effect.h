@@ -53,6 +53,7 @@ public:
 	uint16 active_location;
 	uint16 active_sequence;
 	card* active_handler;
+	int32 active_effect;
 	uint16 status;
 	std::vector<uint32> label;
 	int32 label_object;
@@ -92,6 +93,7 @@ public:
 	void get_value(effect* peffect, uint32 extraargs, std::vector<int32>* result);
 	int32 check_value_condition(uint32 extraargs = 0);
 	void* get_label_object();
+	effect* get_active_effect();
 	int32 get_speed();
 	effect* clone();
 	card* get_owner() const;

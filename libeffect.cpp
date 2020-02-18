@@ -11,6 +11,21 @@
 #include "card.h"
 #include "effect.h"
 #include "group.h"
+
+int32 scriptlib::effect_set_active_effect(lua_State *L) {
+	check_param_count(L, 2);
+	check_param(L, PARAM_TYPE_EFFECT, 1);
+	effect* peffect = *(effect**) lua_touserdata(L, 1);
+	if(lua_isnil(L, 2)) {
+		peffect->active_effect = 0;
+		return 0;
+	}
+	check_param(L, PARAM_TYPE_EFFECT, 2);
+	effect* qeffect = *(effect**) lua_touserdata(L, 2);
+	peffect->active_effect = qeffect->ref_handle;
+	return 0;
+}
+
 int32 scriptlib::effect_set_owner(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_EFFECT, 1);
@@ -597,6 +612,8 @@ int32 scriptlib::effect_use_count_limit(lua_State *L) {
 }
 
 static const struct luaL_Reg effectlib[] = {
+	{ "SetActiveEffect", scriptlib::effect_set_active_effect },
+	
 	{ "SetOwner", scriptlib::effect_set_owner },
 	{ "GetRange", scriptlib::effect_get_range },
 	{ "GetCountLimit", scriptlib::effect_get_count_limit },

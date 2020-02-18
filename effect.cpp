@@ -26,6 +26,7 @@ effect::effect(duel* pd) {
 	active_location = 0;
 	active_sequence = 0;
 	active_handler = 0;
+	active_effect = 0;
 	id = 0;
 	code = 0;
 	type = 0;
@@ -688,6 +689,13 @@ int32 effect::check_value_condition(uint32 extraargs) {
 }
 void* effect::get_label_object() {
 	return pduel->lua->get_ref_object(label_object);
+}
+effect* effect::get_active_effect() {
+	effect* peffect = this;
+	while(peffect->active_effect) {
+		peffect = (effect*)pduel->lua->get_ref_object(peffect->active_effect);
+	}
+	return peffect;
 }
 int32 effect::get_speed() {
 	if(!(type & EFFECT_TYPE_ACTIONS))
