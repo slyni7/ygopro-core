@@ -25,6 +25,14 @@ int32 scriptlib::effect_set_active_effect(lua_State *L) {
 	peffect->active_effect = qeffect->ref_handle;
 	return 0;
 }
+int32 scriptlib::effect_set_speed(lua_State *L) {
+	check_param_count(L, 2);
+	check_param(L, PARAM_TYPE_EFFECT, 1);
+	effect* peffect = *(effect**) lua_touserdata(L, 1);
+	uint32 v = lua_tointeger(L, 2);
+	peffect->speed = v;
+	return 0;
+}
 
 int32 scriptlib::effect_set_owner(lua_State *L) {
 	check_param_count(L, 2);
@@ -613,6 +621,7 @@ int32 scriptlib::effect_use_count_limit(lua_State *L) {
 
 static const struct luaL_Reg effectlib[] = {
 	{ "SetActiveEffect", scriptlib::effect_set_active_effect },
+	{ "SetSpeed", scriptlib::effect_set_speed },
 	
 	{ "SetOwner", scriptlib::effect_set_owner },
 	{ "GetRange", scriptlib::effect_get_range },

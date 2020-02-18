@@ -19,6 +19,7 @@ public:
 	
 	static int32 duel_hint_activation(lua_State *L);
 	static int32 effect_set_active_effect(lua_State *L);
+	static int32 effect_set_speed(lua_State *L);
 	
 	//millux
 	static int32 card_is_ritual_type(lua_State *L);

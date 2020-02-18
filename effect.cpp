@@ -52,6 +52,7 @@ effect::effect(duel* pd) {
 	target = 0;
 	value = 0;
 	operation = 0;
+	speed = 0;
 }
 int32 effect::is_disable_related() {
 	if (code == EFFECT_IMMUNE_EFFECT || code == EFFECT_DISABLE || code == EFFECT_CANNOT_DISABLE || code == EFFECT_FORBIDDEN)
@@ -700,6 +701,8 @@ effect* effect::get_active_effect() {
 int32 effect::get_speed() {
 	if(!(type & EFFECT_TYPE_ACTIONS))
 		return 0;
+	if(speed)
+		return speed;
 	if(type & (EFFECT_TYPE_TRIGGER_O | EFFECT_TYPE_TRIGGER_F | EFFECT_TYPE_IGNITION))
 		return 1;
 	else if(type & (EFFECT_TYPE_QUICK_O | EFFECT_TYPE_QUICK_F))

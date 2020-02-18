@@ -62,6 +62,7 @@ public:
 	int32 target;
 	int32 value;
 	int32 operation;
+	uint8 speed;
 
 	explicit effect(duel* pd);
 	~effect() = default;
