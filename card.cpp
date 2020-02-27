@@ -2979,7 +2979,9 @@ int32 card::check_cost_condition(int32 ecode, int32 playerid, int32 sumtype) {
 int32 card::is_summonable_card() {
 	if(!(data.type & TYPE_MONSTER))
 		return FALSE;
-	return !(data.type & (TYPE_SPSUMMON | TYPE_TOKEN));
+	effect_set eset;
+	filter_effect(EFFECT_REVIVE_LIMIT, &eset);
+	return (eset.size() < 1) && !(data.type & (TYPE_SPSUMMON | TYPE_TOKEN));
 }
 int32 card::is_fusion_summonable_card(uint32 summon_type) {
 	if(!(data.type & TYPE_FUSION))
