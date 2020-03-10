@@ -1485,7 +1485,7 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		if(target->current.location == LOCATION_MZONE) {
 			if(target->is_position(POS_FACEDOWN))
 				return TRUE;
-			if(!ignore_count && (core.extra_summon[sumplayer] || !target->is_affected_by_effect(EFFECT_EXTRA_SUMMON_COUNT))
+			if(!ignore_count && !target->is_affected_by_effect(EFFECT_EXTRA_SUMMON_COUNT)
 			        && (core.summon_count[sumplayer] >= get_summon_count_limit(sumplayer)))
 				return TRUE;
 			if(!target->is_affected_by_effect(EFFECT_DUAL_SUMMONABLE))
@@ -1530,7 +1530,7 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		target->filter_effect(EFFECT_EXTRA_SUMMON_COUNT, &eset);
 		if(target->current.location == LOCATION_MZONE) {
 			core.units.begin()->step = 3;
-			if(!ignore_count && !core.extra_summon[sumplayer]) {
+			if(!ignore_count) {
 				for(int32 i = 0; i < eset.size(); ++i) {
 					core.units.begin()->ptr1 = eset[i];
 					return FALSE;
@@ -1541,7 +1541,7 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		}
 		if(proc) {
 			core.units.begin()->step = 3;
-			if(!ignore_count && !core.extra_summon[sumplayer]) {
+			if(!ignore_count) {
 				for(int32 i = 0; i < eset.size(); ++i) {
 					std::vector<int32> retval;
 					eset[i]->get_value(target, 0, &retval);
@@ -1562,14 +1562,17 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 			core.select_effects.push_back(0);
 			core.select_options.push_back(1);
 		}
-		if(!ignore_count && !core.extra_summon[sumplayer]) {
+		if(!ignore_count) {
 			for(int32 i = 0; i < eset.size(); ++i) {
 				std::vector<int32> retval;
 				eset[i]->get_value(target, 0, &retval);
 				int32 new_min_tribute = retval.size() > 0 ? retval[0] : 0;
 				int32 new_zone = retval.size() > 1 ? retval[1] : 0x1f;
 				int32 releasable = retval.size() > 2 ? (retval[2] < 0 ? 0xff00ff + retval[2] : retval[2]) : 0xff00ff;
+				int32 extra_summon = retval.size() > 3 ? retval[3] : 1;
 				new_zone &= zone;
+				if(extra_summon <= core.extra_summon[sumplayer])
+					continue;
 				if(peffect) {
 					if(new_min_tribute < (int32)min_tribute)
 						new_min_tribute = min_tribute;
@@ -1795,7 +1798,7 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		if(!pextra)
 			core.summon_count[sumplayer]++;
 		else {
-			core.extra_summon[sumplayer] = TRUE;
+			core.extra_summon[sumplayer]++;
 			pduel->write_buffer8(MSG_HINT);
 			pduel->write_buffer8(HINT_CARD);
 			pduel->write_buffer8(0);
@@ -1850,7 +1853,7 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		if(!pextra)
 			core.summon_count[sumplayer]++;
 		else {
-			core.extra_summon[sumplayer] = TRUE;
+			core.extra_summon[sumplayer]++;
 			pduel->write_buffer8(MSG_HINT);
 			pduel->write_buffer8(HINT_CARD);
 			pduel->write_buffer8(0);
@@ -2082,7 +2085,7 @@ int32 field::mset(uint16 step, uint8 setplayer, card* target, effect* proc, uint
 		target->filter_effect(EFFECT_EXTRA_SET_COUNT, &eset);
 		if(proc) {
 			core.units.begin()->step = 3;
-			if(!ignore_count && !core.extra_summon[setplayer]) {
+			if(!ignore_count) {
 				for(int32 i = 0; i < eset.size(); ++i) {
 					std::vector<int32> retval;
 					eset[i]->get_value(target, 0, &retval);
@@ -2103,14 +2106,17 @@ int32 field::mset(uint16 step, uint8 setplayer, card* target, effect* proc, uint
 			core.select_effects.push_back(0);
 			core.select_options.push_back(1);
 		}
-		if(!ignore_count && !core.extra_summon[setplayer]) {
+		if(!ignore_count) {
 			for(int32 i = 0; i < eset.size(); ++i) {
 				std::vector<int32> retval;
 				eset[i]->get_value(target, 0, &retval);
 				int32 new_min_tribute = retval.size() > 0 ? retval[0] : 0;
 				int32 new_zone = retval.size() > 1 ? retval[1] : 0x1f;
 				int32 releasable = retval.size() > 2 ? (retval[2] < 0 ? 0xff00ff + retval[2] : retval[2]) : 0xff00ff;
+				int32 extra_summon = retval.size() >3 ? retval[3] : 1;
 				new_zone &= zone;
+				if(extra_summon <= core.extra_summon[setplayer])
+					continue;
 				if(peffect) {
 					if(new_min_tribute < (int32)min_tribute)
 						new_min_tribute = min_tribute;
@@ -2267,7 +2273,7 @@ int32 field::mset(uint16 step, uint8 setplayer, card* target, effect* proc, uint
 		if(!pextra)
 			core.summon_count[setplayer]++;
 		else {
-			core.extra_summon[setplayer] = TRUE;
+			core.extra_summon[setplayer]++;
 			pduel->write_buffer8(MSG_HINT);
 			pduel->write_buffer8(HINT_CARD);
 			pduel->write_buffer8(0);
