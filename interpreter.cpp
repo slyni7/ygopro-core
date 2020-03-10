@@ -82,6 +82,8 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_pushinteger(lua_state, EFFECT_FLAG2_AVAILABLE_BD);
 	lua_setglobal(lua_state, "EFFECT_FLAG2_AVAILABLE_BD");
 	//effects
+	lua_pushinteger(lua_state, EFFECT_SUMMONABLE_CARD);
+	lua_setglobal(lua_state, "EFFECT_SUMMONABLE_CARD");
 	lua_pushinteger(lua_state, EFFECT_CHANGE_LINK_MARKER_KOISHI);
 	lua_setglobal(lua_state, "EFFECT_CHANGE_LINK_MARKER_KOISHI");
 	lua_pushinteger(lua_state, EFFECT_ADD_LINK_MARKER_KOISHI);
