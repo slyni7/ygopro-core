@@ -30,6 +30,33 @@ int32 scriptlib::duel_hint_activation(lua_State *L) {
 	pduel->write_buffer8((uint8)pduel->game_field->core.current_chain.size() + 1);
 	return 0;
 }
+int32 scriptlib::duel_spin_fromex(lua_State *L) {
+	check_action_permission(L);
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	card* pcard = *(card**)lua_touserdata(L, 1);
+	if(!pcard->current.is_location(LOCATION_MZONE) || pcard->current.sequence < 5)
+		return 0;
+	uint32 info = pcard->get_info_location();
+	uint8 p = pcard->current.controler;
+	uint8 seq = pcard->current.sequence;
+	duel* pduel = pcard->pduel;
+	pduel->game_field->remove_card(pcard);
+	pduel->game_field->add_card(1 - p, pcard, LOCATION_MZONE, 11 - seq);
+	pduel->write_buffer8(MSG_MOVE);
+	pduel->write_buffer32(pcard->data.code);
+	pduel->write_buffer32(info);
+	pduel->write_buffer32(pcard->get_info_location());
+	pduel->write_buffer32(0);
+	effect* reason_effect = pduel->game_field->core.reason_effect->get_active_effect();
+	uint8 reason_player = pduel->game_field->core.reason_player;
+	pduel->game_field->set_control(pcard, pcard->current.controler, 0, 0);
+	pduel->game_field->raise_single_event(pcard, 0, EVENT_CONTROL_CHANGED, reason_effect, REASON_EFFECT, reason_player, pcard->current.controler, 0);
+	pduel->game_field->raise_single_event(pcard, 0, EVENT_MOVE, reason_effect, REASON_EFFECT, reason_player, pcard->current.controler, 0);
+	pduel->game_field->raise_event(pcard, EVENT_CONTROL_CHANGED, reason_effect, REASON_EFFECT, reason_player, 0, 0);
+	pduel->game_field->raise_event(pcard, EVENT_MOVE, reason_effect, REASON_EFFECT, reason_player, 0, 0);
+	return 0;
+}
 
 int32 scriptlib::duel_select_field(lua_State * L) {
 	check_action_permission(L);
@@ -4609,6 +4636,7 @@ int32 scriptlib::duel_majestic_copy(lua_State *L) {
 
 static const struct luaL_Reg duellib[] = {
 	{ "HintActivation", scriptlib::duel_hint_activation },
+	{ "SpinFromEx", scriptlib::duel_spin_fromex },
 	
 	{ "SelectField", scriptlib::duel_select_field },
 	{ "GetMasterRule", scriptlib::duel_get_master_rule },

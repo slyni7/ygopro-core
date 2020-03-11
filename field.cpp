@@ -656,7 +656,8 @@ int32 field::is_location_useable(uint32 playerid, uint32 location, uint32 sequen
 // list: store local flag in list
 // return: usable count of LOCATION_MZONE or real LOCATION_SZONE of playerid requested by uplayer (may be negative)
 int32 field::get_useable_count(card* pcard, uint8 playerid, uint8 location, uint8 uplayer, uint32 reason, uint32 zone, uint32* list) {
-	if(location == LOCATION_MZONE && pcard && pcard->current.location == LOCATION_EXTRA)
+	if(location == LOCATION_MZONE && ((pcard && (pcard->current.location == LOCATION_EXTRA || pcard->is_affected_by_effect(EFFECT_MAIN_TOEXTRA)))
+		|| is_player_affected_by_effect(playerid, EFFECT_MAIN_TOEXTRA)))
 		return get_useable_count_fromex(pcard, playerid, uplayer, zone, list);
 	else
 		return get_useable_count_other(pcard, playerid, location, uplayer, reason, zone, list);
@@ -837,6 +838,8 @@ uint32 field::get_linked_zone(int32 playerid) {
 }
 uint32 field::get_rule_zone_fromex(int32 playerid, card* pcard) {
 	if(core.duel_rule >= 4) {
+		if(!pcard->current.is_location(LOCATION_EXTRA))
+			return 0x7f;
 		if(core.duel_rule >= 5 && pcard && pcard->is_position(POS_FACEDOWN) && (pcard->data.type & (TYPE_FUSION | TYPE_SYNCHRO | TYPE_EXTRA | TYPE_XYZ)))
 			return 0x7f;
 		if(is_player_affected_by_effect(playerid, EFFECT_EXTRA_TOMAIN_KOISHI) || pcard && pcard->is_affected_by_effect(EFFECT_EXTRA_TOMAIN_KOISHI))
