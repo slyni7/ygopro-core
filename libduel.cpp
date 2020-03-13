@@ -55,6 +55,8 @@ int32 scriptlib::duel_spin_fromex(lua_State *L) {
 	pduel->game_field->raise_single_event(pcard, 0, EVENT_MOVE, reason_effect, REASON_EFFECT, reason_player, pcard->current.controler, 0);
 	pduel->game_field->raise_event(pcard, EVENT_CONTROL_CHANGED, reason_effect, REASON_EFFECT, reason_player, 0, 0);
 	pduel->game_field->raise_event(pcard, EVENT_MOVE, reason_effect, REASON_EFFECT, reason_player, 0, 0);
+	pduel->game_field->process_single_event();
+	pduel->game_field->process_instant_event();
 	return 0;
 }
 
