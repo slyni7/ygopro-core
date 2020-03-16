@@ -138,6 +138,7 @@ public:
 	card_state previous;
 	card_state temp;
 	card_state current;
+	card_state turnstart;
 	query_cache q_cache;
 	uint8 owner;
 	uint8 summon_player;

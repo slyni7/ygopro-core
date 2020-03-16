@@ -59,6 +59,54 @@ int32 scriptlib::duel_spin_fromex(lua_State *L) {
 	pduel->game_field->process_instant_event();
 	return 0;
 }
+//not fully implemented
+int32 scriptlib::duel_time_tyrant(lua_State *L) {
+	check_action_permission(L);
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_GROUP, 1);
+	group* pgroup = *(group**)lua_touserdata(L, 1);
+	duel* pduel = pgroup->pduel;
+	for (auto& pcard : pgroup->container) {
+		pduel->game_field->remove_card(pcard);
+	}
+	pduel->write_buffer8(MSG_MOVE_GROUP);
+	pduel->write_buffer8(pgroup->container.size());
+	for (auto& pcard : pgroup->container) {
+		pcard->current.position = pcard->turnstart.position;
+		switch (pcard->turnstart.location) {
+		case LOCATION_DECK:
+			pduel->game_field->add_card(pcard->turnstart.controler, pcard, pcard->turnstart.location, pduel->game_field->player[pcard->turnstart.controler].list_main.size());
+		case LOCATION_HAND:
+			pduel->game_field->add_card(pcard->turnstart.controler, pcard, pcard->turnstart.location, pduel->game_field->player[pcard->turnstart.controler].list_hand.size());
+		case LOCATION_MZONE:
+			if (pduel->game_field->is_location_useable(pcard->turnstart.controler, pcard->turnstart.location, pcard->turnstart.sequence))
+				pduel->game_field->add_card(pcard->turnstart.controler, pcard, pcard->turnstart.location, pcard->turnstart.sequence);
+			else
+				pduel->game_field->add_card(pcard->turnstart.controler, pcard, LOCATION_GRAVE, pduel->game_field->player[pcard->turnstart.controler].list_grave.size());
+		case LOCATION_SZONE:
+			if (pduel->game_field->is_location_useable(pcard->turnstart.controler, pcard->turnstart.location, pcard->turnstart.sequence))
+				pduel->game_field->add_card(pcard->turnstart.controler, pcard, pcard->turnstart.location, pcard->turnstart.sequence);
+			else
+				pduel->game_field->add_card(pcard->turnstart.controler, pcard, LOCATION_GRAVE, pduel->game_field->player[pcard->turnstart.controler].list_grave.size());
+		case LOCATION_GRAVE:
+			pduel->game_field->add_card(pcard->turnstart.controler, pcard, pcard->turnstart.location, pduel->game_field->player[pcard->turnstart.controler].list_grave.size());
+		case LOCATION_REMOVED:
+			pduel->game_field->add_card(pcard->turnstart.controler, pcard, pcard->turnstart.location, pduel->game_field->player[pcard->turnstart.controler].list_remove.size());
+		case LOCATION_EXTRA:
+			pduel->game_field->add_card(pcard->turnstart.controler, pcard, pcard->turnstart.location, pduel->game_field->player[pcard->turnstart.controler].list_extra.size());
+		}
+		pduel->write_buffer32(pcard->data.code);
+		pduel->write_buffer8(pcard->previous.controler);
+		pduel->write_buffer8(pcard->previous.location);
+		pduel->write_buffer8(pcard->previous.sequence);
+		pduel->write_buffer8(pcard->previous.position);
+		pduel->write_buffer32(pcard->get_info_location());
+		pduel->write_buffer32(0);
+	}
+	pduel->game_field->process_single_event();
+	pduel->game_field->process_instant_event();
+	return 0;
+}
 
 int32 scriptlib::duel_select_field(lua_State * L) {
 	check_action_permission(L);
@@ -4639,6 +4687,7 @@ int32 scriptlib::duel_majestic_copy(lua_State *L) {
 static const struct luaL_Reg duellib[] = {
 	{ "HintActivation", scriptlib::duel_hint_activation },
 	{ "SpinFromEx", scriptlib::duel_spin_fromex },
+	{ "TimeTyrant", scriptlib::duel_time_tyrant },
 	
 	{ "SelectField", scriptlib::duel_select_field },
 	{ "GetMasterRule", scriptlib::duel_get_master_rule },

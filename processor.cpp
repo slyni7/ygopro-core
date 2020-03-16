@@ -2025,6 +2025,18 @@ int32 field::process_single_event(effect* peffect, const tevent& e, chain_list& 
 int32 field::process_idle_command(uint16 step) {
 	switch(step) {
 	case 0: {
+		auto ir = effects.continuous_effect.equal_range(EVENT_IDLE_TIMING);
+		for (auto eit = ir.first; eit != ir.second;) {
+			effect* peffect = eit->second;
+			++eit;
+			if (peffect->operation) {
+				core.sub_solving_event.push_back(nil_event);
+				add_process(PROCESSOR_EXECUTE_OPERATION, 0, peffect, 0, peffect->get_handler_player(), 0);
+			}
+		}
+		return FALSE;
+	}
+	case 1: {
 		effect* peffect;
 		bool must_attack = false;
 		core.select_chains.clear();
@@ -2160,7 +2172,7 @@ int32 field::process_idle_command(uint16 step) {
 		add_process(PROCESSOR_SELECT_IDLECMD, 0, 0, 0, infos.turn_player, 0);
 		return FALSE;
 	}
-	case 1: {
+	case 2: {
 		uint32 ctype = returns.ivalue[0] & 0xffff;
 		uint32 sel = returns.ivalue[0] >> 16;
 		if(ctype == 5) {
@@ -2230,7 +2242,7 @@ int32 field::process_idle_command(uint16 step) {
 		}
 		return TRUE;
 	}
-	case 2: {
+	case 3: {
 		for(auto& ch_lim : core.chain_limit)
 			luaL_unref(pduel->lua->lua_state, LUA_REGISTRYINDEX, ch_lim.function);
 		core.chain_limit.clear();
@@ -3720,6 +3732,66 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 			if(count > 0) {
 				draw(0, REASON_RULE, turn_player, turn_player, count);
 				add_process(PROCESSOR_POINT_EVENT, 0, 0, 0, 0, 0);
+			}
+		}
+		for (uint8 p = 0; p < 2; p++) {
+			for (auto& pcard : player[p].list_main) {
+				pcard->turnstart.controler = pcard->current.controler;
+				pcard->turnstart.location = pcard->current.location;
+				pcard->turnstart.sequence = pcard->current.sequence;
+				pcard->turnstart.position = pcard->current.position;
+			}
+			for (auto& pcard : player[p].list_hand) {
+				pcard->turnstart.controler = pcard->current.controler;
+				pcard->turnstart.location = pcard->current.location;
+				pcard->turnstart.sequence = pcard->current.sequence;
+				pcard->turnstart.position = pcard->current.position;
+			}
+			for (auto& pcard : player[p].list_mzone) {
+				if (!pcard)
+					continue;
+				pcard->turnstart.controler = pcard->current.controler;
+				pcard->turnstart.location = pcard->current.location;
+				pcard->turnstart.sequence = pcard->current.sequence;
+				pcard->turnstart.position = pcard->current.position;
+				for (auto& xyzcard : pcard->xyz_materials) {
+					xyzcard->turnstart.controler = xyzcard->current.controler;
+					xyzcard->turnstart.location = xyzcard->current.location;
+					xyzcard->turnstart.sequence = xyzcard->current.sequence;
+					xyzcard->turnstart.position = xyzcard->current.position;
+				}
+			}
+			for (auto& pcard : player[p].list_szone) {
+				if (!pcard)
+					continue;
+				pcard->turnstart.controler = pcard->current.controler;
+				pcard->turnstart.location = pcard->current.location;
+				pcard->turnstart.sequence = pcard->current.sequence;
+				pcard->turnstart.position = pcard->current.position;
+				for (auto& xyzcard : pcard->xyz_materials) {
+					xyzcard->turnstart.controler = xyzcard->current.controler;
+					xyzcard->turnstart.location = xyzcard->current.location;
+					xyzcard->turnstart.sequence = xyzcard->current.sequence;
+					xyzcard->turnstart.position = xyzcard->current.position;
+				}
+			}
+			for (auto& pcard : player[p].list_grave) {
+				pcard->turnstart.controler = pcard->current.controler;
+				pcard->turnstart.location = pcard->current.location;
+				pcard->turnstart.sequence = pcard->current.sequence;
+				pcard->turnstart.position = pcard->current.position;
+			}
+			for (auto& pcard : player[p].list_remove) {
+				pcard->turnstart.controler = pcard->current.controler;
+				pcard->turnstart.location = pcard->current.location;
+				pcard->turnstart.sequence = pcard->current.sequence;
+				pcard->turnstart.position = pcard->current.position;
+			}
+			for (auto& pcard : player[p].list_extra) {
+				pcard->turnstart.controler = pcard->current.controler;
+				pcard->turnstart.location = pcard->current.location;
+				pcard->turnstart.sequence = pcard->current.sequence;
+				pcard->turnstart.position = pcard->current.position;
 			}
 		}
 		add_process(PROCESSOR_PHASE_EVENT, 0, 0, 0, PHASE_DRAW, 0);

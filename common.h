@@ -91,6 +91,7 @@ struct card_sort {
 #define TYPE_PENDULUM		0x1000000	//
 #define TYPE_SPSUMMON		0x2000000	//
 #define TYPE_LINK			0x4000000	//
+#define TYPE_SQUARE			0x80000000	//
 
 //Attributes
 #define ATTRIBUTE_EARTH		0x01		//
@@ -321,6 +322,7 @@ struct card_sort {
 #define MSG_PLAYER_HINT			165
 #define MSG_MATCH_KILL			170
 #define MSG_CUSTOM_MSG			180
+#define MSG_MOVE_GROUP			255
 
 //Hints
 #define HINT_EVENT				1
