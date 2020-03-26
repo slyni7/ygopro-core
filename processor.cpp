@@ -4015,9 +4015,11 @@ int32 field::add_chain(uint16 step) {
 			if(phandler->current.location == LOCATION_HAND) {
 				if(phandler->data.type & TYPE_TRAP)
 					ecode = EFFECT_TRAP_ACT_IN_HAND;
-				else if((phandler->data.type & TYPE_SPELL) && (phandler->data.type & TYPE_QUICKPLAY)
-				        && infos.turn_player != phandler->current.controler)
-					ecode = EFFECT_QP_ACT_IN_NTPHAND;
+				else if((phandler->data.type & TYPE_SPELL) && infos.turn_player != phandler->current.controler)
+					if (phandler->data.type & TYPE_QUICKPLAY)
+						ecode = EFFECT_QP_ACT_IN_NTPHAND;
+					else
+						ecode = EFFECT_SPELL_ACT_IN_NTPHAND;
 				else if((phandler->data.type & TYPE_PENDULUM) && peffect->is_flag(EFFECT_FLAG2_SPOSITCH)
 				        && infos.turn_player != phandler->current.controler)
 					ecode = EFFECT_QP_ACT_IN_NTPHAND;

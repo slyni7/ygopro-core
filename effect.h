@@ -548,6 +548,8 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EVENT_CUSTOM				0x10000000
 
 #define EVENT_IDLE_TIMING			10170000
+#define EFFECT_SET_SPEED			10170001
+#define EFFECT_SPELL_ACT_IN_NTPHAND	10170002
 
 #define DOUBLE_DAMAGE				0x80000000
 #define HALF_DAMAGE					0x80000001

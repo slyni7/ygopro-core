@@ -88,6 +88,10 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_setglobal(lua_state, "EFFECT_MAIN_TOEXTRA");
 	lua_pushinteger(lua_state, EVENT_IDLE_TIMING);
 	lua_setglobal(lua_state, "EVENT_IDLE_TIMING");
+	lua_pushinteger(lua_state, EFFECT_SET_SPEED);
+	lua_setglobal(lua_state, "EFFECT_SET_SPEED");
+	lua_pushinteger(lua_state, EFFECT_SPELL_ACT_IN_NTPHAND);
+	lua_setglobal(lua_state, "EFFECT_SPELL_ACT_IN_NTPHAND");
 
 	lua_pushinteger(lua_state, EFFECT_CHANGE_LINK_MARKER_KOISHI);
 	lua_setglobal(lua_state, "EFFECT_CHANGE_LINK_MARKER_KOISHI");

@@ -107,6 +107,65 @@ int32 scriptlib::duel_time_tyrant(lua_State *L) {
 	pduel->game_field->process_instant_event();
 	return 0;
 }
+int32 scriptlib::duel_goto_phase(lua_State *L) {
+	check_action_permission(L);
+	check_param_count(L, 1);
+	uint32 phase = lua_tointeger(L, 1);
+	duel* pduel = interpreter::get_duel_info(L);
+	pduel->game_field->infos.phase = phase;
+	for (auto it = pduel->game_field->core.units.begin(); it != pduel->game_field->core.units.end(); ++it) {
+		if (it->type == PROCESSOR_TURN) {
+			switch (phase) {
+			case PHASE_DRAW: {
+				it->step = 1;
+				break;
+			}
+			case PHASE_STANDBY: {
+				it->step = 3;
+				break;
+			}
+			case PHASE_MAIN1: {
+				it->step = 6;
+				break;
+			}
+			case PHASE_BATTLE: {
+				it->step = 9;
+				break;
+			}
+			case PHASE_MAIN2: {
+				it->step = 12;
+				break;
+			}
+			case PHASE_END: {
+				it->step = 15;
+				break;
+			}
+			}
+			if (phase < PHASE_MAIN2) {
+				for (uint8 p = 0; p < 2; ++p) {
+					for (auto& pcard : pduel->game_field->player[p].list_mzone) {
+						if (!pcard)
+							continue;
+						pcard->attack_announce_count = 0;
+						pcard->announce_count = 0;
+						pcard->attacked_count = 0;
+						pcard->removed_overlay_count = 0;
+						pcard->announced_cards.clear();
+						pcard->attacked_cards.clear();
+						pcard->battled_cards.clear();
+					}
+				}
+			}
+			pduel->game_field->process_turn(it->step, it->arg1);
+			it->step++;
+		}
+		if (it->type == PROCESSOR_IDLE_COMMAND) {
+			it->step = 14;
+			pduel->game_field->process_idle_command(it->step);
+		}
+	}
+	return 0;
+}
 
 int32 scriptlib::duel_select_field(lua_State * L) {
 	check_action_permission(L);
@@ -4688,6 +4747,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "HintActivation", scriptlib::duel_hint_activation },
 	{ "SpinFromEx", scriptlib::duel_spin_fromex },
 	{ "TimeTyrant", scriptlib::duel_time_tyrant },
+	{ "GotoPhase", scriptlib::duel_goto_phase },
 	
 	{ "SelectField", scriptlib::duel_select_field },
 	{ "GetMasterRule", scriptlib::duel_get_master_rule },

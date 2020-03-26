@@ -234,7 +234,7 @@ int32 effect::is_activateable(uint8 playerid, const tevent& e, int32 neglect_con
 					if(handler->data.type & TYPE_QUICKPLAY)
 						ecode = EFFECT_QP_ACT_IN_NTPHAND;
 					else
-						return FALSE;
+						ecode = EFFECT_SPELL_ACT_IN_NTPHAND;
 				}
 				else if((handler->data.type & TYPE_PENDULUM) && pduel->game_field->infos.turn_player != playerid && is_flag(EFFECT_FLAG2_SPOSITCH)) {
 					ecode = EFFECT_QP_ACT_IN_NTPHAND;
@@ -701,6 +701,17 @@ effect* effect::get_active_effect() {
 int32 effect::get_speed() {
 	if(!(type & EFFECT_TYPE_ACTIONS))
 		return 0;
+	effect_set eset;
+	handler->filter_effect(EFFECT_SET_SPEED, &eset);
+	int32 val = 0;
+	for (int32 i = 0; i < eset.size(); i++) {
+		pduel->lua->add_param(eset[i], PARAM_TYPE_EFFECT);
+		pduel->lua->add_param(this, PARAM_TYPE_EFFECT);
+		if (pduel->lua->check_condition(eset[i]->target, 2))
+			val = eset[i]->get_value();
+	}
+	if (val)
+		return val;
 	if(speed)
 		return speed;
 	if(type & (EFFECT_TYPE_TRIGGER_O | EFFECT_TYPE_TRIGGER_F | EFFECT_TYPE_IGNITION))
