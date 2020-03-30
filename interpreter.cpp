@@ -156,7 +156,7 @@ int32 interpreter::register_card(card *pcard) {
 	lua_setmetatable(current_state, -2);
 	lua_pop(current_state, 1);
 	//Initial
-	if(pcard->data.code && (!(pcard->data.type & TYPE_NORMAL) || (pcard->data.type & TYPE_PENDULUM + TYPE_SQUARE))) {
+	if(pcard->data.code && (!(pcard->data.type & TYPE_NORMAL) || (pcard->data.type & TYPE_PENDULUM))) {
 		pcard->set_status(STATUS_INITIALIZING, TRUE);
 		add_param(pcard, PARAM_TYPE_CARD);
 		call_card_function(pcard, "initial_effect", 1, 0);

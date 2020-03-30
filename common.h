@@ -91,7 +91,6 @@ struct card_sort {
 #define TYPE_PENDULUM		0x1000000	//
 #define TYPE_SPSUMMON		0x2000000	//
 #define TYPE_LINK			0x4000000	//
-#define TYPE_SQUARE			0x80000000	//
 
 //Attributes
 #define ATTRIBUTE_EARTH		0x01		//
