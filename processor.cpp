@@ -1297,7 +1297,7 @@ int32 field::process_point_event(int16 step, int32 skip_trigger, int32 skip_free
 		core.full_event.splice(core.full_event.end(), core.delayed_activate_event);
 		core.delayed_quick.clear();
 		core.delayed_quick_tmp.swap(core.delayed_quick);
-		core.current_player = infos.turn_player;
+		core.current_player = (core.duel_rule >= 64) ? (1 - infos.turn_player) : infos.turn_player;
 		core.units.begin()->step = 1;
 		return FALSE;
 	}
@@ -1335,10 +1335,10 @@ int32 field::process_point_event(int16 step, int32 skip_trigger, int32 skip_free
 	case 3: {
 		if(returns.ivalue[0] == -1) {
 			if(core.new_fchain_s.size()) {
-				core.current_player = 1 - infos.turn_player;
+				core.current_player = (core.duel_rule >= 64) ? infos.turn_player : (1 - infos.turn_player);
 				core.units.begin()->step = 1;
 			} else {
-				core.current_player = infos.turn_player;
+				core.current_player = (core.duel_rule >= 64) ? (1 - infos.turn_player) : infos.turn_player;
 			}
 			return FALSE;
 		}
@@ -1407,10 +1407,10 @@ int32 field::process_point_event(int16 step, int32 skip_trigger, int32 skip_free
 				core.new_ochain_s.remove_if([chain_id = ch.chain_id](chain ch) { return ch.chain_id == chain_id; });
 			}
 			if(core.new_ochain_s.size()) {
-				core.current_player = 1 - infos.turn_player;
+				core.current_player = (core.duel_rule >= 64) ? infos.turn_player : (1 - infos.turn_player);
 				core.units.begin()->step = 3;
 			} else {
-				core.current_player = infos.turn_player;
+				core.current_player = (core.duel_rule >= 64) ? (1 - infos.turn_player) : infos.turn_player;
 				core.units.begin()->step = 6;
 			}
 			return FALSE;
@@ -3738,7 +3738,7 @@ int32 field::process_turn(uint16 step, uint8 turn_player) {
 	}
 	case 2: {
 		// Draw, new ruling
-		if((core.duel_rule <= 2) || (infos.turn_id > 1)) {
+		if((core.duel_rule <= 2) || (core.duel_rule >= 64) || (infos.turn_id > 1)) {
 			int32 count = get_draw_count(infos.turn_player);
 			if(count > 0) {
 				draw(0, REASON_RULE, turn_player, turn_player, count);
