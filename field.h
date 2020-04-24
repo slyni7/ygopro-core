@@ -313,9 +313,6 @@ struct processor {
 	uint8 normalsummon_state_count[2];
 	uint8 flipsummon_state_count[2];
 	uint8 spsummon_state_count[2];
-	uint8 spsummon_state_count_rst[2];
-	uint8 spsummon_state_count_tmp[2];
-	bool spsummon_rst;
 	uint8 attack_state_count[2];
 	uint8 battle_phase_count[2];
 	uint8 battled_count[2];
@@ -434,7 +431,7 @@ public:
 	void check_card_counter(card* pcard, int32 counter_type, int32 playerid);
 	void check_card_counter(group* pgroup, int32 counter_type, int32 playerid);
 	void check_chain_counter(effect* peffect, int32 playerid, int32 chainid, bool cancel = false);
-	void set_spsummon_counter(uint8 playerid, bool add = true, bool chain = false);
+	void set_spsummon_counter(uint8 playerid);
 	int32 check_spsummon_counter(uint8 playerid, uint8 ct = 1);
 
 	int32 check_lp_cost(uint8 playerid, uint32 cost);
@@ -553,7 +550,7 @@ public:
 	void release(card* target, effect* reason_effect, uint32 reason, uint32 reason_player);
 	void send_to(card_set* targets, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, uint32 destination, uint32 sequence, uint32 position);
 	void send_to(card* target, effect* reason_effect, uint32 reason, uint32 reason_player, uint32 playerid, uint32 destination, uint32 sequence, uint32 position);
-	void move_to_field(card* target, uint32 move_player, uint32 playerid, uint32 destination, uint32 positions, uint32 enable = FALSE, uint32 ret = 0, uint32 is_equip = FALSE, uint32 zone = 0xff);
+	void move_to_field(card* target, uint32 move_player, uint32 playerid, uint32 destination, uint32 positions, uint32 enable = FALSE, uint32 ret = 0, uint32 pzone = FALSE, uint32 zone = 0xff);
 	void change_position(card_set* targets, effect* reason_effect, uint32 reason_player, uint32 au, uint32 ad, uint32 du, uint32 dd, uint32 flag, uint32 enable = FALSE);
 	void change_position(card* target, effect* reason_effect, uint32 reason_player, uint32 npos, uint32 flag, uint32 enable = FALSE);
 	void operation_replace(int32 type, int32 step, group* targets);
@@ -585,7 +582,7 @@ public:
 	int32 send_replace(uint16 step, group* targets, card* target);
 	int32 send_to(uint16 step, group* targets, effect* reason_effect, uint32 reason, uint8 reason_player);
 	int32 discard_deck(uint16 step, uint8 playerid, uint8 count, uint32 reason);
-	int32 move_to_field(uint16 step, card* target, uint32 enable, uint32 ret, uint32 is_equip, uint32 zone);
+	int32 move_to_field(uint16 step, card* target, uint32 enable, uint32 ret, uint32 pzone, uint32 zone);
 	int32 change_position(uint16 step, group* targets, effect* reason_effect, uint8 reason_player, uint32 enable);
 	int32 operation_replace(uint16 step, effect* replace_effect, group* targets, card* target, int32 is_destroy);
 	int32 activate_effect(uint16 step, effect* peffect);

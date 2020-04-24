@@ -282,13 +282,13 @@ void field::send_to(card* target, effect* reason_effect, uint32 reason, uint32 r
 	tset.insert(target);
 	send_to(&tset, reason_effect, reason, reason_player, playerid, destination, sequence, position);
 }
-void field::move_to_field(card* target, uint32 move_player, uint32 playerid, uint32 destination, uint32 positions, uint32 enable, uint32 ret, uint32 is_equip, uint32 zone) {
+void field::move_to_field(card* target, uint32 move_player, uint32 playerid, uint32 destination, uint32 positions, uint32 enable, uint32 ret, uint32 pzone, uint32 zone) {
 	if(!(destination & LOCATION_ONFIELD) || !positions)
 		return;
 	if(destination == target->current.location && playerid == target->current.controler)
 		return;
 	target->to_field_param = (move_player << 24) + (playerid << 16) + (destination << 8) + positions;
-	add_process(PROCESSOR_MOVETOFIELD, 0, 0, (group*)target, enable, ret + (is_equip << 8), zone);
+	add_process(PROCESSOR_MOVETOFIELD, 0, 0, (group*)target, enable, ret + (pzone << 8), zone);
 }
 void field::change_position(card_set* targets, effect* reason_effect, uint32 reason_player, uint32 au, uint32 ad, uint32 du, uint32 dd, uint32 flag, uint32 enable) {
 	group* ng = pduel->new_group(*targets);
@@ -1488,7 +1488,7 @@ int32 field::equip(uint16 step, uint8 equip_player, card * equip_card, card * ta
 			return FALSE;
 		}
 		equip_card->enable_field_effect(false);
-		move_to_field(equip_card, equip_player, equip_player, LOCATION_SZONE, (up || equip_card->is_position(POS_FACEUP)) ? POS_FACEUP : POS_FACEDOWN, FALSE, 0, TRUE);
+		move_to_field(equip_card, equip_player, equip_player, LOCATION_SZONE, (up || equip_card->is_position(POS_FACEUP)) ? POS_FACEUP : POS_FACEDOWN);
 		return FALSE;
 	}
 	case 1: {
@@ -1944,8 +1944,6 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		pduel->write_buffer8(MSG_SUMMONING);
 		pduel->write_buffer32(target->data.code);
 		pduel->write_buffer32(target->get_info_location());
-		core.summon_state_count[sumplayer]++;
-		core.normalsummon_state_count[sumplayer]++;
 		if (target->material_cards.size()) {
 			for (auto& mcard : target->material_cards)
 				raise_single_event(mcard, 0, EVENT_BE_PRE_MATERIAL, proc, REASON_SUMMON, sumplayer, sumplayer, 0);
@@ -1987,6 +1985,8 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 			core.units.begin()->step = 14;
 			return FALSE;
 		}
+		if(proc)
+			remove_oath_effect(proc);
 		if(target->current.location == LOCATION_MZONE)
 			send_to(target, 0, REASON_RULE, sumplayer, sumplayer, LOCATION_GRAVE, 0, 0);
 		adjust_instant();
@@ -2020,6 +2020,8 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		return FALSE;
 	}
 	case 17: {
+		core.summon_state_count[sumplayer]++;
+		core.normalsummon_state_count[sumplayer]++;
 		check_card_counter(target, 1, sumplayer);
 		check_card_counter(target, 2, sumplayer);
 		raise_single_event(target, 0, EVENT_SUMMON_SUCCESS, proc, 0, sumplayer, sumplayer, 0);
@@ -2060,7 +2062,6 @@ int32 field::flip_summon(uint16 step, uint8 sumplayer, card * target) {
 		target->current.position = POS_FACEUP_ATTACK;
 		target->fieldid = infos.field_id++;
 		core.phase_action = TRUE;
-		core.flipsummon_state_count[sumplayer]++;
 		pduel->write_buffer8(MSG_FLIPSUMMONING);
 		pduel->write_buffer32(target->data.code);
 		pduel->write_buffer32(target->get_info_location());
@@ -2093,6 +2094,7 @@ int32 field::flip_summon(uint16 step, uint8 sumplayer, card * target) {
 	}
 	case 4: {
 		pduel->write_buffer8(MSG_FLIPSUMMONED);
+		core.flipsummon_state_count[sumplayer]++;
 		check_card_counter(target, 4, sumplayer);
 		adjust_instant();
 		raise_single_event(target, 0, EVENT_FLIP, 0, 0, sumplayer, sumplayer, 0);
@@ -2415,7 +2417,7 @@ int32 field::sset(uint16 step, uint8 setplayer, uint8 toplayer, card * target, e
 	}
 	case 1: {
 		target->enable_field_effect(false);
-		move_to_field(target, setplayer, toplayer, LOCATION_SZONE, POS_FACEDOWN, FALSE, 0, FALSE, zone ? zone : 0xff);
+		move_to_field(target, setplayer, toplayer, LOCATION_SZONE, POS_FACEDOWN, FALSE, 0, FALSE, zone ? zone : (target->data.type & TYPE_FIELD) ? 0x1 << 5 : 0xff);
 		return FALSE;
 	}
 	case 2: {
@@ -2786,7 +2788,6 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		target->current.reason_effect = peffect;
 		target->current.reason_player = sumplayer;
 		target->summon_player = sumplayer;
-		set_spsummon_counter(sumplayer);
 		break_effect();
 		return FALSE;
 	}
@@ -2856,6 +2857,7 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 			core.units.begin()->step = 14;
 			return FALSE;
 		}
+		remove_oath_effect(core.units.begin()->peffect);
 		if(target->current.location == LOCATION_MZONE)
 			send_to(target, 0, REASON_RULE, sumplayer, sumplayer, LOCATION_GRAVE, 0, 0);
 		adjust_instant();
@@ -2895,6 +2897,7 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 		return FALSE;
 	}
 	case 17: {
+		set_spsummon_counter(sumplayer);
 		check_card_counter(target, 3, sumplayer);
 		if(target->spsummon_code)
 			core.spsummon_once_map[sumplayer][target->spsummon_code]++;
@@ -3000,7 +3003,6 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 	}
 	case 25: {
 		group* pgroup = core.units.begin()->ptarget;
-		set_spsummon_counter(sumplayer);
 		card_set cset;
 		for(auto& pcard : pgroup->container) {
 			pcard->set_status(STATUS_SUMMONING, TRUE);
@@ -3031,6 +3033,7 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 			adjust_instant();
 		}
 		if(pgroup->container.size() == 0) {
+			remove_oath_effect(core.units.begin()->peffect);
 			add_process(PROCESSOR_POINT_EVENT, 0, 0, 0, FALSE, 0);
 			return TRUE;
 		}
@@ -3053,6 +3056,7 @@ int32 field::special_summon_rule(uint16 step, uint8 sumplayer, card* target, uin
 	case 28: {
 		group* pgroup = core.units.begin()->ptarget;
 		pduel->write_buffer8(MSG_SPSUMMONED);
+		set_spsummon_counter(sumplayer);
 		check_card_counter(pgroup, 3, sumplayer);
 		std::set<uint32> spsummon_once_set;
 		for(auto& pcard : pgroup->container) {
@@ -4038,7 +4042,6 @@ int32 field::send_to(uint16 step, group * targets, effect * reason_effect, uint3
 		} else if(dest == LOCATION_REMOVED) {
 			core.hint_timing[control_player] |= TIMING_REMOVE;
 		}
-		//call move_card()
 		if(pcard->current.controler != playerid || pcard->current.location != dest) {
 			pduel->write_buffer8(MSG_MOVE);
 			pduel->write_buffer32(pcard->data.code);
@@ -4421,7 +4424,7 @@ int32 field::discard_deck(uint16 step, uint8 playerid, uint8 count, uint32 reaso
 // move a card from anywhere to field, including sp_summon, Duel.MoveToField(), Duel.ReturnToField()
 // ret: 0 = default, 1 = return after temporarily banished, 2 = trap_monster return to LOCATION_SZONE
 // call move_card() in step 2
-int32 field::move_to_field(uint16 step, card* target, uint32 enable, uint32 ret, uint32 is_equip, uint32 zone) {
+int32 field::move_to_field(uint16 step, card* target, uint32 enable, uint32 ret, uint32 pzone, uint32 zone) {
 	uint32 move_player = (target->to_field_param >> 24) & 0xff;
 	uint32 playerid = (target->to_field_param >> 16) & 0xff;
 	uint32 location = (target->to_field_param >> 8) & 0xff;
@@ -4431,7 +4434,7 @@ int32 field::move_to_field(uint16 step, card* target, uint32 enable, uint32 ret,
 		returns.ivalue[0] = FALSE;
 		if((ret == 1) && (!(target->current.reason & REASON_TEMPORARY) || (target->current.reason_effect->owner != core.reason_effect->get_active_effect()->owner)))
 			return TRUE;
-		if(!is_equip && location == LOCATION_SZONE && (target->data.type & TYPE_FIELD) && (target->data.type & TYPE_SPELL)) {
+		if(location == LOCATION_SZONE && zone == 0x1 << 5 && (target->data.type & TYPE_FIELD) && (target->data.type & TYPE_SPELL)) {
 			card* pcard = get_field_card(playerid, LOCATION_SZONE, 5);
 			if(pcard) {
 				if(core.duel_rule >= 3)
@@ -4440,7 +4443,7 @@ int32 field::move_to_field(uint16 step, card* target, uint32 enable, uint32 ret,
 					destroy(pcard, 0, REASON_RULE, pcard->current.controler);
 				adjust_all();
 			}
-		} else if(!is_equip && location == LOCATION_SZONE && (target->data.type & TYPE_PENDULUM)) {
+		} else if(pzone && location == LOCATION_SZONE && (target->data.type & TYPE_PENDULUM)) {
 			uint32 flag = 0;
 			if(is_location_useable(playerid, LOCATION_PZONE, 0))
 				flag |= 0x1u << (core.duel_rule >= 4 ? 8 : 14);
@@ -4501,7 +4504,7 @@ int32 field::move_to_field(uint16 step, card* target, uint32 enable, uint32 ret,
 	}
 	case 1: {
 		uint32 seq = returns.bvalue[2];
-		if(!is_equip && location == LOCATION_SZONE && (target->data.type & TYPE_FIELD) && (target->data.type & TYPE_SPELL))
+		if(location == LOCATION_SZONE && zone == 0x1 << 5 && (target->data.type & TYPE_FIELD) && (target->data.type & TYPE_SPELL))
 			seq = 5;
 		if(ret != 1) {
 			if(location != target->current.location) {
@@ -4566,10 +4569,6 @@ int32 field::move_to_field(uint16 step, card* target, uint32 enable, uint32 ret,
 		pduel->write_buffer32(target->get_info_location());
 		if(target->overlay_target)
 			target->overlay_target->xyz_remove(target);
-		// call move_card()
-		uint8 pzone = FALSE;
-		if(!is_equip && location == LOCATION_SZONE && (target->data.type & TYPE_PENDULUM))
-			pzone = TRUE;
 		move_card(playerid, target, location, target->temp.sequence, pzone);
 		target->current.position = returns.ivalue[0];
 		target->set_status(STATUS_LEAVE_CONFIRMED, FALSE);
@@ -4805,7 +4804,6 @@ int32 field::change_position(uint16 step, group * targets, effect * reason_effec
 				if((pcard->summon_info & SUMMON_TYPE_PENDULUM) == SUMMON_TYPE_PENDULUM)
 					pcard->summon_info &= 0xf000ffff;
 				pcard->spsummon_counter[0] = pcard->spsummon_counter[1] = 0;
-				pcard->spsummon_counter_rst[0] = pcard->spsummon_counter_rst[1] = 0;
 			}
 			if((npos & POS_FACEDOWN) && pcard->equiping_cards.size()) {
 				for(auto csit = pcard->equiping_cards.begin(); csit != pcard->equiping_cards.end();) {

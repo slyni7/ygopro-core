@@ -26,10 +26,10 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	luaL_openlibs(lua_state);
 #ifdef YGOPRO_LUA_SAFE
 	lua_pushnil(lua_state);
- 	lua_setglobal(lua_state, "io");
- 	lua_pushnil(lua_state);
- 	lua_setglobal(lua_state, "os");
-	luaL_getsubtable(lua_state, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
+	lua_setglobal(lua_state, "io");
+	lua_pushnil(lua_state);
+	lua_setglobal(lua_state, "os");
+	luaL_getsubtable(lua_state, LUA_REGISTRYINDEX, "_LOADED");
 	lua_pushnil(lua_state);
 	lua_setfield(lua_state, -2, "io");
 	lua_pushnil(lua_state);
