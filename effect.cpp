@@ -709,10 +709,8 @@ int32 effect::get_speed() {
 	handler->filter_effect(EFFECT_SET_SPEED, &eset);
 	int32 val = 0;
 	for (int32 i = 0; i < eset.size(); i++) {
-		pduel->lua->add_param(eset[i], PARAM_TYPE_EFFECT);
 		pduel->lua->add_param(this, PARAM_TYPE_EFFECT);
-		if (pduel->lua->check_condition(eset[i]->target, 2))
-			val = eset[i]->get_value();
+		val = eset[i]->get_value(1);
 	}
 	if (val)
 		return val;
