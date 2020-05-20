@@ -1310,7 +1310,7 @@ int32 field::process_point_event(int16 step, int32 skip_trigger, int32 skip_free
 			if(phandler->is_has_relation(*clit)) //work around: position and control should be refreshed before raising event
 				clit->set_triggering_state(phandler);
 			uint8 tp = clit->triggering_player;
-			if(phandler->is_has_relation(*clit) && peffect->is_chainable(tp) && peffect->is_activateable(tp, clit->evt, TRUE)) {
+			if(check_trigger_effect(*clit) && peffect->is_chainable(tp) && peffect->is_activateable(tp, clit->evt, TRUE)) {
 				if(tp == core.current_player)
 					core.select_chains.push_back(*clit);
 			} else {
@@ -1367,7 +1367,7 @@ int32 field::process_point_event(int16 step, int32 skip_trigger, int32 skip_free
 				clit->set_triggering_state(phandler);
 			}
 			uint8 tp = clit->triggering_player;
-			if(check_hand_trigger(*clit) && phandler->is_has_relation(*clit)
+			if(check_hand_trigger(*clit) && check_trigger_effect(*clit)
 				&& peffect->is_chainable(tp) && peffect->is_activateable(tp, clit->evt, TRUE)
 				&& check_spself_from_hand_trigger(*clit)) {
 				if(tp == core.current_player)
@@ -3306,7 +3306,7 @@ int32 field::process_damage_step(uint16 step, uint32 new_attack) {
 	return TRUE;
 }
 void field::calculate_battle_damage(effect** pdamchange, card** preason_card, uint8* battle_destroyed) {
-	uint32 aa = core.attacker->get_attack(), ad = core.attacker->get_defense();
+	uint32 aa = core.attacker->get_battle_attack(), ad = core.attacker->get_battle_defense();
 	uint32 da = 0, dd = 0, a = aa, d;
 	uint8 pa = core.attacker->current.controler, pd;
 	uint8 damp = 0;
@@ -3321,8 +3321,8 @@ void field::calculate_battle_damage(effect** pdamchange, card** preason_card, ui
 			a = ad;
 	}
 	if(core.attack_target) {
-		da = core.attack_target->get_attack();
-		dd = core.attack_target->get_defense();
+		da = core.attack_target->get_battle_attack();
+		dd = core.attack_target->get_battle_defense();
 		pd = core.attack_target->current.controler;
 		if(core.attack_target->is_position(POS_ATTACK)) {
 			d = da;
