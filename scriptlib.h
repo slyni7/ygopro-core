@@ -538,6 +538,7 @@ public:
 	static int32 duel_get_ritual_material(lua_State *L);
 	static int32 duel_release_ritual_material(lua_State *L);
 	static int32 duel_get_fusion_material(lua_State *L);
+	static int32 duel_is_summon_cancelable(lua_State *L);
 	static int32 duel_set_must_select_cards(lua_State *L);
 	static int32 duel_grab_must_select_cards(lua_State *L);
 	static int32 duel_set_target_card(lua_State *L);
