@@ -47,6 +47,7 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	scriptlib::open_debuglib(lua_state);
 	//extra scripts
 	load_script("./script/constant.lua");
+	load_script("./ireina/main.lua");
 	load_script("./script/utility.lua");
 	//load kpro constant
 	//card data constants

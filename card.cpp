@@ -267,6 +267,38 @@ uint32 card::get_infos(byte* buf, int32 query_flag, int32 use_cache) {
 			} else query_flag &= ~QUERY_LINK;
 		}
 	}
+	if (!use_cache) {
+		if (query_flag & QUERY_SQUARE)	{
+			q_cache.square_mana_count = *p++ = get_square_mana_count();
+			if (get_square_mana_count()) {
+				for (int i = 1; i <= get_square_mana_count(); ++i) {
+					q_cache.nth_square_mana[i] = *p++ = get_nth_square_mana(i);
+				}
+			}
+		}
+	}
+	else {
+		if (query_flag & QUERY_SQUARE) {
+			bool square_res = TRUE;
+			uint32 mana_count = get_square_mana_count();
+			if ((mana_count != q_cache.square_mana_count)) {
+				q_cache.square_mana_count = mana_count;
+				*p++ = (int32)mana_count;
+				square_res = FALSE;
+			}
+			if (mana_count) {
+				for (int i = 1; i <= mana_count; ++i) {
+					if (get_nth_square_mana(i) != q_cache.nth_square_mana[i]) {
+						q_cache.nth_square_mana[i] = get_nth_square_mana(i);
+						*p++ = (int32)get_nth_square_mana(i);
+						square_res = FALSE;
+					}
+				}
+			}
+			if (square_res)
+				query_flag &= ~QUERY_SQUARE;
+		}
+	}
 	*(uint32*)buf = (uint32)((byte*)p - buf);
 #ifdef _IRR_ANDROID_PLATFORM_
 	memcpy(buf + 4, &query_flag, sizeof(uint32));
@@ -274,6 +306,29 @@ uint32 card::get_infos(byte* buf, int32 query_flag, int32 use_cache) {
 	*(uint32*)(buf + 4) = query_flag;
 #endif
 	return (uint32)((byte*)p - buf);
+}
+uint32 card::get_nth_square_mana(uint32 nth) {
+	uint32 mana;
+	lua_getglobal(pduel->lua->lua_state, "get_nth_square_mana");
+	if (lua_isnil(pduel->lua->lua_state, 1))
+		return 0xffffffff;
+	interpreter::card2value(pduel->lua->lua_state, this);
+	lua_pushinteger(pduel->lua->lua_state, nth);
+	lua_call(pduel->lua->lua_state, 2, 1);
+	mana = lua_tointeger(pduel->lua->lua_state, -1);
+	lua_pop(pduel->lua->lua_state, 1);
+	return mana;
+}
+uint32 card::get_square_mana_count() {
+	uint32 count;
+	lua_getglobal(pduel->lua->lua_state, "get_square_mana_count");
+	if (lua_isnil(pduel->lua->lua_state, 1))
+		return 0;
+	interpreter::card2value(pduel->lua->lua_state, this);
+	lua_call(pduel->lua->lua_state, 1, 1);
+	count = lua_tointeger(pduel->lua->lua_state, -1);
+	lua_pop(pduel->lua->lua_state, 1);
+	return count;
 }
 uint32 card::get_info_location() {
 	if(overlay_target) {
