@@ -269,15 +269,10 @@ uint32 card::get_infos(byte* buf, int32 query_flag, int32 use_cache) {
 	}
 	if (!use_cache) {
 		if (query_flag & QUERY_SQUARE)	{
-			if ((int32)get_square_mana_count() > 64) {
-				q_cache.square_mana_count = *p++ = 0;			
-			}
-			else {
-				q_cache.square_mana_count = *p++ = get_square_mana_count();
-				if (get_square_mana_count()) {
-					for (int i = 1; i <= get_square_mana_count(); ++i) {
-						q_cache.nth_square_mana[i] = *p++ = get_nth_square_mana(i);
-					}
+			q_cache.square_mana_count = *p++ = get_square_mana_count();
+			if (get_square_mana_count()) {
+				for (int i = 1; i <= get_square_mana_count(); ++i) {
+					q_cache.nth_square_mana[i] = *p++ = get_nth_square_mana(i);
 				}
 			}
 		}
@@ -286,31 +281,22 @@ uint32 card::get_infos(byte* buf, int32 query_flag, int32 use_cache) {
 		if (query_flag & QUERY_SQUARE) {
 			bool square_res = TRUE;
 			int32 mana_count = get_square_mana_count();
-			if (mana_count > 64) {
-				if ((0 != q_cache.square_mana_count)) {
-					q_cache.square_mana_count = 0;
-					*p++ = (int32)0;
-					query_flag &= ~QUERY_SQUARE;
-				}
+			if ((mana_count != q_cache.square_mana_count)) {
+				q_cache.square_mana_count = mana_count;
+				*p++ = (int32)mana_count;
+				square_res = FALSE;
 			}
-			else {
-				if ((mana_count != q_cache.square_mana_count)) {
-					q_cache.square_mana_count = mana_count;
-					*p++ = (int32)mana_count;
-					square_res = FALSE;
-				}
-				if (mana_count) {
-					for (int i = 1; i <= mana_count; ++i) {
-						if (get_nth_square_mana(i) != q_cache.nth_square_mana[i]) {
-							q_cache.nth_square_mana[i] = get_nth_square_mana(i);
-							*p++ = (int32)get_nth_square_mana(i);
-							square_res = FALSE;
-						}
+			if (mana_count) {
+				for (int i = 1; i <= mana_count; ++i) {
+					if (get_nth_square_mana(i) != q_cache.nth_square_mana[i]) {
+						q_cache.nth_square_mana[i] = get_nth_square_mana(i);
+						*p++ = (int32)get_nth_square_mana(i);
+						square_res = FALSE;
 					}
 				}
-				if (square_res)
-					query_flag &= ~QUERY_SQUARE;
 			}
+			if (square_res)
+				query_flag &= ~QUERY_SQUARE;
 		}
 	}
 	*(uint32*)buf = (uint32)((byte*)p - buf);
@@ -342,6 +328,8 @@ uint32 card::get_square_mana_count() {
 	lua_call(pduel->lua->lua_state, 1, 1);
 	count = lua_tointeger(pduel->lua->lua_state, -1);
 	lua_pop(pduel->lua->lua_state, 1);
+	if ((int32)count > 64)
+		return 0;
 	return count;
 }
 uint32 card::get_info_location() {
