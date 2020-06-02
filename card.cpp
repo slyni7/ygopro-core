@@ -272,7 +272,7 @@ uint32 card::get_infos(byte* buf, int32 query_flag, int32 use_cache) {
 			q_cache.square_mana_count = *p++ = get_square_mana_count();
 			if (get_square_mana_count()) {
 				for (int i = 1; i <= get_square_mana_count(); ++i) {
-					q_cache.nth_square_mana[i] = *p++ = get_nth_square_mana(i);
+					q_cache.nth_square_mana[i - 1] = *p++ = get_nth_square_mana(i);
 				}
 			}
 		}
@@ -288,8 +288,8 @@ uint32 card::get_infos(byte* buf, int32 query_flag, int32 use_cache) {
 			}
 			if (mana_count) {
 				for (int i = 1; i <= mana_count; ++i) {
-					if (get_nth_square_mana(i) != q_cache.nth_square_mana[i]) {
-						q_cache.nth_square_mana[i] = get_nth_square_mana(i);
+					if (get_nth_square_mana(i) != q_cache.nth_square_mana[i - 1]) {
+						q_cache.nth_square_mana[i - 1] = get_nth_square_mana(i);
 						*p++ = (int32)get_nth_square_mana(i);
 						square_res = FALSE;
 					}
