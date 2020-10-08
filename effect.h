@@ -221,7 +221,7 @@ enum effect_flag2 : uint32 {
 //	EFFECT_FLAG2_NAGA				= 0x0001,
 	EFFECT_FLAG2_COF				= 0x0002,
 	EFFECT_FLAG2_SPOSITCH			= 0x0100, // flag2 from 0x0100 are koishipro use
-	EFFECT_FLAG2_AVAILABLE_BD		= 0x0101,
+	EFFECT_FLAG2_AVAILABLE_BD		= 0x0200,
 };
 inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 {
@@ -541,7 +541,6 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EVENT_LEVEL_UP				1200
 #define EVENT_PAY_LPCOST			1201
 #define EVENT_DETACH_MATERIAL		1202
-#define EVENT_RETURN_TO_GRAVE		1203
 #define EVENT_TURN_END				1210
 #define EVENT_PHASE					0x1000
 #define EVENT_PHASE_START			0x2000
