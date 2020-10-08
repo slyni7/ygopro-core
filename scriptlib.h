@@ -45,6 +45,7 @@ public:
 	static int32 duel_get_cards_in_zone(lua_State *L);
 	static int32 duel_xyz_summon_by_rose(lua_State *L);
 	static int32 duel_load_script(lua_State *L);
+	static int32 duel_reset_time_limit(lua_State *L);
 	//card lib
 	static int32 card_get_code(lua_State *L);
 	static int32 card_get_origin_code(lua_State *L);
@@ -166,6 +167,7 @@ public:
 	static int32 card_get_equip_target(lua_State *L);
 	static int32 card_get_pre_equip_target(lua_State *L);
 	static int32 card_check_equip_target(lua_State *L);
+	static int32 card_check_union_target(lua_State *L);
 	static int32 card_get_union_count(lua_State *L);
 	static int32 card_get_overlay_group(lua_State *L);
 	static int32 card_get_overlay_count(lua_State *L);

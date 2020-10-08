@@ -467,12 +467,26 @@ int32 field::damage(uint16 step, effect* reason_effect, uint32 reason, uint8 rea
 				}
 			}
 		}
+		eset.clear();
+		filter_player_effect(playerid, EFFECT_REFLECT_DAMAGE, &eset);
+		for(int32 i = 0; i < eset.size(); ++i) {
+			pduel->lua->add_param(reason_effect, PARAM_TYPE_EFFECT);
+			pduel->lua->add_param(amount, PARAM_TYPE_INT);
+			pduel->lua->add_param(reason, PARAM_TYPE_INT);
+			pduel->lua->add_param(reason_player, PARAM_TYPE_INT);
+			pduel->lua->add_param(reason_card, PARAM_TYPE_CARD);
+			if (eset[i]->check_value_condition(5)) {
+				playerid = 1 - playerid;
+				core.units.begin()->arg2 |= 1 << 29;
+				break;
+			}
+		}
 		uint32 val = amount;
 		eset.clear();
 		filter_player_effect(playerid, EFFECT_CHANGE_DAMAGE, &eset);
 		for(int32 i = 0; i < eset.size(); ++i) {
 			pduel->lua->add_param(reason_effect, PARAM_TYPE_EFFECT);
-			pduel->lua->add_param(amount, PARAM_TYPE_INT);
+			pduel->lua->add_param(val, PARAM_TYPE_INT);
 			pduel->lua->add_param(reason, PARAM_TYPE_INT);
 			pduel->lua->add_param(reason_player, PARAM_TYPE_INT);
 			pduel->lua->add_param(reason_card, PARAM_TYPE_CARD);
@@ -480,19 +494,6 @@ int32 field::damage(uint16 step, effect* reason_effect, uint32 reason, uint8 rea
 			returns.ivalue[0] = val;
 			if(val == 0)
 				return TRUE;
-		}
-		eset.clear();
-		filter_player_effect(playerid, EFFECT_REFLECT_DAMAGE, &eset);
-		for(int32 i = 0; i < eset.size(); ++i) {
-			pduel->lua->add_param(reason_effect, PARAM_TYPE_EFFECT);
-			pduel->lua->add_param(val, PARAM_TYPE_INT);
-			pduel->lua->add_param(reason, PARAM_TYPE_INT);
-			pduel->lua->add_param(reason_player, PARAM_TYPE_INT);
-			pduel->lua->add_param(reason_card, PARAM_TYPE_CARD);
-			if(eset[i]->check_value_condition(5)) {
-				core.units.begin()->arg2 |= 1 << 29;
-				break;
-			}
 		}
 		core.units.begin()->arg2 = (core.units.begin()->arg2 & 0xff000000) | (val & 0xffffff);
 		if(is_step) {
@@ -1063,13 +1064,16 @@ int32 field::swap_control(uint16 step, effect* reason_effect, uint8 reason_playe
 		uint8 s1 = pcard1->current.sequence;
 		uint32 flag;
 		get_useable_count(NULL, p1, LOCATION_MZONE, reason_player, LOCATION_REASON_CONTROL, 0xff, &flag);
-		flag = (flag & ~(1 << s1) & 0xff) | ~0x1f;
+		if(reason_player == p1)
+			flag = (flag & ~(1 << s1) & 0xff) | ~0x1f;
+		else
+			flag = ((flag & ~(1 << s1)) << 16 & 0xff0000) | ~0x1f0000;
 		card* pcard2 = *targets2->it;
 		pduel->write_buffer8(MSG_HINT);
 		pduel->write_buffer8(HINT_SELECTMSG);
-		pduel->write_buffer8(p1);
+		pduel->write_buffer8(reason_player);
 		pduel->write_buffer32(pcard2->data.code);
-		add_process(PROCESSOR_SELECT_PLACE, 0, 0, 0, p1, flag, 1);
+		add_process(PROCESSOR_SELECT_PLACE, 0, 0, 0, reason_player, flag, 1);
 		return FALSE;
 	}
 	case 2: {
@@ -1079,13 +1083,16 @@ int32 field::swap_control(uint16 step, effect* reason_effect, uint8 reason_playe
 		uint8 s2 = pcard2->current.sequence;
 		uint32 flag;
 		get_useable_count(NULL, p2, LOCATION_MZONE, reason_player, LOCATION_REASON_CONTROL, 0xff, &flag);
-		flag = (flag & ~(1 << s2) & 0xff) | ~0x1f;
+		if(reason_player == p2)
+			flag = (flag & ~(1 << s2) & 0xff) | ~0x1f;
+		else
+			flag = ((flag & ~(1 << s2)) << 16 & 0xff0000) | ~0x1f0000;
 		card* pcard1 = *targets1->it;
 		pduel->write_buffer8(MSG_HINT);
 		pduel->write_buffer8(HINT_SELECTMSG);
-		pduel->write_buffer8(p2);
+		pduel->write_buffer8(reason_player);
 		pduel->write_buffer32(pcard1->data.code);
-		add_process(PROCESSOR_SELECT_PLACE, 0, 0, 0, p2, flag, 1);
+		add_process(PROCESSOR_SELECT_PLACE, 0, 0, 0, reason_player, flag, 1);
 		return FALSE;
 	}
 	case 3: {
@@ -1390,6 +1397,10 @@ int32 field::self_destroy(uint16 step, card* ucard, int32 p) {
 int32 field::trap_monster_adjust(uint16 step) {
 	switch(step) {
 	case 0: {
+		if(core.duel_rule <= 4) {
+			core.units.begin()->step = 3;
+			return FALSE;
+		}
 		card_set* to_grave_set = new card_set;
 		core.units.begin()->ptr1 = to_grave_set;
 		return FALSE;
@@ -1444,14 +1455,17 @@ int32 field::trap_monster_adjust(uint16 step) {
 		for(uint8 p = 0; p < 2; ++p) {
 			for(auto& pcard : core.trap_monster_adjust_set[tp]) {
 				pcard->reset(RESET_TURN_SET, RESET_EVENT);
+				if(core.duel_rule <= 4)
+					refresh_location_info_instant();
 				move_to_field(pcard, tp, tp, LOCATION_SZONE, pcard->current.position, FALSE, 2);
 			}
 			tp = 1 - tp;
 		}
-		card_set* to_grave_set = (card_set*)core.units.begin()->ptr1;
-		if(to_grave_set->size())
-			send_to(to_grave_set, 0, REASON_RULE, PLAYER_NONE, PLAYER_NONE, LOCATION_GRAVE, 0, POS_FACEUP);
-		delete to_grave_set;
+		if(card_set* to_grave_set = (card_set*)core.units.begin()->ptr1) {
+			if(to_grave_set->size())
+				send_to(to_grave_set, 0, REASON_RULE, PLAYER_NONE, PLAYER_NONE, LOCATION_GRAVE, 0, POS_FACEUP);
+			delete to_grave_set;
+		}
 		return TRUE;
 	}
 	}
@@ -1572,7 +1586,7 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 			effect_set eset;
 			int32 res = target->filter_summon_procedure(sumplayer, &eset, ignore_count, min_tribute, zone);
 			if(proc) {
-				if(res < 0)
+				if(res < 0 || !target->check_summon_procedure(proc, sumplayer, ignore_count, min_tribute, zone))
 					return TRUE;
 			} else {
 				if(res == -2)
@@ -1613,23 +1627,10 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 			core.units.begin()->ptr1 = 0;
 			return FALSE;
 		}
-		if(proc) {
-			core.units.begin()->step = 3;
-			if(!ignore_count) {
-				for(int32 i = 0; i < eset.size(); ++i) {
-					std::vector<int32> retval;
-					eset[i]->get_value(target, 0, &retval);
-					if(retval.size() < 2) {
-						core.units.begin()->ptr1 = eset[i];
-						return FALSE;
-					}
-				}
-			}
-			core.units.begin()->ptr1 = 0;
-			return FALSE;
+		if(!proc) {
+			proc = core.select_effects[returns.ivalue[0]];
+			core.units.begin()->peffect = proc;
 		}
-		effect* proc = core.select_effects[returns.ivalue[0]];
-		core.units.begin()->peffect = proc;
 		core.select_effects.clear();
 		core.select_options.clear();
 		if(ignore_count || core.summon_count[sumplayer] < get_summon_count_limit(sumplayer)) {
@@ -1896,7 +1897,7 @@ int32 field::summon(uint16 step, uint8 sumplayer, card* target, effect* proc, ui
 		if(is_player_affected_by_effect(sumplayer, EFFECT_DEVINE_LIGHT))
 			positions = POS_FACEUP;
 		if(proc && proc->is_flag(EFFECT_FLAG_SPSUM_PARAM)) {
-			positions = (uint8)proc->s_range;
+			positions = (uint8)proc->s_range & POS_FACEUP;
 			if(proc->o_range)
 				targetplayer = 1 - sumplayer;
 		}
@@ -2158,7 +2159,7 @@ int32 field::mset(uint16 step, uint8 setplayer, card* target, effect* proc, uint
 		effect_set eset;
 		int32 res = target->filter_set_procedure(setplayer, &eset, ignore_count, min_tribute, zone);
 		if(proc) {
-			if(res < 0)
+			if(res < 0 || !target->check_set_procedure(proc, setplayer, ignore_count, min_tribute, zone))
 				return TRUE;
 		} else {
 			if(res == -2)
@@ -2184,23 +2185,10 @@ int32 field::mset(uint16 step, uint8 setplayer, card* target, effect* proc, uint
 	case 1: {
 		effect_set eset;
 		target->filter_effect(EFFECT_EXTRA_SET_COUNT, &eset);
-		if(proc) {
-			core.units.begin()->step = 3;
-			if(!ignore_count) {
-				for(int32 i = 0; i < eset.size(); ++i) {
-					std::vector<int32> retval;
-					eset[i]->get_value(target, 0, &retval);
-					if(retval.size() < 2) {
-						core.units.begin()->ptr1 = eset[i];
-						return FALSE;
-					}
-				}
-			}
-			core.units.begin()->ptr1 = 0;
-			return FALSE;
+		if(!proc) {
+			proc = core.select_effects[returns.ivalue[0]];
+			core.units.begin()->peffect = proc;
 		}
-		effect* proc = core.select_effects[returns.ivalue[0]];
-		core.units.begin()->peffect = proc;
 		core.select_effects.clear();
 		core.select_options.clear();
 		if(ignore_count || core.summon_count[setplayer] < get_summon_count_limit(setplayer)) {
@@ -2227,7 +2215,7 @@ int32 field::mset(uint16 step, uint8 setplayer, card* target, effect* proc, uint
 					int32 rcount = target->get_set_tribute_count();
 					int32 min = rcount & 0xffff;
 					int32 max = (rcount >> 16) & 0xffff;
-					if(!is_player_can_summon(SUMMON_TYPE_ADVANCE, setplayer, target, setplayer))
+					if(!is_player_can_mset(SUMMON_TYPE_ADVANCE, setplayer, target, setplayer))
 						max = 0;
 					if(min < (int32)min_tribute)
 						min = min_tribute;
@@ -2391,7 +2379,7 @@ int32 field::mset(uint16 step, uint8 setplayer, card* target, effect* proc, uint
 		uint8 targetplayer = setplayer;
 		uint8 positions = POS_FACEDOWN_DEFENSE;
 		if(proc && proc->is_flag(EFFECT_FLAG_SPSUM_PARAM)) {
-			positions = (uint8)proc->s_range;
+			positions = (uint8)proc->s_range & POS_FACEDOWN;
 			if(proc->o_range)
 				targetplayer = 1 - setplayer;
 		}
@@ -3161,7 +3149,7 @@ int32 field::special_summon_step(uint16 step, group* targets, card* target, uint
 			}
 		}
 		if((target->current.location == LOCATION_MZONE)
-				|| check_unique_onfield(target, playerid, LOCATION_MZONE)
+				|| !(positions & POS_FACEDOWN) && check_unique_onfield(target, playerid, LOCATION_MZONE)
 		        || !is_player_can_spsummon(core.reason_effect->get_active_effect(), target->summon_info & 0xff00ffff, positions, target->summon_player, playerid, target)
 		        || (!nocheck && !(target->data.type & TYPE_MONSTER))) {
 			core.units.begin()->step = 4;
@@ -3874,7 +3862,7 @@ int32 field::send_to(uint16 step, group * targets, effect * reason_effect, uint3
 			uint8 dest = pcard->sendto_param.location;
 			if(!(reason & REASON_RULE) &&
 			        (pcard->get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP)
-			         || (!(pcard->current.reason & REASON_COST) && !pcard->is_affect_by_effect(pcard->current.reason_effect))
+			         || (!(pcard->current.reason & (REASON_COST | REASON_SUMMON | REASON_MATERIAL)) && !pcard->is_affect_by_effect(pcard->current.reason_effect))
 			         || (dest == LOCATION_HAND && !pcard->is_capable_send_to_hand(core.reason_player))
 			         || (dest == LOCATION_DECK && !pcard->is_capable_send_to_deck(core.reason_player))
 			         || (dest == LOCATION_REMOVED && !pcard->is_removeable(core.reason_player, pcard->sendto_param.position, reason))
@@ -4240,6 +4228,7 @@ int32 field::send_to(uint16 step, group * targets, effect * reason_effect, uint3
 				else
 					pcard->reset(RESET_REMOVE, RESET_EVENT);
 			}
+			pcard->refresh_disable_status();
 		}
 		for(auto& pcard : param->leave)
 			raise_single_event(pcard, 0, EVENT_LEAVE_FIELD, pcard->current.reason_effect, pcard->current.reason, pcard->current.reason_player, 0, 0);
@@ -4531,7 +4520,7 @@ int32 field::move_to_field(uint16 step, card* target, uint32 enable, uint32 ret,
 			uint32 flag;
 			uint32 lreason = (target->current.location == LOCATION_MZONE) ? LOCATION_REASON_CONTROL : LOCATION_REASON_TOFIELD;
 			int32 ct = get_useable_count(target, playerid, location, move_player, lreason, zone, &flag);
-			if((ret == 1) && (ct <= 0 || target->is_status(STATUS_FORBIDDEN) || check_unique_onfield(target, playerid, location))) {
+			if((ret == 1) && (ct <= 0 || target->is_status(STATUS_FORBIDDEN) || !(positions & POS_FACEDOWN) && check_unique_onfield(target, playerid, location))) {
 				core.units.begin()->step = 3;
 				send_to(target, core.reason_effect->get_active_effect(), REASON_RULE, core.reason_player, PLAYER_NONE, LOCATION_GRAVE, 0, 0);
 				return FALSE;
@@ -5293,7 +5282,7 @@ int32 field::select_synchro_material(int16 step, uint8 playerid, card* pcard, in
 	case 3: {
 		card* tuner = core.limit_tuner;
 		effect* ptuner = tuner->is_affected_by_effect(EFFECT_TUNER_MATERIAL_LIMIT);
-		if(ptuner) {
+		if(ptuner && ptuner->is_flag(EFFECT_FLAG_SPSUM_PARAM)) {
 			if(ptuner->s_range && ptuner->s_range > min)
 				min = ptuner->s_range;
 			if(ptuner->o_range && ptuner->o_range < max)
@@ -5322,7 +5311,7 @@ int32 field::select_synchro_material(int16 step, uint8 playerid, card* pcard, in
 			nsyn.push_back(smat);
 			tuner->sum_param = tuner->get_synchro_level(pcard);
 			smat->sum_param = smat->get_synchro_level(pcard);
-			if(check_with_sum_limit_m(nsyn, lv, 0, 0, 0, 2))
+			if(check_with_sum_limit_m(nsyn, lv, 0, 0, 0, 0xffff, 2))
 				core.units.begin()->step = 8;
 		}
 		return FALSE;
@@ -5496,8 +5485,8 @@ int32 field::select_synchro_material(int16 step, uint8 playerid, card* pcard, in
 						if(nsyn[i]->is_affected_by_effect(EFFECT_SCRAP_CHIMERA))
 							mremoved = false;
 					}
-					if(mfiltered && check_with_sum_limit_m(nsyn_filtered, lv, 0, min, max, mcount)) {
-						if(mremoved && check_with_sum_limit_m(nsyn_removed, lv, 0, min, max, mcount)) {
+					if(mfiltered && check_with_sum_limit_m(nsyn_filtered, lv, 0, min, max, 0xffff, mcount)) {
+						if(mremoved && check_with_sum_limit_m(nsyn_removed, lv, 0, min, max, 0xffff, mcount)) {
 							add_process(PROCESSOR_SELECT_YESNO, 0, 0, 0, playerid, peffect->description);
 							core.units.begin()->step = 9;
 							return FALSE;
@@ -5578,6 +5567,14 @@ int32 field::select_xyz_material(int16 step, uint8 playerid, uint32 lv, card* sc
 	switch(step) {
 	case 0: {
 		core.operated_set.clear();
+		int32 mzone_limit = get_mzone_limit(playerid, playerid, LOCATION_REASON_TOFIELD);
+		if(mzone_limit <= 0) {
+			int32 ft = -mzone_limit + 1;
+			if(ft > min) {
+				min = ft;
+				core.units.begin()->arg2 = min + (max << 16);
+			}
+		}
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_MUST_BE_XMATERIAL, &eset);
 		core.select_cards.clear();
@@ -5623,7 +5620,7 @@ int32 field::select_xyz_material(int16 step, uint8 playerid, uint32 lv, card* sc
 		min -= returns.bvalue[0];
 		if(min < 0)
 			min = 0;
-		if((int32)core.operated_set.size() < pv)
+		if(pv - (int32)core.operated_set.size() > min)
 			min = pv - (int32)core.operated_set.size();
 		core.units.begin()->arg2 = min + (max << 16);
 		if(min == 0) {
@@ -5787,7 +5784,7 @@ int32 field::select_xyz_material(int16 step, uint8 playerid, uint32 lv, card* sc
 		}
 		if(min > 0)
 			min--;
-		if((int32)core.operated_set.size() < pv)
+		if(pv - (int32)core.operated_set.size() > min)
 			min = pv - (int32)core.operated_set.size();
 		core.units.begin()->arg2 = min + (max << 16);
 		if(min == 0) {
@@ -5868,7 +5865,7 @@ int32 field::select_xyz_material(int16 step, uint8 playerid, uint32 lv, card* sc
 			return TRUE;
 		}
 		min = 0;
-		if((int32)core.operated_set.size() < pv)
+		if(pv - (int32)core.operated_set.size() > min)
 			min = pv - (int32)core.operated_set.size();
 		core.units.begin()->arg2 = min + (max << 16);
 		if(min == 0) {
@@ -5975,7 +5972,7 @@ int32 field::select_xyz_material(int16 step, uint8 playerid, uint32 lv, card* sc
 		}
 		if(min > 0)
 			min--;
-		if((int32)core.operated_set.size() < pv)
+		if(pv - (int32)core.operated_set.size() > min)
 			min = pv - (int32)core.operated_set.size();
 		core.units.begin()->arg2 = min + (max << 16);
 		core.units.begin()->arg3 = selectable;
