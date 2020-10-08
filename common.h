@@ -321,6 +321,9 @@ struct card_sort {
 #define MSG_PLAYER_HINT			165
 #define MSG_MATCH_KILL			170
 #define MSG_CUSTOM_MSG			180
+
+#define MSG_RESET_TIME			221
+
 #define MSG_MOVE_GROUP			255
 
 //Hints
