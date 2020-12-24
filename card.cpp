@@ -283,9 +283,9 @@ uint32 card::get_infos(byte* buf, int32 query_flag, int32 use_cache) {
 			int32 mana_count = get_square_mana_count();
 			if ((mana_count != q_cache.square_mana_count)) {
 				q_cache.square_mana_count = mana_count;
-				*p++ = (int32)mana_count;
 				square_res = FALSE;
 			}
+			*p++ = (int32)mana_count;
 			if (mana_count) {
 				for (int i = 1; i <= mana_count; ++i) {
 					if (get_nth_square_mana(i) != q_cache.nth_square_mana[i - 1]) {
