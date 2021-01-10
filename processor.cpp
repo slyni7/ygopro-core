@@ -4778,13 +4778,13 @@ int32 field::adjust_step(uint16 step) {
 	case 1: {
 		//win check
 		uint32 winp = 5, rea = 1;
-		bool lp_zero_0 = (player[0].lp <= 0 && !is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_KOISHI));
-		bool lp_zero_1 = (player[1].lp <= 0 && !is_player_affected_by_effect(1, EFFECT_CANNOT_LOSE_KOISHI));
+		bool lp_zero_0 = (player[0].lp <= 0 && !is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_KOISHI) && !is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_LP));
+		bool lp_zero_1 = (player[1].lp <= 0 && !is_player_affected_by_effect(1, EFFECT_CANNOT_LOSE_KOISHI) && !is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_LP));
 		if(lp_zero_0 && !lp_zero_1) {
 			winp = 1;
 			rea = 1;
 		}
-		if(core.overdraw[0] && !core.overdraw[1]) {
+		if(core.overdraw[0] && !core.overdraw[1] && !is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_DECK)) {
 			winp = 1;
 			rea = 2;
 		}
@@ -4792,7 +4792,7 @@ int32 field::adjust_step(uint16 step) {
 			winp = 0;
 			rea = 1;
 		}
-		if(core.overdraw[1] && !core.overdraw[0]) {
+		if(core.overdraw[1] && !core.overdraw[0] && !is_player_affected_by_effect(1, EFFECT_CANNOT_LOSE_DECK)) {
 			winp = 0;
 			rea = 2;
 		}
@@ -4800,8 +4800,13 @@ int32 field::adjust_step(uint16 step) {
 			winp = PLAYER_NONE;
 			rea = 1;
 		}
-		if(core.overdraw[1] && core.overdraw[0]) {
-			winp = PLAYER_NONE;
+		if (core.overdraw[1] && core.overdraw[0] && !(is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_DECK) && is_player_affected_by_effect(1, EFFECT_CANNOT_LOSE_DECK))) {
+			if (is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_DECK))
+				winp = 0;
+			else if (is_player_affected_by_effect(1, EFFECT_CANNOT_LOSE_DECK))
+				winp = 1;
+			else
+				winp = PLAYER_NONE;
 			rea = 2;
 		}
 		if(winp != 5) {

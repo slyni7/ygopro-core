@@ -20,6 +20,7 @@ public:
 	static int32 duel_hint_activation(lua_State *L);
 	static int32 duel_spin_fromex(lua_State *L);
 	static int32 duel_time_tyrant(lua_State *L);
+	static int32 duel_send_massive_todeck(lua_State *L);
 	static int32 duel_goto_phase(lua_State *L);
 	static int32 effect_set_active_effect(lua_State *L);
 	static int32 effect_set_speed(lua_State *L);

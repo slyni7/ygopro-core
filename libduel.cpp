@@ -70,7 +70,7 @@ int32 scriptlib::duel_time_tyrant(lua_State *L) {
 		pduel->game_field->remove_card(pcard);
 	}
 	pduel->write_buffer8(MSG_MOVE_GROUP);
-	pduel->write_buffer8(pgroup->container.size());
+	pduel->write_buffer32(pgroup->container.size());
 	for (auto& pcard : pgroup->container) {
 		pcard->current.position = pcard->turnstart.position;
 		switch (pcard->turnstart.location) {
@@ -95,6 +95,42 @@ int32 scriptlib::duel_time_tyrant(lua_State *L) {
 		case LOCATION_EXTRA:
 			pduel->game_field->add_card(pcard->turnstart.controler, pcard, pcard->turnstart.location, pduel->game_field->player[pcard->turnstart.controler].list_extra.size());
 		}
+		pduel->write_buffer32(pcard->data.code);
+		pduel->write_buffer8(pcard->previous.controler);
+		pduel->write_buffer8(pcard->previous.location);
+		pduel->write_buffer8(pcard->previous.sequence);
+		pduel->write_buffer8(pcard->previous.position);
+		pduel->write_buffer32(pcard->get_info_location());
+		pduel->write_buffer32(0);
+	}
+	pduel->game_field->process_single_event();
+	pduel->game_field->process_instant_event();
+	return 0;
+}
+int32 scriptlib::duel_send_massive_todeck(lua_State *L) {
+	check_action_permission(L);
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_GROUP, 1);
+	group* pgroup = *(group**)lua_touserdata(L, 1);
+	duel* pduel = pgroup->pduel;
+	for (auto& pcard : pgroup->container) {
+		pduel->game_field->remove_card(pcard);
+	}
+	pduel->write_buffer8(MSG_MOVE_GROUP);
+	pduel->write_buffer32(pgroup->container.size());
+	for (auto& pcard : pgroup->container) {
+		if (pcard->is_extra_deck_monster()) {
+			pduel->game_field->add_card(pcard->owner, pcard, LOCATION_EXTRA, pduel->game_field->player[pcard->owner].list_extra.size());
+		}
+		else {
+			pduel->game_field->add_card(pcard->owner, pcard, LOCATION_DECK, pduel->game_field->player[pcard->owner].list_main.size());
+		}
+		pcard->temp.reason = pcard->current.reason;
+		pcard->temp.reason_effect = pcard->current.reason_effect;
+		pcard->temp.reason_player = pcard->current.reason_player;
+		pcard->current.reason = REASON_RULE;
+		pcard->current.reason_effect = pduel->game_field->core.reason_effect->get_active_effect();
+		pcard->current.reason_player = pduel->game_field->core.reason_player;
 		pduel->write_buffer32(pcard->data.code);
 		pduel->write_buffer8(pcard->previous.controler);
 		pduel->write_buffer8(pcard->previous.location);
@@ -1625,8 +1661,27 @@ int32 scriptlib::duel_win(lua_State *L) {
 	if(playerid != 0 && playerid != 1 && playerid != 2)
 		return 0;
 	duel* pduel = interpreter::get_duel_info(L);
-	if(pduel->game_field->core.win_player == 5) {
+	if (playerid == 0) {
+		if (pduel->game_field->is_player_affected_by_effect(1, EFFECT_CANNOT_LOSE_EFFECT))
+			return 0;
+	}
+	else if (playerid == 1) {
+		if (pduel->game_field->is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_EFFECT))
+			return 0;
+	}
+	else {
+		if (pduel->game_field->is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_EFFECT) && pduel->game_field->is_player_affected_by_effect(1, EFFECT_CANNOT_LOSE_EFFECT))
+			return 0;
+		else if (pduel->game_field->is_player_affected_by_effect(0, EFFECT_CANNOT_LOSE_EFFECT))
+			playerid = 0;
+		else if (pduel->game_field->is_player_affected_by_effect(1, EFFECT_CANNOT_LOSE_EFFECT))
+			playerid = 1;
+	}
+	if (pduel->game_field->core.win_player == 5) {
 		pduel->game_field->core.win_player = playerid;
+		pduel->game_field->core.win_reason = reason;
+	} else if ((pduel->game_field->core.win_player == 0 && playerid == 1) || (pduel->game_field->core.win_player == 1 && playerid == 0)) {
+		pduel->game_field->core.win_player = 2;
 		pduel->game_field->core.win_reason = reason;
 	}
 	return 0;
@@ -4859,6 +4914,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "HintActivation", scriptlib::duel_hint_activation },
 	{ "SpinFromEx", scriptlib::duel_spin_fromex },
 	{ "TimeTyrant", scriptlib::duel_time_tyrant },
+	{ "SendMassivetoDeck", scriptlib::duel_send_massive_todeck },
 	{ "GotoPhase", scriptlib::duel_goto_phase },
 	
 	{ "SelectField", scriptlib::duel_select_field },

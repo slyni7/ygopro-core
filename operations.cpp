@@ -515,7 +515,7 @@ int32 field::damage(uint16 step, effect* reason_effect, uint32 reason, uint8 rea
 		pduel->write_buffer32(amount);
 		raise_event(reason_card, EVENT_DAMAGE, reason_effect, reason, reason_player, playerid, amount);
 		if(reason == REASON_BATTLE && reason_card) {
-			if((player[playerid].lp <= 0) && (core.attack_target == 0) && reason_card->is_affected_by_effect(EFFECT_MATCH_KILL) && !(is_player_affected_by_effect(playerid, EFFECT_CANNOT_LOSE_KOISHI))) {
+			if((player[playerid].lp <= 0) && (core.attack_target == 0) && reason_card->is_affected_by_effect(EFFECT_MATCH_KILL) && !(is_player_affected_by_effect(playerid, EFFECT_CANNOT_LOSE_KOISHI)) && !is_player_affected_by_effect(playerid, EFFECT_CANNOT_LOSE_LP)) {
 				pduel->write_buffer8(MSG_MATCH_KILL);
 				pduel->write_buffer32(reason_card->data.code);
 			}
@@ -523,6 +523,8 @@ int32 field::damage(uint16 step, effect* reason_effect, uint32 reason, uint8 rea
 			raise_event(reason_card, EVENT_BATTLE_DAMAGE, 0, 0, reason_player, playerid, amount);
 			process_single_event();
 		}
+		if(is_player_affected_by_effect(playerid, EFFECT_CANNOT_LOSE_LP) && player[playerid].lp < 0)
+			player[playerid].lp = 0;
 		process_instant_event();
 		return FALSE;
 	}
@@ -561,6 +563,20 @@ int32 field::recover(uint16 step, effect* reason_effect, uint32 reason, uint8 re
 				}
 			}
 		}
+		uint32 val = amount;
+		eset.clear();
+		filter_player_effect(playerid, EFFECT_CHANGE_RECOVER, &eset);
+		for(int32 i = 0; i < eset.size(); ++i) {
+			pduel->lua->add_param(reason_effect, PARAM_TYPE_EFFECT);
+			pduel->lua->add_param(val, PARAM_TYPE_INT);
+			pduel->lua->add_param(reason, PARAM_TYPE_INT);
+			pduel->lua->add_param(reason_player, PARAM_TYPE_INT);
+			val = eset[i]->get_value(4);
+			returns.ivalue[0] = val;
+			if(val == 0)
+				return TRUE;
+		}
+		core.units.begin()->arg2 = (core.units.begin()->arg2 & 0xff000000) | (val & 0xffffff);
 		if(is_step) {
 			core.units.begin()->step = 9;
 			return TRUE;
@@ -4730,7 +4746,7 @@ int32 field::change_position(uint16 step, group * targets, effect * reason_effec
 			uint8 npos = pcard->position_param & 0xff;
 			uint8 opos = pcard->current.position;
 			if((pcard->current.location != LOCATION_MZONE && pcard->current.location != LOCATION_SZONE)
-				|| (pcard->data.type & TYPE_LINK)
+				|| ((pcard->data.type & TYPE_LINK) && !pcard->is_affected_by_effect(EFFECT_CAPABLE_CHANGE_POSITION))
 				|| pcard->get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP)
 				|| !pcard->is_affect_by_effect(reason_effect) || npos == opos
 				|| (!(pcard->data.type & TYPE_TOKEN) && (opos & POS_FACEUP) && (npos & POS_FACEDOWN) && !pcard->is_capable_turn_set(reason_player))

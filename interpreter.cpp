@@ -93,6 +93,16 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_setglobal(lua_state, "EFFECT_SET_SPEED");
 	lua_pushinteger(lua_state, EFFECT_SPELL_ACT_IN_NTPHAND);
 	lua_setglobal(lua_state, "EFFECT_SPELL_ACT_IN_NTPHAND");
+	lua_pushinteger(lua_state, EFFECT_CANNOT_LOSE_DECK);
+	lua_setglobal(lua_state, "EFFECT_CANNOT_LOSE_DECK");
+	lua_pushinteger(lua_state, EFFECT_CANNOT_LOSE_LP);
+	lua_setglobal(lua_state, "EFFECT_CANNOT_LOSE_LP");
+	lua_pushinteger(lua_state, EFFECT_CANNOT_LOSE_EFFECT);
+	lua_setglobal(lua_state, "EFFECT_CANNOT_LOSE_EFFECT");
+	lua_pushinteger(lua_state, EFFECT_CAPABLE_CHANGE_POSITION);
+	lua_setglobal(lua_state, "EFFECT_CAPABLE_CHANGE_POSITION");
+	lua_pushinteger(lua_state, EFFECT_CHANGE_RECOVER);
+	lua_setglobal(lua_state, "EFFECT_CHANGE_RECOVER");
 
 	lua_pushinteger(lua_state, EFFECT_CHANGE_LINK_MARKER_KOISHI);
 	lua_setglobal(lua_state, "EFFECT_CHANGE_LINK_MARKER_KOISHI");
@@ -639,7 +649,7 @@ int32 interpreter::call_coroutine(int32 f, uint32 param_count, uint32 * yield_va
 		coroutines.emplace(f, rthread);
 	} else {
 		rthread = it->second;
-		if(step == 0) {
+		/*if(step == 0) {
 			sprintf(pduel->strbuffer, "recursive event trigger detected.");
 			handle_message(pduel, 1);
 			params.clear();
@@ -649,7 +659,7 @@ int32 interpreter::call_coroutine(int32 f, uint32 param_count, uint32 * yield_va
 				pduel->restore_assumes();
 			}
 			return OPERATION_FAIL;
-		}
+		}*/
 	}
 	push_param(rthread, true);
 	current_state = rthread;

@@ -3198,6 +3198,21 @@ int32 card::is_can_be_summoned(uint8 playerid, uint8 ignore_count, effect* peffe
 			pduel->game_field->restore_lp_cost();
 			return FALSE;
 		}
+		if(!ignore_count && pduel->game_field->core.summon_count[playerid] >= pduel->game_field->get_summon_count_limit(playerid)) {
+			effect_set eset;
+			filter_effect(EFFECT_EXTRA_SUMMON_COUNT, &eset);
+			bool res = FALSE;
+			for (int32 i = 0; i < eset.size(); ++i) {
+				std::vector<int32> retval;
+				eset[i]->get_value(this, 0, &retval);
+				int32 extra_summon = retval.size() > 3 ? retval[3] : 1;
+				if (extra_summon <= pduel->game_field->core.extra_summon[playerid])
+					continue;
+				res = TRUE;
+			}
+			if(!res)
+				return FALSE;
+		}
 	} else if(current.location == LOCATION_HAND) {
 		if(is_affected_by_effect(EFFECT_CANNOT_SUMMON)) {
 			pduel->game_field->restore_lp_cost();
@@ -3779,7 +3794,7 @@ int32 card::is_capable_attack_announce(uint8 playerid) {
 int32 card::is_capable_change_position(uint8 playerid) {
 	if(get_status(STATUS_SUMMON_TURN | STATUS_FLIP_SUMMON_TURN | STATUS_SPSUMMON_TURN | STATUS_FORM_CHANGED))
 		return FALSE;
-	if(data.type & TYPE_LINK)
+	if((data.type & TYPE_LINK) && !is_affected_by_effect(EFFECT_CAPABLE_CHANGE_POSITION))
 		return FALSE;
 	if(announce_count > 0)
 		return FALSE;
@@ -3792,7 +3807,7 @@ int32 card::is_capable_change_position(uint8 playerid) {
 	return TRUE;
 }
 int32 card::is_capable_change_position_by_effect(uint8 playerid) {
-	if(data.type & TYPE_LINK)
+	if((data.type & TYPE_LINK) && !is_affected_by_effect(EFFECT_CAPABLE_CHANGE_POSITION))
 		return FALSE;
 	return TRUE;
 }
