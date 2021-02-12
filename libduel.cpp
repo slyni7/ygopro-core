@@ -30,6 +30,28 @@ int32 scriptlib::duel_hint_activation(lua_State *L) {
 	pduel->write_buffer8((uint8)pduel->game_field->core.current_chain.size() + 1);
 	return 0;
 }
+int32 scriptlib::duel_hint_spsummon(lua_State *L) {
+	check_action_permission(L);
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	card* pcard = *(card**)lua_touserdata(L, 1);
+	duel* pduel = pcard->pduel;
+	pduel->write_buffer8(MSG_SPSUMMONING);
+	pduel->write_buffer32(pcard->data.code);
+	pduel->write_buffer32(pcard->get_info_location());
+	return 0;
+}
+int32 scriptlib::duel_rotate_card(lua_State *L) {
+	check_action_permission(L);
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	card* pcard = *(card**)lua_touserdata(L, 1);
+	duel* pduel = pcard->pduel;
+	pduel->write_buffer8(MSG_ROTATE);
+	pduel->write_buffer32(pcard->get_info_location());
+	pduel->write_buffer32(pcard->get_link_rotate());
+	return 0;
+}
 int32 scriptlib::duel_spin_fromex(lua_State *L) {
 	check_action_permission(L);
 	check_param_count(L, 1);
@@ -199,6 +221,22 @@ int32 scriptlib::duel_goto_phase(lua_State *L) {
 			it->step = 14;
 			pduel->game_field->process_idle_command(it->step);
 		}
+	}
+	return 0;
+}
+int32 scriptlib::duel_set_description_text(lua_State *L) {
+	check_param_count(L, 2);
+	duel* pduel = interpreter::get_duel_info(L);
+	check_param(L, PARAM_TYPE_INT, 1);
+	uint32 desc = lua_tointeger(L, 1);
+	check_param(L, PARAM_TYPE_STRING, 2);
+	const char* pstr = lua_tostring(L, 2);
+	pduel->write_buffer8(MSG_SET_DESC_TEXT);
+	pduel->write_buffer8(strlen(pstr));
+	pduel->write_buffer32(desc);
+	for (int i = 0; i < strlen(pstr); i++) {
+		int8 bt = pstr[i];
+		pduel->write_buffer8(bt);
 	}
 	return 0;
 }
@@ -415,8 +453,13 @@ int32 scriptlib::duel_load_script(lua_State *L) {
 	duel* pduel = interpreter::get_duel_info(L); 
 	const char* pstr = lua_tostring(L, 1);
 	char filename[64];
-	sprintf(filename, "./script/%s", pstr);
-	lua_pushboolean(L, pduel->lua->load_script(filename));
+	sprintf(filename, "./repositories/delta-utopia/script/%s", pstr);
+	if(pduel->lua->load_script(filename))
+		lua_pushboolean(L, TRUE);
+	else {
+		sprintf(filename, "./script/%s", pstr);
+		lua_pushboolean(L, pduel->lua->load_script(filename));
+	}
 	return 1;
 }
 
@@ -4912,11 +4955,14 @@ int32 scriptlib::duel_majestic_copy(lua_State *L) {
 
 static const struct luaL_Reg duellib[] = {
 	{ "HintActivation", scriptlib::duel_hint_activation },
+	{ "HintSpSummon", scriptlib::duel_hint_spsummon },
+	{ "RotateCard", scriptlib::duel_rotate_card },
 	{ "SpinFromEx", scriptlib::duel_spin_fromex },
 	{ "TimeTyrant", scriptlib::duel_time_tyrant },
 	{ "SendMassivetoDeck", scriptlib::duel_send_massive_todeck },
 	{ "GotoPhase", scriptlib::duel_goto_phase },
-	
+	{ "SetDescriptionText", scriptlib::duel_set_description_text },
+
 	{ "SelectField", scriptlib::duel_select_field },
 	{ "GetMasterRule", scriptlib::duel_get_master_rule },
 	{ "ReadCard", scriptlib::duel_read_card },
@@ -5114,6 +5160,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "SetCoinResult", scriptlib::duel_set_coin_result },
 	{ "SetDiceResult", scriptlib::duel_set_dice_result },
 	{ "IsPlayerAffectedByEffect", scriptlib::duel_is_player_affected_by_effect },
+	{ "GetPlayerEffect", scriptlib::duel_is_player_affected_by_effect },
 	{ "IsPlayerCanDraw", scriptlib::duel_is_player_can_draw },
 	{ "IsPlayerCanDiscardDeck", scriptlib::duel_is_player_can_discard_deck },
 	{ "IsPlayerCanDiscardDeckAsCost", scriptlib::duel_is_player_can_discard_deck_as_cost },

@@ -327,6 +327,8 @@ struct card_sort {
 
 #define MSG_RESET_TIME			221
 
+#define MSG_SET_DESC_TEXT		253
+#define MSG_ROTATE				254
 #define MSG_MOVE_GROUP			255
 
 //Hints

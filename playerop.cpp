@@ -10,6 +10,7 @@
 #include "effect.h"
 #include "card.h"
 #include "ocgapi.h"
+#include "interpreter.h"
 
 #include <algorithm>
 #include <stack>
@@ -321,19 +322,19 @@ int32 field::select_unselect_card(uint16 step, uint8 playerid, uint8 cancelable,
 	}
 }
 int32 field::select_chain(uint16 step, uint8 playerid, uint8 spe_count, uint8 forced) {
-	if(step == 0) {
+	if (step == 0) {
 		returns.ivalue[0] = -1;
-		if((playerid == 1) && (core.duel_options & DUEL_SIMPLE_AI)) {
-			if(core.select_chains.size() == 0)
+		if ((playerid == 1) && (core.duel_options & DUEL_SIMPLE_AI)) {
+			if (core.select_chains.size() == 0)
 				returns.ivalue[0] = -1;
-			else if(forced)
+			else if (forced)
 				returns.ivalue[0] = 0;
 			else {
 				bool act = true;
-				for(const auto& ch : core.current_chain)
-					if(ch.triggering_player == 1)
+				for (const auto& ch : core.current_chain)
+					if (ch.triggering_player == 1)
 						act = false;
-				if(act)
+				if (act)
 					returns.ivalue[0] = 0;
 				else
 					returns.ivalue[0] = -1;
@@ -359,7 +360,21 @@ int32 field::select_chain(uint16 step, uint8 playerid, uint8 spe_count, uint8 fo
 				pduel->write_buffer8(0);
 			pduel->write_buffer32(pcard->data.code);
 			pduel->write_buffer32(pcard->get_info_location());
-			pduel->write_buffer32(peffect->description);
+			if (peffect->chaindesc) {
+				tevent e = ch.evt;
+				pduel->lua->add_param(peffect, PARAM_TYPE_EFFECT);
+				pduel->lua->add_param(ch.triggering_player, PARAM_TYPE_INT);
+				pduel->lua->add_param(e.event_cards, PARAM_TYPE_GROUP);
+				pduel->lua->add_param(e.event_player, PARAM_TYPE_INT);
+				pduel->lua->add_param(e.event_value, PARAM_TYPE_INT);
+				pduel->lua->add_param(e.reason_effect, PARAM_TYPE_EFFECT);
+				pduel->lua->add_param(e.reason, PARAM_TYPE_INT);
+				pduel->lua->add_param(e.reason_player, PARAM_TYPE_INT);
+				int cd = pduel->lua->get_function_value(peffect->chaindesc, 8);
+				pduel->write_buffer32(cd);
+			}
+			else
+				pduel->write_buffer32(peffect->description);
 		}
 		return FALSE;
 	} else {

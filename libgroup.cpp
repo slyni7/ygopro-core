@@ -11,6 +11,57 @@
 #include "effect.h"
 #include "duel.h"
 
+int32 scriptlib::group_includes(lua_State* L) {
+	check_param_count(L, 2);
+	check_param(L, PARAM_TYPE_GROUP, 1);
+	group* pgroup1 = *(group**)lua_touserdata(L, 1);
+	check_param(L, PARAM_TYPE_GROUP, 2);
+	group* pgroup2 = *(group**)lua_touserdata(L, 1);
+	int res = TRUE;
+	if (pgroup1->container.size() < pgroup2->container.size())
+		res = FALSE;
+	else if (!pgroup2->container.empty())
+		res = std::includes(pgroup1->container.cbegin(), pgroup1->container.cend(), pgroup2->container.cbegin(), pgroup2->container.cend(), card_sort());
+	lua_pushboolean(L, res);
+	return 1;
+}
+int32 scriptlib::group_split(lua_State* L) {
+	check_param_count(L, 3);
+	check_param(L, PARAM_TYPE_GROUP, 1);
+	check_param(L, PARAM_TYPE_FUNCTION, 2);
+	group* pgroup = *(group**)lua_touserdata(L, 1);
+	field::card_set cset(pgroup->container);
+	field::card_set notmatching;
+	if(!lua_isnil(L, 3)) {
+		if(check_param(L, PARAM_TYPE_CARD, 3, TRUE)) {
+			card* pcard = *(card**) lua_touserdata(L, 3);
+			cset.erase(pcard);
+			notmatching.insert(pcard);
+		} else if (check_param(L, PARAM_TYPE_GROUP, 3, TRUE)) {
+			group* mgroup = *(group**) lua_touserdata(L, 3);
+			for(auto& pcard : pgroup->container) {
+				cset.erase(pcard);
+				notmatching.insert(pcard);
+			}
+		} else {
+			luaL_error(L, "Parameter %d should be \"Card\" or \"Group\".", 3);
+		}
+	}	
+	duel* pduel = interpreter::get_duel_info(L);
+	group* new_group = pduel->new_group();
+	uint32 extraargs = lua_gettop(L) - 3;
+	for(auto& pcard : cset) {
+		if(pduel->lua->check_matching(pcard, 2, extraargs)) {
+			new_group->container.insert(pcard);
+		} else {
+			notmatching.insert(pcard);
+		}
+	}
+	interpreter::group2value(L, new_group);
+	interpreter::group2value(L, pduel->new_group(notmatching));
+	return 2;
+}
+
 int32 scriptlib::group_new(lua_State *L) {
 	duel* pduel = interpreter::get_duel_info(L);
 	group* pgroup = pduel->new_group();
@@ -850,6 +901,9 @@ int32 scriptlib::group_meta_bxor(lua_State* L) {
 }
 
 static const struct luaL_Reg grouplib[] = {
+	{ "Includes", scriptlib::group_includes },
+	{ "Split", scriptlib::group_split },
+
 	{ "CreateGroup", scriptlib::group_new },
 	{ "FromCards", scriptlib::group_new },
 	{ "KeepAlive", scriptlib::group_keep_alive },

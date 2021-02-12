@@ -18,12 +18,21 @@ public:
 	static int32 check_action_permission(lua_State* L);
 	
 	static int32 duel_hint_activation(lua_State *L);
+	static int32 duel_hint_spsummon(lua_State *L);
+	static int32 duel_rotate_card(lua_State *L);
 	static int32 duel_spin_fromex(lua_State *L);
 	static int32 duel_time_tyrant(lua_State *L);
 	static int32 duel_send_massive_todeck(lua_State *L);
 	static int32 duel_goto_phase(lua_State *L);
 	static int32 effect_set_active_effect(lua_State *L);
 	static int32 effect_set_speed(lua_State *L);
+	static int32 effect_get_reset(lua_State *L);
+	static int32 group_includes(lua_State *L);
+	static int32 card_get_cardid(lua_State *L);
+	static int32 card_enable_unsummonable(lua_State *L);
+	static int32 group_split(lua_State *L);
+	static int32 duel_set_description_text(lua_State *L);
+	static int32 effect_set_chain_desc(lua_State *L);
 	
 	//millux
 	static int32 card_is_ritual_type(lua_State *L);

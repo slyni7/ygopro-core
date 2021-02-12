@@ -246,6 +246,7 @@ uint32 card::get_infos(byte* buf, int32 query_flag, int32 use_cache) {
 		if(query_flag & QUERY_LINK) {
 			q_cache.link = *p++ = get_link();
 			q_cache.link_marker = *p++ = get_link_marker();
+			q_cache.link_rotate = *p++ = get_link_rotate();
 		}
 	} else {
 		if((query_flag & QUERY_LSCALE) && ((uint32)(tdata = get_lscale()) != q_cache.lscale)) {
@@ -280,6 +281,12 @@ uint32 card::get_infos(byte* buf, int32 query_flag, int32 use_cache) {
 	else {
 		if (query_flag & QUERY_SQUARE) {
 			bool square_res = TRUE;
+			int32 link_rotate = get_link_rotate();
+			if ((link_rotate != q_cache.link_rotate)) {
+				q_cache.link_rotate = link_rotate;
+				square_res = FALSE;
+			}
+			*p++ = (int32)link_rotate;
 			int32 mana_count = get_square_mana_count();
 			if ((mana_count != q_cache.square_mana_count)) {
 				q_cache.square_mana_count = mana_count;
@@ -331,6 +338,16 @@ uint32 card::get_square_mana_count() {
 	if ((int32)count > 64)
 		return 0;
 	return count;
+}
+uint32 card::get_link_rotate() {
+	int rot = 0;
+	effect_set eset;
+	filter_effect(EFFECT_LINK_ROTATE, &eset, FALSE);
+	for (int32 i = 0; i < eset.size();) {
+		rot += eset[i]->get_value(this);
+		++i;
+	}
+	return rot % 8;
 }
 uint32 card::get_info_location() {
 	if(overlay_target) {
@@ -3082,9 +3099,9 @@ int32 card::is_summonable_card() {
 		return FALSE;
 	effect_set eset;
 	filter_effect(EFFECT_SUMMONABLE_CARD, &eset);
-	return (eset.size() > 0) || !(data.type & (TYPE_RITUAL | TYPE_SPSUMMON
+	return (eset.size() > 0) || (!(data.type & (TYPE_RITUAL | TYPE_SPSUMMON
 		| TYPE_FUSION | TYPE_SYNCHRO | TYPE_XYZ | TYPE_LINK 
-		| TYPE_TOKEN));
+		| TYPE_TOKEN)) && !is_affected_by_effect(EFFECT_UNSUMMONABLE_CARD));
 }
 int32 card::is_fusion_summonable_card(uint32 summon_type) {
 	if(!(data.type & TYPE_FUSION))

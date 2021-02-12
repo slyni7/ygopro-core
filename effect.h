@@ -63,6 +63,8 @@ public:
 	int32 value;
 	int32 operation;
 	uint8 speed;
+	int32 chaindesc;
+	int32 chaintext;
 
 	explicit effect(duel* pd);
 	~effect() = default;
@@ -115,6 +117,7 @@ public:
 	}
 };
 
+#define IREDO_COMES_TRUE	10169999
 #define EFFECT_SUMMONABLE_CARD	10170000
 #define EFFECT_MAIN_TOEXTRA		10170001
 #define EVENT_IDLE_TIMING			10170002
@@ -122,6 +125,7 @@ public:
 #define EFFECT_SPELL_ACT_IN_NTPHAND	10170004
 #define EFFECT_CAPABLE_CHANGE_POSITION	10170005
 #define EFFECT_CHANGE_RECOVER	10170006
+#define EFFECT_LINK_ROTATE		10170007
 
 // KoishiPro effects
 #define EFFECT_CHANGE_LINK_MARKER_KOISHI	710253
@@ -456,7 +460,7 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EFFECT_CANNOT_SELECT_EFFECT_TARGET	333
 #define EFFECT_ADD_SETCODE				334
 #define EFFECT_NO_EFFECT_DAMAGE			335
-//#define EFFECT_UNSUMMONABLE_CARD		336
+#define EFFECT_UNSUMMONABLE_CARD		336
 #define EFFECT_DISCARD_COST_CHANGE		338
 #define EFFECT_HAND_SYNCHRO				339
 #define EFFECT_ADD_FUSION_CODE			340

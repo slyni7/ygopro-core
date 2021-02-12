@@ -33,6 +33,28 @@ int32 scriptlib::effect_set_speed(lua_State *L) {
 	peffect->speed = v;
 	return 0;
 }
+int32 scriptlib::effect_get_reset(lua_State* L) {
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_EFFECT, 1);
+	effect* peffect = *(effect**)lua_touserdata(L, 1);
+	lua_pushinteger(L, peffect->reset_flag);
+	lua_pushinteger(L, peffect->reset_count);
+	return 0;
+}
+int32 scriptlib::effect_set_chain_desc(lua_State *L) {
+	check_param_count(L, 2);
+	check_param(L, PARAM_TYPE_EFFECT, 1);
+	effect* peffect = *(effect**)lua_touserdata(L, 1);
+	if (peffect->chaindesc)
+		luaL_unref(L, LUA_REGISTRYINDEX, peffect->chaindesc);
+	if (!lua_isnil(L, 2)) {
+		check_param(L, PARAM_TYPE_FUNCTION, 2);
+		peffect->chaindesc = interpreter::get_function_handle(L, 2);
+	}
+	else
+		peffect->chaindesc = 0;
+	return 0;
+}
 
 int32 scriptlib::effect_set_owner(lua_State *L) {
 	check_param_count(L, 2);
@@ -622,10 +644,12 @@ int32 scriptlib::effect_use_count_limit(lua_State *L) {
 static const struct luaL_Reg effectlib[] = {
 	{ "SetActiveEffect", scriptlib::effect_set_active_effect },
 	{ "SetSpeed", scriptlib::effect_set_speed },
-	
+	{ "SetChainDesc", scriptlib::effect_set_chain_desc },
+
 	{ "SetOwner", scriptlib::effect_set_owner },
 	{ "GetRange", scriptlib::effect_get_range },
 	{ "GetCountLimit", scriptlib::effect_get_count_limit },
+	{ "GetReset", scriptlib::effect_get_reset },
 
 	{ "CreateEffect", scriptlib::effect_new },
 	{ "GlobalEffect", scriptlib::effect_newex },

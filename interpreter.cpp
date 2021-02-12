@@ -46,9 +46,11 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	scriptlib::open_duellib(lua_state);
 	scriptlib::open_debuglib(lua_state);
 	//extra scripts
-	load_script("./script/constant.lua");
+	/*if(!load_script("./repositories/delta-utopia/script/constant.lua"))
+		load_script("./script/constant.lua");
 	load_script("./ireina/main.lua");
-	load_script("./script/utility.lua");
+	if(!load_script("./repositories/delta-utopia/script/utility.lua"))
+		load_script("./script/utility.lua");*/
 	//load kpro constant
 	//card data constants
 	lua_pushinteger(lua_state, CARDDATA_CODE);
@@ -83,6 +85,8 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_pushinteger(lua_state, EFFECT_FLAG2_AVAILABLE_BD);
 	lua_setglobal(lua_state, "EFFECT_FLAG2_AVAILABLE_BD");
 	//effects
+	lua_pushinteger(lua_state, IREDO_COMES_TRUE);
+	lua_setglobal(lua_state, "IREDO_COMES_TRUE");
 	lua_pushinteger(lua_state, EFFECT_SUMMONABLE_CARD);
 	lua_setglobal(lua_state, "EFFECT_SUMMONABLE_CARD");
 	lua_pushinteger(lua_state, EFFECT_MAIN_TOEXTRA);
@@ -103,6 +107,8 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_setglobal(lua_state, "EFFECT_CAPABLE_CHANGE_POSITION");
 	lua_pushinteger(lua_state, EFFECT_CHANGE_RECOVER);
 	lua_setglobal(lua_state, "EFFECT_CHANGE_RECOVER");
+	lua_pushinteger(lua_state, EFFECT_LINK_ROTATE);
+	lua_setglobal(lua_state, "EFFECT_LINK_ROTATE");
 
 	lua_pushinteger(lua_state, EFFECT_CHANGE_LINK_MARKER_KOISHI);
 	lua_setglobal(lua_state, "EFFECT_CHANGE_LINK_MARKER_KOISHI");
@@ -248,6 +254,8 @@ int32 interpreter::load_card_script(uint32 code) {
 	//if script is not loaded, create and load it
 	if (lua_isnil(current_state, -1)) {
 		lua_pop(current_state, 1);
+		lua_pushinteger(current_state, code);
+		lua_setglobal(current_state, "self_code");
 		//create a table & set metatable
 		lua_createtable(current_state, 0, 0);
 		lua_setglobal(current_state, class_name);
@@ -257,11 +265,21 @@ int32 interpreter::load_card_script(uint32 code) {
 		lua_pushstring(current_state, "__index");
 		lua_pushvalue(current_state, -2);
 		lua_rawset(current_state, -3);
+		lua_getglobal(current_state, class_name);
+		lua_setglobal(current_state, "self_table");
 		char script_name[64];
 		sprintf(script_name, "./script/c%d.lua", code);
 		if(!load_script(script_name)) {
+			lua_pushnil(current_state);
+			lua_setglobal(current_state, "self_table");
+			lua_pushnil(current_state);
+			lua_setglobal(current_state, "self_code");
 			return OPERATION_FAIL;
 		}
+		lua_pushnil(current_state);
+		lua_setglobal(current_state, "self_table");
+		lua_pushnil(current_state);
+		lua_setglobal(current_state, "self_code");
 	}
 	return OPERATION_SUCCESS;
 }

@@ -12,6 +12,29 @@
 #include "effect.h"
 #include "group.h"
 
+int32 scriptlib::card_get_cardid(lua_State *L) {
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	card* pcard = *(card**)lua_touserdata(L, 1);
+	lua_pushinteger(L, pcard->cardid);
+	return 1;
+}
+int32 scriptlib::card_enable_unsummonable(lua_State *L) {
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	card* pcard = *(card**) lua_touserdata(L, 1);
+	duel* pduel = pcard->pduel;
+	if(!pcard->is_status(STATUS_COPYING_EFFECT)) {
+		effect* peffect = pduel->new_effect();
+		peffect->owner = pcard;
+		peffect->code = EFFECT_UNSUMMONABLE_CARD;
+		peffect->type = EFFECT_TYPE_SINGLE;
+		peffect->flag[0] = EFFECT_FLAG_CANNOT_DISABLE | EFFECT_FLAG_UNCOPYABLE;
+		pcard->add_effect(peffect);
+	}
+	return 0;
+}
+
 int32 scriptlib::card_is_ritual_type(lua_State *L) {
 	check_param_count(L, 2);
 	check_param(L, PARAM_TYPE_CARD, 1);
@@ -3302,6 +3325,10 @@ int32 scriptlib::card_set_spsummon_once(lua_State *L) {
 }
 
 static const struct luaL_Reg cardlib[] = {
+
+	{ "GetCardID", scriptlib::card_get_cardid },
+	{ "EnableUnsummonable", scriptlib::card_enable_unsummonable },
+
 	//millux
 	{ "IsRitualType", scriptlib::card_is_ritual_type },
 	{ "SetEntityCode", scriptlib::card_set_entity_code },
@@ -3461,6 +3488,7 @@ static const struct luaL_Reg cardlib[] = {
 	{ "GetHandSynchro", scriptlib::card_get_hand_synchro },
 	{ "RegisterEffect", scriptlib::card_register_effect },
 	{ "IsHasEffect", scriptlib::card_is_has_effect },
+	{ "GetCardEffect", scriptlib::card_is_has_effect },
 	{ "ResetEffect", scriptlib::card_reset_effect },
 	{ "GetEffectCount", scriptlib::card_get_effect_count },
 	{ "RegisterFlagEffect", scriptlib::card_register_flag_effect },

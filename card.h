@@ -85,6 +85,7 @@ struct query_cache {
 	uint32 lscale;
 	uint32 rscale;
 	uint32 link_marker;
+	uint32 link_rotate;
 	uint32 square_mana_count;
 	uint32 nth_square_mana[64];
 };
@@ -205,6 +206,7 @@ public:
 	uint32 get_infos(byte* buf, int32 query_flag, int32 use_cache = TRUE);
 	uint32 get_nth_square_mana(uint32 nth);
 	uint32 get_square_mana_count();
+	uint32 get_link_rotate();
 	uint32 get_info_location();
 	uint32 second_code(uint32 code);
 	uint32 get_code();
