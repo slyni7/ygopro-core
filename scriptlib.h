@@ -45,7 +45,6 @@ public:
 	static int32 effect_set_owner(lua_State *L);
 	static int32 effect_get_range(lua_State *L);
 	static int32 effect_get_count_limit(lua_State *L);
-	static int32 duel_select_field(lua_State *L);
 	static int32 duel_get_master_rule(lua_State *L);
 	static int32 duel_read_card(lua_State *L);
 	static int32 duel_exile(lua_State *L);
@@ -56,6 +55,7 @@ public:
 	static int32 duel_xyz_summon_by_rose(lua_State *L);
 	static int32 duel_load_script(lua_State *L);
 	static int32 duel_reset_time_limit(lua_State *L);
+	static int32 duel_set_summon_cancelable(lua_State *L);
 	//card lib
 	static int32 card_get_code(lua_State *L);
 	static int32 card_get_origin_code(lua_State *L);
@@ -162,6 +162,8 @@ public:
 	static int32 card_is_link_attribute(lua_State *L);
 	static int32 card_is_reason(lua_State *L);
 	static int32 card_is_summon_type(lua_State *L);
+	static int32 card_is_summon_location(lua_State *L);
+	static int32 card_is_summon_player(lua_State *L);
 	static int32 card_is_status(lua_State *L);
 	static int32 card_is_not_tuner(lua_State *L);
 	static int32 card_set_status(lua_State *L);
@@ -262,6 +264,7 @@ public:
 	static int32 card_is_position(lua_State *L);
 	static int32 card_is_pre_position(lua_State *L);
 	static int32 card_is_controler(lua_State *L);
+	static int32 card_is_pre_controler(lua_State *L);
 	static int32 card_is_onfield(lua_State *L);
 	static int32 card_is_location(lua_State *L);
 	static int32 card_is_pre_location(lua_State *L);
@@ -471,6 +474,7 @@ public:
 	static int32 duel_discard_deck(lua_State *L);
 	static int32 duel_discard_hand(lua_State *L);
 	static int32 duel_disable_shuffle_check(lua_State *L);
+	static int32 duel_disable_self_destroy_check(lua_State *L);
 	static int32 duel_shuffle_deck(lua_State *L);
 	static int32 duel_shuffle_extra(lua_State *L);
 	static int32 duel_shuffle_hand(lua_State *L);
@@ -575,6 +579,7 @@ public:
 	static int32 duel_select_sequence(lua_State *L);
 	static int32 duel_select_position(lua_State *L);
 	static int32 duel_select_disable_field(lua_State *L);
+	static int32 duel_select_field(lua_State *L);
 	static int32 duel_announce_race(lua_State *L);
 	static int32 duel_announce_attribute(lua_State *L);
 	static int32 duel_announce_level(lua_State *L);

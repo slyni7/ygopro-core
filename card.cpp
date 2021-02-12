@@ -2084,8 +2084,10 @@ void card::reset(uint32 id, uint32 reset_type) {
 			battled_cards.clear();
 			reset_effect_count();
 			auto pr = field_effect.equal_range(EFFECT_DISABLE_FIELD);
-			for(; pr.first != pr.second; ++pr.first)
-				pr.first->second->value = 0;
+			for(; pr.first != pr.second; ++pr.first){
+				if(!pr.first->second->is_flag(EFFECT_FLAG_FUNC_VALUE))
+					pr.first->second->value = 0;
+			}
 		}
 		if(id & (RESET_TODECK | RESET_TOHAND | RESET_TOGRAVE | RESET_REMOVE | RESET_TEMP_REMOVE
 			| RESET_OVERLAY | RESET_MSCHANGE | RESET_TOFIELD  | RESET_TURN_SET)) {
@@ -2264,9 +2266,9 @@ int32 card::leave_field_redirect(uint32 reason) {
 		return LOCATION_REMOVED;
 	// the ruling for the priority of the following redirects can't be confirmed for now
 	if(redirects & LOCATION_DECK) {
-		if(redirects & LOCATION_DECKBOT)
+		if((redirects & LOCATION_DECKBOT) == LOCATION_DECKBOT)
 			return LOCATION_DECKBOT;
-		if(redirects & LOCATION_DECKSHF)
+		if((redirects & LOCATION_DECKSHF) == LOCATION_DECKSHF)
 			return LOCATION_DECKSHF;
 		return LOCATION_DECK;
 	}
