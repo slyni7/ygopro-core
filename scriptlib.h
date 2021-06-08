@@ -38,6 +38,7 @@ public:
 	static int32 duel_get_random_number(lua_State *L);
 	static int32 duel_get_player_count(lua_State *L);
 	static int32 duel_tag_swap(lua_State *L);
+	static int32 duel_process_idle_command(lua_State *L);
 	
 	//millux
 	static int32 card_is_ritual_type(lua_State *L);

@@ -333,6 +333,15 @@ int32 scriptlib::duel_tag_swap(lua_State* L) {
 	pduel->game_field->tag_swap(playerid);
 	return 0;
 }
+int32 scriptlib::duel_process_idle_command(lua_State* L) {
+	check_param_count(L, 1);
+	duel* pduel = interpreter::get_duel_info(L);
+	check_param(L, PARAM_TYPE_INT, 1);
+	int32 playerid = lua_tointeger(L, 1);
+	pduel->game_field->infos.turn_player = playerid;
+	pduel->game_field->add_process(PROCESSOR_IDLE_COMMAND, 0, 0, 0, 0, 0);
+	return 0;
+}
 
 int32 scriptlib::duel_get_master_rule(lua_State * L) {
 	duel* pduel = interpreter::get_duel_info(L);
@@ -5080,6 +5089,7 @@ static const struct luaL_Reg duellib[] = {
 	{ "GetRandomNumber", scriptlib::duel_get_random_number },
 	{ "GetPlayerCount", scriptlib::duel_get_player_count },
 	{ "TagSwap", scriptlib::duel_tag_swap },
+	{ "ProcessIdleCommand", scriptlib::duel_process_idle_command },
 
 	{ "GetMasterRule", scriptlib::duel_get_master_rule },
 	{ "ReadCard", scriptlib::duel_read_card },
