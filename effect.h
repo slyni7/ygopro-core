@@ -73,6 +73,7 @@ public:
 	int32 is_self_destroy_related();
 	int32 is_can_be_forbidden();
 	int32 is_available();
+	int32 is_single_ready();
 	int32 check_count_limit(uint8 playerid);
 	int32 is_activateable(uint8 playerid, const tevent& e, int32 neglect_cond = FALSE, int32 neglect_cost = FALSE, int32 neglect_target = FALSE, int32 neglect_loc = FALSE, int32 neglect_faceup = FALSE);
 	int32 is_action_check(uint8 playerid);
@@ -230,7 +231,7 @@ enum effect_flag : uint32 {
 	EFFECT_FLAG_IMMEDIATELY_APPLY	= 0x80000000,
 };
 enum effect_flag2 : uint32 {
-//	EFFECT_FLAG2_NAGA				= 0x0001,
+	EFFECT_FLAG2_MILLENNIUM_RESTRICT	= 0x0001,
 	EFFECT_FLAG2_COF				= 0x0002,
 	EFFECT_FLAG2_SPOSITCH			= 0x0100, // flag2 from 0x0100 are koishipro use
 	EFFECT_FLAG2_AVAILABLE_BD		= 0x0200,
@@ -489,6 +490,8 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EFFECT_SET_BATTLE_ATTACK		362
 #define EFFECT_SET_BATTLE_DEFENSE		363
 #define EFFECT_OVERLAY_RITUAL_MATERIAL	364
+#define EFFECT_CHANGE_GRAVE_ATTRIBUTE	365
+#define EFFECT_CHANGE_GRAVE_RACE		366
 
 #define EFFECT_CANNOT_LOSE_DECK			400
 #define EFFECT_CANNOT_LOSE_LP			401
