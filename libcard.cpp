@@ -101,6 +101,9 @@ int32 scriptlib::card_set_card_data(lua_State *L) {
 	case CARDDATA_LINK_MARKER:
 		pcard->data.link_marker = lua_tointeger(L, 3);
 		break;
+	case CARDDATA_OT:
+		pcard->data.ot = lua_tointeger(L, 3);
+		break;
 	}
 	pduel->write_buffer8(MSG_MOVE);
 	pduel->write_buffer32(pcard->data.code);

@@ -416,5 +416,6 @@ struct card_sort {
 #define CARDDATA_LSCALE			10
 #define CARDDATA_RSCALE			11
 #define CARDDATA_LINK_MARKER	12
+#define CARDDATA_OT				13
 
 #endif /* COMMON_H_ */

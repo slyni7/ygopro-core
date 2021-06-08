@@ -153,6 +153,8 @@ int32 scriptlib::duel_send_massive_todeck(lua_State *L) {
 		pcard->current.reason = REASON_RULE;
 		pcard->current.reason_effect = pduel->game_field->core.reason_effect->get_active_effect();
 		pcard->current.reason_player = pduel->game_field->core.reason_player;
+		if (pcard->current.location == LOCATION_EXTRA)
+			pcard->current.position = POS_FACEDOWN;
 		pduel->write_buffer32(pcard->data.code);
 		pduel->write_buffer8(pcard->previous.controler);
 		pduel->write_buffer8(pcard->previous.location);
@@ -240,6 +242,98 @@ int32 scriptlib::duel_set_description_text(lua_State *L) {
 	}
 	return 0;
 }
+//not fully implemented
+int32 scriptlib::duel_moment(lua_State *L) {
+	check_param_count(L, 2);
+	duel* pduel = interpreter::get_duel_info(L);
+	check_param(L, PARAM_TYPE_CARD, 1);
+	check_param(L, PARAM_TYPE_INT, 2);
+	card* pcard = *(card**)lua_touserdata(L, 1);
+	uint32 infoloc = lua_tointeger(L, 2);
+	uint32 playerid = infoloc & 0xff;
+	uint32 location = (infoloc >> 8) & 0xff;
+	uint32 sequence = (infoloc >> 16) & 0xff;
+	uint32 position = (infoloc >> 24) & 0xff;
+	if(pcard->current.location & LOCATION_GRAVE) {
+		pduel->game_field->player[playerid].list_grave.erase(pduel->game_field->player[playerid].list_grave.begin() + pcard->current.sequence);
+		pduel->game_field->reset_sequence(playerid, LOCATION_GRAVE);
+	}
+	if(location & LOCATION_GRAVE)
+		pduel->game_field->player[playerid].list_grave.push_back(pcard);
+	pcard->current.controler = playerid;
+	pcard->current.location = location;
+	pcard->current.sequence = sequence;
+	pcard->current.position = position;
+	return 0;
+}
+int32 scriptlib::duel_exile_massive(lua_State *L) {
+	check_action_permission(L);
+	check_param_count(L, 1);
+	check_param(L, PARAM_TYPE_GROUP, 1);
+	group* pgroup = *(group**)lua_touserdata(L, 1);
+	duel* pduel = pgroup->pduel;
+	for (auto& pcard : pgroup->container) {
+		pduel->game_field->remove_card(pcard);
+	}
+	pduel->write_buffer8(MSG_MOVE_GROUP);
+	pduel->write_buffer32(pgroup->container.size());
+	for (auto& pcard : pgroup->container) {
+		pduel->game_field->add_card(pcard->owner, pcard, 0, 0);
+		pcard->temp.reason = pcard->current.reason;
+		pcard->temp.reason_effect = pcard->current.reason_effect;
+		pcard->temp.reason_player = pcard->current.reason_player;
+		pcard->current.reason = REASON_RULE;
+		pcard->current.reason_effect = pduel->game_field->core.reason_effect->get_active_effect();
+		pcard->current.reason_player = pduel->game_field->core.reason_player;
+		pduel->write_buffer32(pcard->data.code);
+		pduel->write_buffer8(pcard->previous.controler);
+		pduel->write_buffer8(pcard->previous.location);
+		pduel->write_buffer8(pcard->previous.sequence);
+		pduel->write_buffer8(pcard->previous.position);
+		pduel->write_buffer32(pcard->get_info_location());
+		pduel->write_buffer32(0);
+	}
+	pduel->game_field->process_single_event();
+	pduel->game_field->process_instant_event();
+	return 0;
+}
+int32 scriptlib::duel_get_random_number(lua_State* L) {
+	check_param_count(L, 1);
+	duel* pduel = interpreter::get_duel_info(L);
+	int32 min = 0;
+	int32 max = 1;
+	if (lua_gettop(L) > 1) {
+		min = lua_tointeger(L, 1);
+		max = lua_tointeger(L, 2);
+	}
+	else
+		max = lua_tointeger(L, 1);
+	lua_pushinteger(L, pduel->get_next_integer(min, max));
+	return 1;
+}
+//not fully implemented
+int32 scriptlib::duel_get_player_count(lua_State* L) {
+	check_param_count(L, 1);
+	duel* pduel = interpreter::get_duel_info(L);
+	check_param(L, PARAM_TYPE_INT, 1);
+	int32 playerid = lua_tointeger(L, 1);
+	if (playerid != 0 && playerid != 1)
+		return 0;
+	int32 count = pduel->game_field->player[playerid].tag_list_hand.size() || pduel->game_field->player[playerid].tag_list_main.size();
+	lua_pushinteger(L, count + 1);
+	return 1;
+}
+int32 scriptlib::duel_tag_swap(lua_State* L) {
+	check_param_count(L, 1);
+	duel* pduel = interpreter::get_duel_info(L);
+	check_param(L, PARAM_TYPE_INT, 1);
+	int32 playerid = lua_tointeger(L, 1);
+	if (playerid != 0 && playerid != 1)
+		return 0;
+	pduel->game_field->tag_swap(playerid);
+	return 0;
+}
+
 int32 scriptlib::duel_get_master_rule(lua_State * L) {
 	duel* pduel = interpreter::get_duel_info(L);
 	lua_pushinteger(L, pduel->game_field->core.duel_rule);
@@ -296,6 +390,9 @@ int32 scriptlib::duel_read_card(lua_State *L) {
 			break;
 		case CARDDATA_LINK_MARKER:
 			lua_pushinteger(L, dat.link_marker);
+			break;
+		case CARDDATA_OT:
+			lua_pushinteger(L, dat.ot);
 			break;
 		default:
 			lua_pushinteger(L, 0);
@@ -4978,6 +5075,11 @@ static const struct luaL_Reg duellib[] = {
 	{ "SendMassivetoDeck", scriptlib::duel_send_massive_todeck },
 	{ "GotoPhase", scriptlib::duel_goto_phase },
 	{ "SetDescriptionText", scriptlib::duel_set_description_text },
+	{ "Moment", scriptlib::duel_moment },
+	{ "ExileMassive", scriptlib::duel_exile_massive },
+	{ "GetRandomNumber", scriptlib::duel_get_random_number },
+	{ "GetPlayerCount", scriptlib::duel_get_player_count },
+	{ "TagSwap", scriptlib::duel_tag_swap },
 
 	{ "GetMasterRule", scriptlib::duel_get_master_rule },
 	{ "ReadCard", scriptlib::duel_read_card },

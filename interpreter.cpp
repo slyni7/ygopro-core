@@ -65,8 +65,6 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_setglobal(lua_state, "CARDDATA_LEVEL");
 	lua_pushinteger(lua_state, CARDDATA_ATTRIBUTE);
 	lua_setglobal(lua_state, "CARDDATA_ATTRIBUTE");
-	lua_pushinteger(lua_state, CARDDATA_ATTRIBUTE);
-	lua_setglobal(lua_state, "CARDDATA_ATTRIBUTE");
 	lua_pushinteger(lua_state, CARDDATA_RACE);
 	lua_setglobal(lua_state, "CARDDATA_RACE");
 	lua_pushinteger(lua_state, CARDDATA_ATTACK);
@@ -79,6 +77,8 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_setglobal(lua_state, "CARDDATA_RSCALE");
 	lua_pushinteger(lua_state, CARDDATA_LINK_MARKER);
 	lua_setglobal(lua_state, "CARDDATA_LINK_MARKER");
+	lua_pushinteger(lua_state, CARDDATA_OT);
+	lua_setglobal(lua_state, "CARDDATA_OT");
 	//effect flag2s
 	lua_pushinteger(lua_state, EFFECT_FLAG2_SPOSITCH);
 	lua_setglobal(lua_state, "EFFECT_FLAG2_SPOSITCH");
@@ -109,7 +109,11 @@ interpreter::interpreter(duel* pd): coroutines(256) {
 	lua_setglobal(lua_state, "EFFECT_CHANGE_RECOVER");
 	lua_pushinteger(lua_state, EFFECT_LINK_ROTATE);
 	lua_setglobal(lua_state, "EFFECT_LINK_ROTATE");
-
+	lua_pushinteger(lua_state, EVENT_AFTER_HAND);
+	lua_setglobal(lua_state, "EVENT_AFTER_HAND");
+	lua_pushinteger(lua_state, EFFECT_FIRST_TO_GO);
+	lua_setglobal(lua_state, "EFFECT_FIRST_TO_GO");
+	
 	lua_pushinteger(lua_state, EFFECT_CHANGE_LINK_MARKER_KOISHI);
 	lua_setglobal(lua_state, "EFFECT_CHANGE_LINK_MARKER_KOISHI");
 	lua_pushinteger(lua_state, EFFECT_ADD_LINK_MARKER_KOISHI);
