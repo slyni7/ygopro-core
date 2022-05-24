@@ -4315,6 +4315,10 @@ LUA_FUNCTION(GetStartingHand) {
 	lua_pushinteger(L, pduel->game_field->player[playerid].start_count);
 	return 1;
 }
+LUA_FUNCTION(TsukasaCheck) {
+	check_param_count(L, 0);
+	return 0;
+}
 }
 
 void scriptlib::push_duel_lib(lua_State* L) {
