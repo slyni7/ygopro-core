@@ -4319,6 +4319,12 @@ LUA_FUNCTION(TsukasaCheck) {
 	check_param_count(L, 0);
 	return 0;
 }
+LUA_FUNCTION(OneCardCheck) {
+	check_param_count(L, 0);
+	const auto pduel = lua_get<duel*>(L);
+	lua_pushinteger(L, pduel->game_field->core.one_card_check);
+	return 1;
+}
 }
 
 void scriptlib::push_duel_lib(lua_State* L) {

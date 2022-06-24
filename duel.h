@@ -61,6 +61,7 @@ public:
 			write_internal<T>(static_cast<T>(data));
 		}
 	};
+	uint32_t playerop_line = 0;
 	std::vector<uint8_t> buff;
 	std::vector<uint8_t> query_buffer;
 	field* game_field;

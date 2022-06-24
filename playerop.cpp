@@ -14,6 +14,45 @@
 #include <stack>
 
 int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currval1, currval2;
+				char curr[25];
+				sscanf(line, "%s : %d,%d", curr, &currval1, &currval2);
+				if (!strcmp(curr, "select_battle_command")) {
+					std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+					returns.clear();
+					returns.at<uint32_t>(0) = currval1 | (currval2 << 16);
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		auto message = pduel->new_message(MSG_SELECT_BATTLECMD);
 		message->write<uint8_t>(playerid);
@@ -60,10 +99,65 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "select_battle_command : %d,%d", t, s);
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				char fc[40];
+				sprintf_s(fc, "./playerop_line.log");
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "currentop_line : %d", pduel->playerop_line);
+				fprintf(fp, "\n");
+				fclose(fp);
+				int currval1, currval2;
+				char curr[25];
+				sscanf(line, "%s : %d,%d", curr, &currval1, &currval2);
+				if (!strcmp(curr, "select_idle_command")) {
+					std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+					returns.clear();
+					returns.at<uint32_t>(0) = currval1 | (currval2 << 16);
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		auto message = pduel->new_message(MSG_SELECT_IDLECMD);
 		message->write<uint8_t>(playerid);
@@ -150,10 +244,60 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "select_idle_command : %d,%d", t, s);
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t description, card* pcard) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "select_effect_yes_no")) {
+					returns.clear();
+					returns.data.push_back(currvalue);
+					returns.data.push_back(currvalue >> 8);
+					returns.data.push_back(currvalue >> 16);
+					returns.data.push_back(currvalue >> 24);
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		if((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
 			returns.at<int32_t>(0) = 1;
@@ -171,10 +315,60 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "select_effect_yes_no : %d", returns.at<int32_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t description) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "select_yes_no")) {
+					returns.clear();
+					returns.data.push_back(currvalue);
+					returns.data.push_back(currvalue >> 8);
+					returns.data.push_back(currvalue >> 16);
+					returns.data.push_back(currvalue >> 24);
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		if((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
 			returns.at<int32_t>(0) = 1;
@@ -190,10 +384,60 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "select_yes_no : %d", returns.at<int32_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_option(uint16_t step, uint8_t playerid) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "select_option")) {
+					returns.clear();
+					returns.data.push_back(currvalue);
+					returns.data.push_back(currvalue >> 8);
+					returns.data.push_back(currvalue >> 16);
+					returns.data.push_back(currvalue >> 24);
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		returns.at<int32_t>(0) = -1;
 		if(core.select_options.size() == 0)
@@ -212,6 +456,15 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 		if(returns.at<int32_t>(0) < 0 || returns.at<int32_t>(0) >= (int32_t)core.select_options.size()) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
+		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "select_option : %d", returns.at<int32_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
 		}
 		return TRUE;
 	}
@@ -263,6 +516,62 @@ bool inline field::parse_response_cards(bool cancelable) {
 	return ::parse_response_cards(returns, return_cards, core.select_cards, cancelable);
 }
 int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, uint8_t min, uint8_t max) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				char curr[25];
+				char currstr[400];
+				sscanf(line, "%s : %s", curr, currstr);
+				std::vector<uint32_t> currvals;
+				currvals.push_back(0);
+				for (int s = 0; s < strlen(currstr); s++) {
+					char nowc = currstr[s];
+					if (nowc == 0x2c) {
+						currvals.push_back(0);
+					}
+					if ((nowc >= 0x30) && (nowc <= 0x39)) {
+						currvals.back() = currvals.back() * 10 + (nowc - 0x30);
+					}
+				}
+				if (!strcmp(curr, "select_card")) {
+					return_cards.clear();
+					returns.clear();
+					for (auto& pcard : core.select_cards) {
+						for (auto currval : currvals) {
+							if (pcard->fieldid_r == currval) {
+								return_cards.list.push_back(pcard);
+							}
+						}
+					}
+					fclose(fp);
+					pduel->playerop_line++;
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		return_cards.clear();
 		returns.clear();
@@ -296,23 +605,116 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 			message->write(pcard->get_info_location());
 		}
 		return FALSE;
-	} else {
-		if(!parse_response_cards(cancelable || min == 0)) {
+	}
+	else {
+		if (!parse_response_cards(cancelable || min == 0)) {
 			return_cards.clear();
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if(return_cards.canceled)
+		if (return_cards.canceled) {
+			if (plconf == 2) {
+				char fc[40];
+				sprintf_s(fc, "./playerop.log");
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "select_card : ");
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
 			return TRUE;
+		}
 		if(return_cards.list.size() < min || return_cards.list.size() > max) {
 			return_cards.clear();
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			bool first = true;
+			fprintf(fp, "select_card : ");
+			for (auto& pcard : return_cards.list) {
+				if (first) {
+					first = false;
+					fprintf(fp, "%d", pcard->fieldid_r);
+				}
+				else
+					fprintf(fp, ",%d", pcard->fieldid_r);
+			}
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancelable, uint8_t min, uint8_t max) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				char curr[25];
+				char currstr[400];
+				sscanf(line, "%s : %s", curr, currstr);
+				std::vector<uint32_t> currvals;
+				currvals.push_back(0);
+				for (int s = 0; s < strlen(currstr); s++) {
+					char nowc = currstr[s];
+					if (nowc == 0x2d) {
+						pduel->playerop_line++;
+						fclose(fp);
+						return TRUE;
+					}
+					if (nowc == 0x2c) {
+						currvals.push_back(0);
+					}
+					if ((nowc >= 0x30) && (nowc <= 0x39)) {
+						currvals.back() = currvals.back() * 10 + (nowc - 0x30);
+					}
+				}
+				if (!strcmp(curr, "select_card_coes")) {
+					return_card_codes.clear();
+					returns.clear();
+					int pairfirst = 0;
+					for (auto currval : currvals) {
+						if (!pairfirst)
+							pairfirst = currval;
+						else {
+							return_card_codes.list.push_back(std::pair<uint32_t, uint32_t>(pairfirst, currval));
+							pairfirst = 0;
+						}
+					}
+					fclose(fp);
+					pduel->playerop_line++;
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		return_card_codes.clear();
 		returns.clear();
@@ -351,17 +753,90 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if(return_card_codes.canceled)
+		if (return_card_codes.canceled) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			bool first = true;
+			fprintf(fp, "select_card_codes : -1");
+			fprintf(fp, "\n");
+			fclose(fp);
 			return TRUE;
+		}
 		if(return_card_codes.list.size() < min || return_card_codes.list.size() > max) {
 			return_card_codes.clear();
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			bool first = true;
+			fprintf(fp, "select_card_codes : ");
+			for (auto& pccode : return_card_codes.list) {
+				if (first) {
+					first = false;
+					fprintf(fp, "%d,%d", pccode.first, pccode.second);
+				}
+				else
+					fprintf(fp, ",%d,%d", pccode.first, pccode.second);
+			}
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t cancelable, uint8_t min, uint8_t max, uint8_t finishable) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "select_unselect_card")) {
+					return_cards.clear();
+					returns.clear();
+					if (currvalue == -1) {
+						return_cards.canceled = true;
+						pduel->playerop_line++;
+						fclose(fp);
+						return TRUE;
+					}
+					std::sort(core.select_cards.begin(), core.select_cards.end(), card::card_operation_sort);
+					return_cards.list.push_back((currvalue >= (int32_t)core.select_cards.size()) ? core.unselect_cards[currvalue - core.select_cards.size()] : core.select_cards[currvalue]);
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if (step == 0) {
 		return_cards.clear();
 		returns.clear();
@@ -401,6 +876,15 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 		if(returns.at<int32_t>(0) == -1) {
 			if(cancelable || finishable) {
 				return_cards.canceled = true;
+				if (plconf == 2) {
+					char fc[40];
+					sprintf_s(fc, "./playerop.log");
+					FILE *fp = NULL;
+					fopen_s(&fp, fc, "a+");
+					fprintf(fp, "select_unselect_card : %d", -1);
+					fprintf(fp, "\n");
+					fclose(fp);
+				}
 				return TRUE;
 			}
 			return_cards.clear();
@@ -419,10 +903,58 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 			return FALSE;
 		}
 		return_cards.list.push_back((retval >= (int32_t)core.select_cards.size()) ? core.unselect_cards[retval - core.select_cards.size()] : core.select_cards[retval]);
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "select_unselect_card : %d", returns.at<int32_t>(1));
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, uint8_t forced) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "select_chain")) {
+					std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+					returns.clear();
+					returns.at<int32_t>(0) = currvalue;
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		returns.at<int32_t>(0) = -1;
 		if((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
@@ -459,17 +991,87 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 			message->write<uint8_t>(peffect->get_client_mode());
 		}
 		return FALSE;
-	} else {
-		if(!forced && returns.at<int32_t>(0) == -1)
+	}
+	else {
+		if (!forced && returns.at<int32_t>(0) == -1) {
+			if (plconf == 2) {
+				char fc[40];
+				sprintf_s(fc, "./playerop.log");
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "select_chain : %d", returns.at<int32_t>(0));
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
 			return TRUE;
+		}
 		if(returns.at<int32_t>(0) < 0 || returns.at<int32_t>(0) >= (int32_t)core.select_chains.size()) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
+		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "select_chain : %d", returns.at<int32_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
 		}
 		return TRUE;
 	}
 }
 int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint8_t count) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				char curr[25];
+				char currstr[400];
+				sscanf(line, "%s : %s", curr, currstr);
+				std::vector<uint8_t> currvals;
+				currvals.push_back(0);
+				for (int s = 0; s < strlen(currstr); s++) {
+					char nowc = currstr[s];
+					if (nowc == 0x2c) {
+						currvals.push_back(0);
+					}
+					if ((nowc >= 0x30) && (nowc <= 0x39)) {
+						currvals.back() = currvals.back() * 10 + (nowc - 0x30);
+					}
+				}
+				if (!strcmp(curr, "select_place")) {
+					returns.clear();
+					for (auto currval : currvals)
+						returns.data.push_back(currval);
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		if(count == 0) {
 			auto message = pduel->new_message(MSG_HINT);
@@ -557,10 +1159,69 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 			flag |= to_check;
 			pt += 3;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			bool first = true;
+			fprintf(fp, "select_place : ");
+			pt = 0;
+			for (int8_t i = 0; i < count; ++i) {
+				if (first)
+					fprintf(fp, "%d,%d,%d", returns.at<uint8_t>(pt), returns.at<uint8_t>(pt + 1), returns.at<uint8_t>(pt + 2));
+				else
+					fprintf(fp, ",%d,%d,%d", returns.at<uint8_t>(pt), returns.at<uint8_t>(pt + 1), returns.at<uint8_t>(pt + 2));
+				pt += 3;
+			}
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, uint8_t positions) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "select_position")) {
+					returns.clear();
+					returns.data.push_back(currvalue);
+					returns.data.push_back(currvalue >> 8);
+					returns.data.push_back(currvalue >> 16);
+					returns.data.push_back(currvalue >> 24);
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		if(positions == 0) {
 			returns.at<int32_t>(0) = POS_FACEUP_ATTACK;
@@ -594,10 +1255,80 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "select_position : %d", returns.at<int32_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelable, uint8_t min, uint8_t max) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				char curr[25];
+				char currstr[400];
+				sscanf(line, "%s : %s", curr, currstr);
+				std::vector<uint32_t> currvals;
+				currvals.push_back(0);
+				for (int s = 0; s < strlen(currstr); s++) {
+					char nowc = currstr[s];
+					if (nowc == 0x2d) {
+						fclose(fp);
+						pduel->playerop_line++;
+						return TRUE;
+					}
+					if (nowc == 0x2c) {
+						currvals.push_back(0);
+					}
+					if ((nowc >= 0x30) && (nowc <= 0x39)) {
+						currvals.back() = currvals.back() * 10 + (nowc - 0x30);
+					}
+				}
+				if (!strcmp(curr, "select_tribute")) {
+					return_cards.clear();
+					returns.clear();
+					for (auto& pcard : core.select_cards) {
+						for (auto currval : currvals) {
+							if (pcard->fieldid_r == currval) {
+								return_cards.list.push_back(pcard);
+							}
+						}
+					}
+					fclose(fp);
+					pduel->playerop_line++;
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		returns.clear();
 		return_cards.clear();
@@ -639,8 +1370,17 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if(return_cards.canceled)
+		if (return_cards.canceled) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			bool first = true;
+			fprintf(fp, "select_tribute : -1");
+			fprintf(fp, "\n");
+			fclose(fp);
 			return TRUE;
+		}
 		if(return_cards.list.size() > max) {
 			return_cards.clear();
 			pduel->new_message(MSG_RETRY);
@@ -654,10 +1394,40 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			bool first = true;
+			fprintf(fp, "select_tribute : ");
+			for (auto& pcard : return_cards.list) {
+				if (first) {
+					first = false;
+					fprintf(fp, "%d", pcard->fieldid_r);
+				}
+				else
+					fprintf(fp, ",%d", pcard->fieldid_r);
+			}
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 }
 int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countertype, uint16_t count, uint8_t s, uint8_t o) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
 	if(step == 0) {
 		if(count == 0)
 			return TRUE;
@@ -712,6 +1482,24 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			bool first = true;
+			fprintf(fp, "select_counter : ");
+			for (uint32_t i = 0; i < core.select_cards.size(); ++i) {
+				if (first) {
+					first = false;
+					fprintf(fp, "%d", returns.at<int16_t>(i));
+				}
+				else
+					fprintf(fp, ",%d", returns.at<int16_t>(i));
+			}
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 	}
 	return TRUE;
 }
@@ -726,6 +1514,62 @@ static int32_t select_sum_check1(const std::vector<int32_t>& oparam, int32_t siz
 	       || (o2 > 0 && acc > o2 && select_sum_check1(oparam, size, index + 1, acc - o2));
 }
 int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc, int32_t min, int32_t max) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				char curr[25];
+				char currstr[400];
+				sscanf(line, "%s : %s", curr, currstr);
+				std::vector<uint32_t> currvals;
+				currvals.push_back(0);
+				for (int s = 0; s < strlen(currstr); s++) {
+					char nowc = currstr[s];
+					if (nowc == 0x2c) {
+						currvals.push_back(0);
+					}
+					if ((nowc >= 0x30) && (nowc <= 0x39)) {
+						currvals.back() = currvals.back() * 10 + (nowc - 0x30);
+					}
+				}
+				if (!strcmp(curr, "select_with_sum_limit")) {
+					return_cards.clear();
+					returns.clear();
+					for (auto& pcard : pduel->cards) {
+						for (auto currval : currvals) {
+							if (pcard->fieldid_r == currval) {
+								return_cards.list.push_back(pcard);
+							}
+						}
+					}
+					fclose(fp);
+					pduel->playerop_line++;
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		return_cards.clear();
 		returns.clear();
@@ -784,6 +1628,24 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 				pduel->new_message(MSG_RETRY);
 				return FALSE;
 			}
+			if (plconf == 2) {
+				char fc[40];
+				sprintf_s(fc, "./playerop.log");
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "select_with_sum_limit : ");
+				for (auto& pcard : return_cards.list) {
+					if (first) {
+						first = false;
+						fprintf(fp, "%d", pcard->fieldid_r);
+					}
+					else
+						fprintf(fp, ",%d", pcard->fieldid_r);
+				}
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
 			return TRUE;
 		} else {
 			// UNUSED VARIABLE
@@ -806,12 +1668,86 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 				pduel->new_message(MSG_RETRY);
 				return FALSE;
 			}
+			if (plconf == 2) {
+				char fc[40];
+				sprintf_s(fc, "./playerop.log");
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "select_with_sum_limit : ");
+				for (auto& pcard : return_cards.list) {
+					if (first) {
+						first = false;
+						fprintf(fp, "%d", pcard->fieldid_r);
+					}
+					else
+						fprintf(fp, ",%d", pcard->fieldid_r);
+				}
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
 			return TRUE;
 		}
 	}
 	return TRUE;
 }
 int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				char curr[25];
+				char currstr[400];
+				sscanf(line, "%s : %s", curr, currstr);
+				std::vector<uint32_t> currvals;
+				currvals.push_back(0);
+				for (int s = 0; s < strlen(currstr); s++) {
+					char nowc = currstr[s];
+					if (nowc == 0x2d) {
+						pduel->playerop_line++;
+						fclose(fp);
+						return TRUE;
+					}
+					if (nowc == 0x2c) {
+						currvals.push_back(0);
+					}
+					if ((nowc >= 0x30) && (nowc <= 0x39)) {
+						currvals.back() = currvals.back() * 10 + (nowc - 0x30);
+					}
+				}
+				if (!strcmp(curr, "sort_card")) {
+					returns.clear();
+					for (auto currval : currvals) {
+						returns.data.push_back(currval);
+					}
+					fclose(fp);
+					pduel->playerop_line++;
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		returns.clear();
 		if((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
@@ -836,8 +1772,18 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 		}
 		return FALSE;
 	} else {
-		if(returns.at<int8_t>(0) == -1)
+		if (returns.at<int8_t>(0) == -1) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			bool first = true;
+			fprintf(fp, "sort_card : ");
+			fprintf(fp, "%d", returns.at<int8_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
 			return TRUE;
+		}
 		bool c[64] = {};
 		uint8_t m = static_cast<uint8_t>(core.select_cards.size());
 		for(uint8_t i = 0; i < m; ++i) {
@@ -848,11 +1794,74 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 			}
 			c[v] = true;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			bool first = true;
+			fprintf(fp, "sort_card : ");
+			for (uint8_t i = 0; i < m; ++i) {
+				if (first) {
+					first = false;
+					fprintf(fp, "%d", returns.at<int8_t>(i));
+				}
+				else
+					fprintf(fp, ",%d", returns.at<int8_t>(i));
+			}
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		return TRUE;
 	}
 	return TRUE;
 }
 int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, int32_t available) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "announce_race")) {
+					returns.clear();
+					returns.data.push_back(currvalue);
+					returns.data.push_back(currvalue >> 8);
+					returns.data.push_back(currvalue >> 16);
+					returns.data.push_back(currvalue >> 24);
+					pduel->playerop_line++;
+					fclose(fp);
+					auto message = pduel->new_message(MSG_HINT);
+					message->write<uint8_t>(HINT_RACE);
+					message->write<uint8_t>(playerid);
+					message->write<uint64_t>(core.select_options[returns.at<int32_t>(0)]);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		int32_t scount = 0;
 		for(int32_t ft = 0x1; ft != 0x2000000; ft <<= 1) {
@@ -883,6 +1892,15 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, int3
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "announce_race : %d", returns.at<int32_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		auto message = pduel->new_message(MSG_HINT);
 		message->write<uint8_t>(HINT_RACE);
 		message->write<uint8_t>(playerid);
@@ -892,6 +1910,51 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, int3
 	return TRUE;
 }
 int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count, int32_t available) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "announce_attribute")) {
+					returns.clear();
+					returns.data.push_back(currvalue);
+					returns.data.push_back(currvalue >> 8);
+					returns.data.push_back(currvalue >> 16);
+					returns.data.push_back(currvalue >> 24);
+					pduel->playerop_line++;
+					fclose(fp);
+					auto message = pduel->new_message(MSG_HINT);
+					message->write<uint8_t>(HINT_ATTRIB);
+					message->write<uint8_t>(playerid);
+					message->write<uint64_t>(core.select_options[returns.at<int32_t>(0)]);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		int32_t scount = 0;
 		for(int32_t ft = 0x1; ft != 0x80; ft <<= 1) {
@@ -921,6 +1984,15 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count,
 		if(sel != count) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
+		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "announce_attribute : %d", returns.at<int32_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
 		}
 		auto message = pduel->new_message(MSG_HINT);
 		message->write<uint8_t>(HINT_ATTRIB);
@@ -1022,6 +2094,51 @@ static int32_t is_declarable(const card_data& cd, const std::vector<uint64_t>& o
 #undef UNARY_OP_OP
 #undef GET_OP
 int32_t field::announce_card(int16_t step, uint8_t playerid) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "announce_card")) {
+					returns.clear();
+					returns.data.push_back(currvalue);
+					returns.data.push_back(currvalue >> 8);
+					returns.data.push_back(currvalue >> 16);
+					returns.data.push_back(currvalue >> 24);
+					pduel->playerop_line++;
+					fclose(fp);
+					auto message = pduel->new_message(MSG_HINT);
+					message->write<uint8_t>(HINT_CODE);
+					message->write<uint8_t>(playerid);
+					message->write<uint64_t>(core.select_options[returns.at<int32_t>(0)]);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		auto message = pduel->new_message(MSG_ANNOUNCE_CARD);
 		message->write<uint8_t>(playerid);
@@ -1036,6 +2153,15 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 			/*auto message = */pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "announce_card : %d", returns.at<int32_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		auto message = pduel->new_message(MSG_HINT);
 		message->write<uint8_t>(HINT_CODE);
 		message->write<uint8_t>(playerid);
@@ -1045,6 +2171,51 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 	return TRUE;
 }
 int32_t field::announce_number(int16_t step, uint8_t playerid) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "announce_number")) {
+					returns.clear();
+					returns.data.push_back(currvalue);
+					returns.data.push_back(currvalue >> 8);
+					returns.data.push_back(currvalue >> 16);
+					returns.data.push_back(currvalue >> 24);
+					pduel->playerop_line++;
+					fclose(fp);
+					auto message = pduel->new_message(MSG_HINT);
+					message->write<uint8_t>(HINT_NUMBER);
+					message->write<uint8_t>(playerid);
+					message->write<uint64_t>(core.select_options[returns.at<int32_t>(0)]);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	if(step == 0) {
 		auto message = pduel->new_message(MSG_ANNOUNCE_NUMBER);
 		message->write<uint8_t>(playerid);
@@ -1058,6 +2229,15 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "announce_number : %d", returns.at<int32_t>(0));
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		auto message = pduel->new_message(MSG_HINT);
 		message->write<uint8_t>(HINT_NUMBER);
 		message->write<uint8_t>(playerid);
@@ -1066,6 +2246,61 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 	}
 }
 int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
+	char fc[40];
+	sprintf_s(fc, "./playerop.conf");
+	FILE *fp = NULL;
+	fopen_s(&fp, fc, "r");
+	int plconf = 0;
+	if (fp) {
+		char conf[40];
+		fgets(conf, 40, fp);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fp);
+	}
+	if (plconf == 1) {
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == pduel->playerop_line) {
+				int currval1, currval2;
+				char curr[25];
+				sscanf(line, "%s : %d,%d", curr, &currval1, &currval2);
+				if (!strcmp(curr, "rock_paper_scissors")) {
+					int32_t hand0 = currval1;
+					int32_t hand1 = currval2;
+					auto message = pduel->new_message(MSG_HAND_RES);
+					message->write<uint8_t>(hand0 + (hand1 << 2));
+					if (hand0 == hand1) {
+						if (repeat) {
+							pduel->playerop_line++;
+							fclose(fp);
+							return FALSE;
+						}
+						else
+							returns.at<int32_t>(0) = PLAYER_NONE;
+					}
+					else if ((hand0 == 1 && hand1 == 2) || (hand0 == 2 && hand1 == 3) || (hand0 == 3 && hand1 == 1)) {
+						returns.at<int32_t>(0) = 1;
+					}
+					else {
+						returns.at<int32_t>(0) = 0;
+					}
+					pduel->playerop_line++;
+					fclose(fp);
+					return TRUE;
+				}
+			}
+			if (line_count > pduel->playerop_line)
+				break;
+		}
+		fclose(fp);
+	}
 	auto checkvalid = [this] {
 		const auto ret = returns.at<int32_t>(0);
 		if(ret < 1 || ret>3) {
@@ -1094,6 +2329,15 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 			return FALSE;
 		int32_t hand0 = core.units.begin()->arg2;
 		int32_t hand1 = returns.at<int32_t>(0);
+		if (plconf == 2) {
+			char fc[40];
+			sprintf_s(fc, "./playerop.log");
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "rock_paper_scissors : %d,%d", hand0, hand1);
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 		auto message = pduel->new_message(MSG_HAND_RES);
 		message->write<uint8_t>(hand0 + (hand1 << 2));
 		if(hand0 == hand1) {

@@ -4045,6 +4045,7 @@ int32_t field::process_turn(uint16_t step, uint8_t turn_player) {
 			core.extra_summon[p] = 0;
 			core.spsummon_once_map[p].clear();
 			core.spsummon_once_map_rst[p].clear();
+			core.one_card_check = 2;
 		}
 		add_process(PROCESSOR_REFRESH_RELAY, 0, 0, 0, 0, 0);
 		return FALSE;

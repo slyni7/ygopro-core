@@ -18,6 +18,31 @@ OCGAPI void OCG_GetVersion(int* major, int* minor) {
 }
 
 OCGAPI int OCG_CreateDuel(OCG_Duel* return_duel_ptr, OCG_DuelOptions options) {
+	char fconf[40];
+	sprintf_s(fconf, "./playerop.conf");
+	FILE *fpconf = NULL;
+	fopen_s(&fpconf, fconf, "r");
+	int plconf = 0;
+	if (fpconf) {
+		char conf[40];
+		fgets(conf, 40, fpconf);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fpconf);
+	}
+	if (plconf == 1) {
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		fgets(line, 400, fp);
+		int seedvalue;
+		char curr[25];
+		sscanf(line, "%s : %d", curr, &seedvalue);
+		options.seed = seedvalue;
+		fclose(fp);
+	}
 	if(return_duel_ptr == nullptr)
 		return OCG_DUEL_CREATION_NO_OUTPUT;
 	if(options.cardReader == nullptr) {
@@ -40,6 +65,15 @@ OCGAPI int OCG_CreateDuel(OCG_Duel* return_duel_ptr, OCG_DuelOptions options) {
 	if(duelPtr == nullptr)
 		return OCG_DUEL_CREATION_NOT_CREATED;
 	*return_duel_ptr = static_cast<OCG_Duel>(duelPtr);
+	if (plconf == 2) {
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "a+");
+		fprintf(fp, "options.seed : %d", options.seed);
+		fprintf(fp, "\n");
+		fclose(fp);
+	}
 	return OCG_DUEL_CREATION_SUCCESS;
 }
 
@@ -49,6 +83,81 @@ OCGAPI void OCG_DestroyDuel(OCG_Duel duel) {
 }
 
 OCGAPI void OCG_DuelNewCard(OCG_Duel duel, OCG_NewCardInfo info) {
+	char fconf[40];
+	sprintf_s(fconf, "./playerop.conf");
+	FILE *fpconf = NULL;
+	fopen_s(&fpconf, fconf, "r");
+	int plconf = 0;
+	if (fpconf) {
+		char conf[40];
+		fgets(conf, 40, fpconf);
+		char plop[10];
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fpconf);
+	}
+	if (plconf == 2) {
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "a+");
+		fprintf(fp, "info.team : %d\n", info.team);
+		fprintf(fp, "info.duelist : %d\n", info.duelist);
+		fprintf(fp, "info.code : %d\n", info.code);
+		fprintf(fp, "info.con : %d\n", info.con);
+		fprintf(fp, "info.loc : %d\n", info.loc);
+		fprintf(fp, "info.seq : %d\n", info.seq);
+		fprintf(fp, "info.pos : %d\n", info.pos);
+		fclose(fp);
+	}
+	else if (plconf == 1) {
+		if (!DUEL->playerop_line)
+			DUEL->playerop_line = 2;
+		int line_count = 0;
+		char fc[40];
+		sprintf_s(fc, "./playerop.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400];
+		while (fgets(line, 400, fp) != NULL) {
+			line_count++;
+			if (line_count == DUEL->playerop_line) {
+				int currvalue;
+				char curr[25];
+				sscanf(line, "%s : %d", curr, &currvalue);
+				if (!strcmp(curr, "info.team")) {
+					info.team = currvalue;
+					DUEL->playerop_line++;
+				}
+				else if (!strcmp(curr, "info.duelist")) {
+					info.duelist = currvalue;
+					DUEL->playerop_line++;
+				}
+				else if (!strcmp(curr, "info.code")) {
+					info.code = currvalue;
+					DUEL->playerop_line++;
+				}
+				else if (!strcmp(curr, "info.con")) {
+					info.con = currvalue;
+					DUEL->playerop_line++;
+				}
+				else if (!strcmp(curr, "info.loc")) {
+					info.loc = currvalue;
+					DUEL->playerop_line++;
+				}
+				else if (!strcmp(curr, "info.seq")) {
+					info.seq = currvalue;
+					DUEL->playerop_line++;
+				}
+				else if (!strcmp(curr, "info.pos")) {
+					info.pos = currvalue;
+					DUEL->playerop_line++;
+					break;
+				}
+			}
+			if (line_count > DUEL->playerop_line)
+				break;
+		}
+	}
 	auto& game_field = *DUEL->game_field;
 	if(info.duelist == 0) {
 		if(game_field.is_location_useable(info.con, info.loc, info.seq)) {
@@ -88,7 +197,18 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel duel, OCG_NewCardInfo info) {
 }
 
 OCGAPI void OCG_StartDuel(OCG_Duel duel) {
-	DUEL->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+	if (duel != nullptr)
+		DUEL->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+}
+
+
+OCGAPI void OCG_OneCard(OCG_Duel duel, uint8_t playerid) {
+	if (DUEL->game_field->core.one_card_check == 2) {
+		if (DUEL->game_field->infos.turn_player == playerid)
+			DUEL->game_field->core.one_card_check = 0;
+		else
+			DUEL->game_field->core.one_card_check = 1;
+	}
 }
 
 OCGAPI int OCG_DuelProcess(OCG_Duel duel) {
