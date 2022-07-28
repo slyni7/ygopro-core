@@ -102,6 +102,8 @@ struct player_info {
 		start_count(team.startingDrawCount), draw_count(team.drawCountPerTurn) {
 		list_mzone.resize(7, nullptr);
 		list_szone.resize(8, nullptr);
+		//list_mzone.resize(256, nullptr);
+		//list_szone.resize(256, nullptr);
 		list_main.reserve(45);
 		list_hand.reserve(10);
 		list_grave.reserve(30);

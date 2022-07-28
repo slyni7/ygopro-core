@@ -40,6 +40,9 @@ interpreter::interpreter(duel* pd): coroutines(256), deleted(pd) {
 	scriptlib::push_group_lib(lua_state);
 	scriptlib::push_duel_lib(lua_state);
 	scriptlib::push_debug_lib(lua_state);
+	//effects
+	lua_pushinteger(lua_state, EFFECT_SUMMONABLE_CARD);
+	lua_setglobal(lua_state, "EFFECT_SUMMONABLE_CARD");
 }
 interpreter::~interpreter() {
 	lua_close(lua_state);

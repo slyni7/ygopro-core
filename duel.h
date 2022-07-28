@@ -118,6 +118,16 @@ public:
 	inline int read_script(const char* name) {
 		return read_script_callback(read_script_payload, this, name);
 	}
+	/*std::deque<duel_message> messages;
+	std::mt19937 random;
+	OCG_DataReader read_card_callback;
+	OCG_ScriptReader read_script_callback;
+	OCG_LogHandler handle_message_callback;
+	OCG_DataReaderDone read_card_done_callback;
+	void* read_card_payload;
+	void* read_script_payload;
+	void* handle_message_payload;
+	void* read_card_done_payload;*/
 private:
 	std::deque<duel_message> messages;
 	std::mt19937 random;

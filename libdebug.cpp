@@ -174,6 +174,24 @@ LUA_FUNCTION(ReloadFieldEnd) {
 		return lua_yield(L, 0);
 	return 0;
 }
+/*LUA_FUNCTION(NewTsukasaDuel) {
+	auto pduel = lua_get<duel*>(L);
+	OCG_DuelOptions options;
+	options.seed = 0;
+	options.cardReader = pduel->read_card_callback;
+	options.scriptReader = pduel->read_script_callback;
+	options.logHandler = pduel->handle_message_callback;
+	options.cardReaderDone = pduel->read_card_done_callback;
+	options.payload1 = pduel->read_card_payload;
+	options.payload2 = pduel->read_script_payload;
+	options.payload3 = pduel->handle_message_payload;
+	options.payload4 = pduel->read_card_done_payload;
+	auto* qduel = new duel(options);
+	qduel->read_script("constant.lua");
+	qduel->read_script("utility.lua");
+	delete qduel;
+	return 0;
+}*/
 template<int message_code, size_t max_len>
 int32_t write_string_message(lua_State* L) {
 	check_param_count(L, 1);

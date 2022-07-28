@@ -3340,11 +3340,13 @@ int32_t card::check_cost_condition(int32_t ecode, int32_t playerid, int32_t sumt
 }
 // check if this is a normal summonable card
 int32_t card::is_summonable_card() {
-	if(!(data.type & TYPE_MONSTER) || (data.type & (TYPE_RITUAL | TYPE_SPSUMMON
+	effect_set eset;
+	filter_effect(EFFECT_SUMMONABLE_CARD, &eset);
+	if(!(data.type & TYPE_MONSTER) || ((data.type & (TYPE_RITUAL | TYPE_SPSUMMON
 					  | TYPE_FUSION | TYPE_SYNCHRO | TYPE_XYZ | TYPE_LINK
-					  | TYPE_TOKEN | TYPE_TRAPMONSTER)))
+					  | TYPE_TOKEN | TYPE_TRAPMONSTER)) && !eset.size()))
 		return FALSE;
-	return !is_affected_by_effect(EFFECT_UNSUMMONABLE_CARD);
+	return !is_affected_by_effect(EFFECT_UNSUMMONABLE_CARD) || eset.size();
 }
 int32_t card::is_fusion_summonable_card(uint32_t summon_type) {
 	if(!(data.type & TYPE_FUSION))
