@@ -201,10 +201,8 @@ LUA_FUNCTION(SetLabelObject) {
 	if(lua_get<lua_obj*>(L, 2) != nullptr || lua_istable(L, 2)) {
 		lua_pushvalue(L, 2);
 		peffect->label_object = luaL_ref(L, LUA_REGISTRYINDEX);
-	} else {
-		luaL_error(L, "Parameter 2 should be \"Card\" or \"Effect\" or \"Group\" or \"table\".");
-		unreachable();
-	}
+	} else
+		lua_error(L, "Parameter 2 should be \"Card\" or \"Effect\" or \"Group\" or \"table\".");
 	return 0;
 }
 LUA_FUNCTION(SetCategory) {
@@ -225,29 +223,29 @@ LUA_FUNCTION(SetHintTiming) {
 }
 LUA_FUNCTION(SetCondition) {
 	check_param_count(L, 2);
-	check_param(L, PARAM_TYPE_FUNCTION, 2);
+	const auto findex = lua_get<function, true>(L, 2);
 	auto peffect = lua_get<effect*, true>(L, 1);
 	if(peffect->condition)
 		luaL_unref(L, LUA_REGISTRYINDEX, peffect->condition);
-	peffect->condition = interpreter::get_function_handle(L, 2);
+	peffect->condition = interpreter::get_function_handle(L, findex);
 	return 0;
 }
 LUA_FUNCTION(SetTarget) {
 	check_param_count(L, 2);
-	check_param(L, PARAM_TYPE_FUNCTION, 2);
+	const auto findex = lua_get<function, true>(L, 2);
 	auto peffect = lua_get<effect*, true>(L, 1);
 	if(peffect->target)
 		luaL_unref(L, LUA_REGISTRYINDEX, peffect->target);
-	peffect->target = interpreter::get_function_handle(L, 2);
+	peffect->target = interpreter::get_function_handle(L, findex);
 	return 0;
 }
 LUA_FUNCTION(SetCost) {
 	check_param_count(L, 2);
-	check_param(L, PARAM_TYPE_FUNCTION, 2);
+	const auto findex = lua_get<function, true>(L, 2);
 	auto peffect = lua_get<effect*, true>(L, 1);
 	if(peffect->cost)
 		luaL_unref(L, LUA_REGISTRYINDEX, peffect->cost);
-	peffect->cost = interpreter::get_function_handle(L, 2);
+	peffect->cost = interpreter::get_function_handle(L, findex);
 	return 0;
 }
 LUA_FUNCTION(SetValue) {
@@ -272,10 +270,10 @@ LUA_FUNCTION(SetOperation) {
 	auto peffect = lua_get<effect*, true>(L, 1);
 	if(peffect->operation)
 		luaL_unref(L, LUA_REGISTRYINDEX, peffect->operation);
-	if(!lua_isnoneornil(L, 2)) {
-		check_param(L, PARAM_TYPE_FUNCTION, 2);
-		peffect->operation = interpreter::get_function_handle(L, 2);
-	} else
+	const auto findex = lua_get<function>(L, 2);
+	if(findex)
+		peffect->operation = interpreter::get_function_handle(L, findex);
+	else
 		peffect->operation = 0;
 	return 0;
 }
