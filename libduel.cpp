@@ -4294,6 +4294,7 @@ LUA_FUNCTION(OneCardCheck) {
 	const auto pduel = lua_get<duel*>(L);
 	lua_pushinteger(L, pduel->game_field->core.one_card_check);
 	return 1;
+}
 #define INFO_FUNC_FROM_CODE(lua_name,attr) \
 LUA_FUNCTION(GetCard ##lua_name ##FromCode) { \
 	check_param_count(L, 1); \
