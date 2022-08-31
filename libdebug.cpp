@@ -176,6 +176,18 @@ LUA_FUNCTION(ReloadFieldEnd) {
 		return lua_yield(L, 0);
 	return 0;
 }
+LUA_FUNCTION(GetDuelOptions) {
+	const auto pduel = lua_get<duel*>(L);
+	lua_pushinteger(L, pduel->game_field->core.duel_options);
+	return 1;
+}
+LUA_FUNCTION(SetDuelOptions) {
+	check_param_count(L, 1);
+	const auto pduel = lua_get<duel*>(L);
+	auto flag = lua_get<uint64_t>(L, 1);
+	pduel->game_field->core.duel_options = flag;
+	return 0;
+}
 /*LUA_FUNCTION(NewTsukasaDuel) {
 	auto pduel = lua_get<duel*>(L);
 	OCG_DuelOptions options;
