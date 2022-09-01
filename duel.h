@@ -62,6 +62,8 @@ public:
 		}
 	};
 	uint32_t playerop_line = 0;
+	uint32_t playerop_seed = 0;
+	uint32_t playerop_config = 0;
 	std::vector<uint8_t> buff;
 	std::vector<uint8_t> query_buffer;
 	field* game_field;

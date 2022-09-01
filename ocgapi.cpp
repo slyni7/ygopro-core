@@ -74,6 +74,7 @@ OCGAPI int OCG_CreateDuel(OCG_Duel* return_duel_ptr, OCG_DuelOptions options) {
 		fprintf(fp, "\n");
 		fclose(fp);
 	}
+	duelPtr->playerop_seed = options.seed;
 	return OCG_DUEL_CREATION_SUCCESS;
 }
 
