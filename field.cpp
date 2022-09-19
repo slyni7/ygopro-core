@@ -841,7 +841,7 @@ int32_t field::check_extra_link(int32_t playerid, card* pcard, int32_t sequence)
 	pcard->current.position = cur_position;
 	return ret;
 }
-void field::get_cards_in_zone(card_set* cset, uint32_t zone, int32_t playerid, int32_t location) {
+void field::get_cards_in_zone(card_set* cset, uint32_t zone, int32_t playerid, int32_t location) const {
 	if(!(location & LOCATION_ONFIELD))
 		return;
 	if(location & LOCATION_MZONE) {
@@ -981,14 +981,15 @@ void field::swap_deck_and_grave(uint8_t playerid) {
 	message->write<uint8_t>(playerid);
 	card_vector ex;
 	ProgressiveBuffer buff;
+	buff.data.reserve((cur_player.list_main.size() / sizeof(uint8_t)) + 1);
 	int i = 0;
 	for(auto clit = cur_player.list_main.begin(); clit != cur_player.list_main.end(); ++i) {
 		if((*clit)->is_extra_deck_monster()) {
-			buff.bitSet(i);
+			buff.bitToggle(i, true);
 			ex.push_back(*clit);
 			clit = cur_player.list_main.erase(clit);
 		} else {
-			buff.bitSet(i, false);
+			buff.bitToggle(i, false);
 			++clit;
 		}
 	}
@@ -2346,7 +2347,6 @@ int32_t field::get_attack_target(card* pcard, card_vector* v, uint8_t chain_atta
 	}
 	//chain attack or announce count check passed
 	uint32_t mcount = 0;
-	uint32_t total_targets = 0;
 	for(auto& atarget : *pv) {
 		if(!atarget)
 			continue;
@@ -2354,7 +2354,6 @@ int32_t field::get_attack_target(card* pcard, card_vector* v, uint8_t chain_atta
 			continue;
 		if(atarget->current.controler != p)
 			++mcount;
-		++total_targets;
 		if(chain_attack && core.chain_attack_target && atarget != core.chain_attack_target)
 			continue;
 		if(select_target && (atype == 2 || atype == 4)) {
@@ -2367,7 +2366,7 @@ int32_t field::get_attack_target(card* pcard, card_vector* v, uint8_t chain_atta
 	}
 	if(atype <= 3)
 		return atype;
-	if((mcount == 0 || pcard->is_affected_by_effect(EFFECT_DIRECT_ATTACK) || core.attack_player || (mcount != total_targets))
+	if((mcount == 0 || pcard->is_affected_by_effect(EFFECT_DIRECT_ATTACK) || core.attack_player)
 			&& !pcard->is_affected_by_effect(EFFECT_CANNOT_DIRECT_ATTACK)
 			&& !(extra_count_m && pcard->announce_count > extra_count)
 			&& !(chain_attack && core.chain_attack_target))

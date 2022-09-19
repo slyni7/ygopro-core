@@ -889,7 +889,7 @@ LUA_FUNCTION(IsRace) {
 	check_param_count(L, 2);
 	const auto pduel = lua_get<duel*>(L);
 	auto pcard = lua_get<card*, true>(L, 1);
-	auto trace = lua_get<uint32_t>(L, 2);
+	auto trace = lua_get<uint64_t>(L, 2);
 	card* scard = 0;
 	auto playerid = PLAYER_NONE;
 	if(lua_gettop(L) > 2 && !lua_isnoneornil(L, 3))
@@ -2319,7 +2319,7 @@ LUA_FUNCTION(AddMonsterAttribute) {
 	auto pcard = lua_get<card*, true>(L, 1);
 	auto type = lua_get<uint32_t>(L, 2);
 	auto attribute = lua_get<uint32_t, 0>(L, 3);
-	auto race = lua_get<uint32_t, 0>(L, 4);
+	auto race = lua_get<uint64_t, 0>(L, 4);
 	auto level = lua_get<uint32_t, 0>(L, 5);
 	auto atk = lua_get<int32_t, 0>(L, 6);
 	auto def = lua_get<int32_t, 0>(L, 7);
@@ -2443,7 +2443,7 @@ LUA_FUNCTION(SetHint) {
 	const auto pduel = lua_get<duel*>(L);
 	auto pcard = lua_get<card*, true>(L, 1);
 	auto type = lua_get<uint8_t>(L, 2);
-	auto value = lua_get<uint32_t>(L, 3);
+	auto value = lua_get<uint64_t>(L, 3);
 	if(type >= CHINT_DESC_ADD)
 		return 0;
 	auto message = pduel->new_message(MSG_CARD_HINT);
@@ -2517,7 +2517,7 @@ LUA_FUNCTION(AssumeProperty) {
 	auto assume = lua_get<uint32_t>(L, 2);
 	if ((assume < ASSUME_CODE) || (assume > ASSUME_LINKMARKER))
 		return 0;
-	pcard->assume[assume] = lua_get<uint32_t>(L, 3);
+	pcard->assume[assume] = lua_get<uint64_t>(L, 3);
 	pduel->assumes.insert(pcard);
 	return 0;
 }
@@ -2551,9 +2551,9 @@ LUA_FUNCTION(Setcode) {
 	if(lua_gettop(L) > 1) {
 		pcard->data.setcodes.clear();
 		if(lua_istable(L, 2)) {
-			lua_table_iterate(L, 2, [&setcodes = pcard->data.setcodes, &L]{
+			lua_table_iterate(L, 2, [&setcodes = pcard->data.setcodes, &L] {
 				setcodes.insert(lua_get<uint16_t>(L, -1));
-							  });
+			});
 		} else
 			pcard->data.setcodes.insert(lua_get<uint16_t>(L, 2));
 		return 0;
@@ -2591,7 +2591,7 @@ LUA_FUNCTION(Recreate) {
 		pcard->data.type = lua_get<uint32_t>(L, 5, pcard->data.type);
 		pcard->data.level = lua_get<uint32_t>(L, 6, pcard->data.level);
 		pcard->data.attribute = lua_get<uint32_t>(L, 7, pcard->data.attribute);
-		pcard->data.race = lua_get<uint32_t>(L, 8, pcard->data.race);
+		pcard->data.race = lua_get<uint64_t>(L, 8, pcard->data.race);
 		pcard->data.attack = lua_get<int32_t>(L, 9, pcard->data.attack);
 		pcard->data.defense = lua_get<int32_t>(L, 10, pcard->data.defense);
 		pcard->data.lscale = lua_get<uint32_t>(L, 11, pcard->data.lscale);

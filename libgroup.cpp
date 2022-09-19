@@ -105,6 +105,8 @@ LUA_FUNCTION(RemoveCard) {
 	if(pcard)
 		pgroup->container.erase(pcard);
 	else {
+		if(pgroup == sgroup)
+			lua_error(L, "Attempting to remove a group from itself");
 		for(auto& _pcard : sgroup->container)
 			pgroup->container.erase(_pcard);
 	}
@@ -572,7 +574,7 @@ LUA_FUNCTION(GetMinGroup) {
 	if(pgroup->container.size() == 0)
 		return 0;
 	group* newgroup = pduel->new_group();
-	int32_t min, op;
+	int64_t min, op;
 	int32_t extraargs = lua_gettop(L) - 2;
 	auto cit = pgroup->container.begin();
 	min = pduel->lua->get_operation_value(*cit, findex, extraargs);
@@ -600,7 +602,7 @@ LUA_FUNCTION(GetMaxGroup) {
 	if(pgroup->container.size() == 0)
 		return 0;
 	group* newgroup = pduel->new_group();
-	int32_t max, op;
+	int64_t max, op;
 	int32_t extraargs = lua_gettop(L) - 2;
 	auto cit = pgroup->container.begin();
 	max = pduel->lua->get_operation_value(*cit, findex, extraargs);
@@ -626,7 +628,7 @@ LUA_FUNCTION(GetSum) {
 	auto pgroup = lua_get<group*, true>(L, 1);
 	const auto pduel = lua_get<duel*>(L);
 	int32_t extraargs = lua_gettop(L) - 2;
-	int32_t sum = 0;
+	int64_t sum = 0;
 	for(auto& pcard : pgroup->container) {
 		sum += pduel->lua->get_operation_value(pcard, findex, extraargs);
 	}
@@ -665,7 +667,7 @@ LUA_FUNCTION(GetClass) {
 	auto pgroup = lua_get<group*, true>(L, 1);
 	const auto pduel = lua_get<duel*>(L);
 	int32_t extraargs = lua_gettop(L) - 2;
-	std::set<uint32_t> er;
+	std::set<int64_t> er;
 	for(auto& pcard : pgroup->container) {
 		er.insert(pduel->lua->get_operation_value(pcard, findex, extraargs));
 	}
@@ -684,7 +686,7 @@ LUA_FUNCTION(GetClassCount) {
 	auto pgroup = lua_get<group*, true>(L, 1);
 	const auto pduel = lua_get<duel*>(L);
 	int32_t extraargs = lua_gettop(L) - 2;
-	std::set<uint32_t> er;
+	std::set<int64_t> er;
 	for(auto& pcard : pgroup->container) {
 		er.insert(pduel->lua->get_operation_value(pcard, findex, extraargs));
 	}
@@ -882,9 +884,9 @@ LUA_FUNCTION(GetBinClassCount) {
 	auto pgroup = lua_get<group*, true>(L, 1);
 	const auto pduel = lua_get<duel*>(L);
 	int32_t extraargs = lua_gettop(L) - 2;
-	int32_t er = 0;
+	uint64_t er = 0;
 	for(auto& pcard : pgroup->container) {
-		er |= pduel->lua->get_operation_value(pcard, findex, extraargs);
+		er |= static_cast<uint64_t>(pduel->lua->get_operation_value(pcard, findex, extraargs));
 	}
 	int32_t ans = 0;
 	while(er) {

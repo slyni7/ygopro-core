@@ -447,7 +447,7 @@ public:
 	uint32_t get_linked_zone(int32_t playerid, bool free = false, bool actually_linked = false);
 	void get_linked_cards(uint8_t self, uint8_t location1, uint8_t location2, card_set* cset);
 	int32_t check_extra_link(int32_t playerid, card* pcard, int32_t sequence);
-	void get_cards_in_zone(card_set* cset, uint32_t zone, int32_t playerid, int32_t location);
+	void get_cards_in_zone(card_set* cset, uint32_t zone, int32_t playerid, int32_t location) const;
 	void shuffle(uint8_t playerid, uint8_t location);
 	void reset_sequence(uint8_t playerid, uint8_t location);
 	void swap_deck_and_grave(uint8_t playerid);
@@ -685,8 +685,8 @@ public:
 	int32_t select_counter(uint16_t step, uint8_t playerid, uint16_t countertype, uint16_t count, uint8_t s, uint8_t o);
 	int32_t select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc, int32_t min, int32_t max);
 	int32_t sort_card(int16_t step, uint8_t playerid, uint8_t is_chain);
-	int32_t announce_race(int16_t step, uint8_t playerid, int32_t count, int32_t available);
-	int32_t announce_attribute(int16_t step, uint8_t playerid, int32_t count, int32_t available);
+	int32_t announce_race(int16_t step, uint8_t playerid, int32_t count, uint64_t available);
+	int32_t announce_attribute(int16_t step, uint8_t playerid, int32_t count, uint32_t available);
 	int32_t announce_card(int16_t step, uint8_t playerid);
 	int32_t announce_number(int16_t step, uint8_t playerid);
 };
