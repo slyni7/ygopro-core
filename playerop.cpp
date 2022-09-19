@@ -26,10 +26,10 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -99,9 +99,9 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_battle_command : %d,%d", t, s);
@@ -124,10 +124,10 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -244,9 +244,9 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_idle_command : %d,%d", t, s);
@@ -269,10 +269,10 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -315,9 +315,9 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_effect_yes_no : %d", returns.at<int32_t>(0));
@@ -340,10 +340,10 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -384,9 +384,9 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_yes_no : %d", returns.at<int32_t>(0));
@@ -409,10 +409,10 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -457,9 +457,9 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_option : %d", returns.at<int32_t>(0));
@@ -528,10 +528,10 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -613,9 +613,9 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 			return FALSE;
 		}
 		if (return_cards.canceled) {
-			if (plconf == 2) {
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 				char fc[40];
-				sprintf_s(fc, "./playerop.log");
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 				FILE *fp = NULL;
 				fopen_s(&fp, fc, "a+");
 				bool first = true;
@@ -630,9 +630,9 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			bool first = true;
@@ -664,10 +664,10 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -755,7 +755,7 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 		}
 		if (return_card_codes.canceled) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			bool first = true;
@@ -769,9 +769,9 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			bool first = true;
@@ -803,10 +803,10 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -876,9 +876,9 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 		if(returns.at<int32_t>(0) == -1) {
 			if(cancelable || finishable) {
 				return_cards.canceled = true;
-				if (plconf == 2) {
+				if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 					char fc[40];
-					sprintf_s(fc, "./playerop.log");
+					if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 					FILE *fp = NULL;
 					fopen_s(&fp, fc, "a+");
 					fprintf(fp, "select_unselect_card : %d", -1);
@@ -903,9 +903,9 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 			return FALSE;
 		}
 		return_cards.list.push_back((retval >= (int32_t)core.select_cards.size()) ? core.unselect_cards[retval - core.select_cards.size()] : core.select_cards[retval]);
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_unselect_card : %d", returns.at<int32_t>(1));
@@ -928,10 +928,10 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -994,9 +994,9 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 	}
 	else {
 		if (!forced && returns.at<int32_t>(0) == -1) {
-			if (plconf == 2) {
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 				char fc[40];
-				sprintf_s(fc, "./playerop.log");
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 				FILE *fp = NULL;
 				fopen_s(&fp, fc, "a+");
 				fprintf(fp, "select_chain : %d", returns.at<int32_t>(0));
@@ -1009,9 +1009,9 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_chain : %d", returns.at<int32_t>(0));
@@ -1034,10 +1034,10 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -1159,9 +1159,9 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 			flag |= to_check;
 			pt += 3;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			bool first = true;
@@ -1193,10 +1193,10 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -1255,9 +1255,9 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_position : %d", returns.at<int32_t>(0));
@@ -1280,10 +1280,10 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -1372,7 +1372,7 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 		}
 		if (return_cards.canceled) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			bool first = true;
@@ -1394,9 +1394,9 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			bool first = true;
@@ -1482,9 +1482,9 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			bool first = true;
@@ -1526,10 +1526,10 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -1628,9 +1628,9 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 				pduel->new_message(MSG_RETRY);
 				return FALSE;
 			}
-			if (plconf == 2) {
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 				char fc[40];
-				sprintf_s(fc, "./playerop.log");
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 				FILE *fp = NULL;
 				fopen_s(&fp, fc, "a+");
 				bool first = true;
@@ -1668,9 +1668,9 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 				pduel->new_message(MSG_RETRY);
 				return FALSE;
 			}
-			if (plconf == 2) {
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 				char fc[40];
-				sprintf_s(fc, "./playerop.log");
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 				FILE *fp = NULL;
 				fopen_s(&fp, fc, "a+");
 				bool first = true;
@@ -1704,10 +1704,10 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -1774,7 +1774,7 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 	} else {
 		if (returns.at<int8_t>(0) == -1) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			bool first = true;
@@ -1794,9 +1794,9 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 			}
 			c[v] = true;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			bool first = true;
@@ -1829,10 +1829,10 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, int3
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -1892,9 +1892,9 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, int3
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "announce_race : %d", returns.at<int32_t>(0));
@@ -1922,10 +1922,10 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count,
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -1985,9 +1985,9 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count,
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "announce_attribute : %d", returns.at<int32_t>(0));
@@ -2106,10 +2106,10 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -2153,9 +2153,9 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 			/*auto message = */pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "announce_card : %d", returns.at<int32_t>(0));
@@ -2183,10 +2183,10 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -2229,9 +2229,9 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "announce_number : %d", returns.at<int32_t>(0));
@@ -2258,10 +2258,10 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fp);
 	}
-	if (plconf == 1) {
+	if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
 		int line_count = 0;
 		char fc[40];
-		sprintf_s(fc, "./playerop.log");
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
@@ -2329,9 +2329,9 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 			return FALSE;
 		int32_t hand0 = core.units.begin()->arg2;
 		int32_t hand1 = returns.at<int32_t>(0);
-		if (plconf == 2) {
+		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[40];
-			sprintf_s(fc, "./playerop.log");
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", pduel->playerop_seed);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "rock_paper_scissors : %d,%d", hand0, hand1);
