@@ -37,10 +37,16 @@ OCGAPI int OCG_CreateDuel(OCG_Duel* return_duel_ptr, OCG_DuelOptions options) {
 		fopen_s(&fp, fc, "r");
 		char line[400];
 		fgets(line, 400, fp);
-		int seedvalue;
 		char curr[25];
-		sscanf(line, "%s : %d", curr, &seedvalue);
-		options.seed = seedvalue;
+		uint64_t seed1;
+		uint64_t seed2;
+		uint64_t seed3;
+		uint64_t seed4;
+		sscanf(line, "%s : %lld,%lld,%lld,%lld", curr, &seed1, &seed2, &seed3, &seed4);
+		options.seed[0] = seed1;
+		options.seed[1] = seed2;
+		options.seed[2] = seed3;
+		options.seed[3] = seed4;
 		fclose(fp);
 	}
 	if(return_duel_ptr == nullptr)
@@ -67,14 +73,17 @@ OCGAPI int OCG_CreateDuel(OCG_Duel* return_duel_ptr, OCG_DuelOptions options) {
 	*return_duel_ptr = static_cast<OCG_Duel>(duelPtr);
 	if ((plconf == 2) || (!plconf && !duelPtr->playerop_config)) {
 		char fc[40];
-		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", options.seed);
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", options.seed[0]);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "a+");
-		fprintf(fp, "options.seed : %d", options.seed);
+		fprintf(fp, "options.seed : %lld,%lld,%lld,%lld", options.seed[0], options.seed[1], options.seed[2], options.seed[3]);
 		fprintf(fp, "\n");
 		fclose(fp);
 	}
-	duelPtr->playerop_seed = options.seed;
+	duelPtr->playerop_seed[0] = options.seed[0];
+	duelPtr->playerop_seed[1] = options.seed[1];
+	duelPtr->playerop_seed[2] = options.seed[2];
+	duelPtr->playerop_seed[3] = options.seed[3];
 	return OCG_DUEL_CREATION_SUCCESS;
 }
 
@@ -98,7 +107,7 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel duel, OCG_NewCardInfo info) {
 	}
 	if ((plconf == 2) || (!plconf && !DUEL->playerop_config)) {
 		char fc[40];
-		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", DUEL->playerop_seed);
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", DUEL->playerop_seed[0]);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "a+");
 		fprintf(fp, "info.team : %d\n", info.team);
@@ -115,7 +124,7 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel duel, OCG_NewCardInfo info) {
 			DUEL->playerop_line = 2;
 		int line_count = 0;
 		char fc[40];
-		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %d.log", DUEL->playerop_seed);
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", DUEL->playerop_seed[0]);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];

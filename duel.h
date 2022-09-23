@@ -62,7 +62,7 @@ public:
 		}
 	};
 	uint32_t playerop_line = 0;
-	uint32_t playerop_seed = 0;
+	RNG::Xoshiro256StarStar::StateType playerop_seed;
 	uint32_t playerop_config = 0;
 	std::vector<uint8_t> buff;
 	std::vector<uint8_t> query_buffer;
