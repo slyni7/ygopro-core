@@ -188,6 +188,27 @@ LUA_FUNCTION(SetDuelOptions) {
 	pduel->game_field->core.duel_options = flag;
 	return 0;
 }
+LUA_FUNCTION(RemoveCardEx) {
+	check_param_count(L, 1);
+	const auto pduel = lua_get<duel*>(L);
+	auto& field = pduel->game_field;
+	auto t_card = lua_get<card*, true>(L, 1);
+	field->remove_card(t_card);
+	return 0;
+}
+LUA_FUNCTION(AddCardEx) {
+	check_param_count(L, 5);
+	const auto pduel = lua_get<duel*>(L);
+	auto& field = pduel->game_field;
+	auto t_card = lua_get<card*, true>(L, 1);
+	auto playerid = lua_get<uint8_t>(L, 2);
+	auto location = lua_get<uint16_t>(L, 3);
+	auto sequence = lua_get<uint16_t>(L, 4);
+	auto position = lua_get<uint8_t>(L, 5);
+	t_card->current.position = position;
+	field->add_card(playerid, t_card, location, sequence);
+	return 0;
+}
 /*LUA_FUNCTION(NewTsukasaDuel) {
 	auto pduel = lua_get<duel*>(L);
 	OCG_DuelOptions options;
