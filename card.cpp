@@ -286,8 +286,7 @@ uint32_t card::get_another_code() {
 		return otcode;
 	return 0;
 }
-uint32_t card::get_summon_code(card* scard, uint64_t sumtype, uint8_t playerid) {
-	std::set<uint32_t> codes;
+void card::get_summon_code(std::set<uint32_t>& codes, card* scard, uint64_t sumtype, uint8_t playerid) {
 	effect_set eset;
 	bool changed = false;
 	filter_effect(EFFECT_ADD_CODE, &eset, FALSE);
@@ -319,9 +318,6 @@ uint32_t card::get_summon_code(card* scard, uint64_t sumtype, uint8_t playerid) 
 		if (code)
 			codes.insert(code);
 	}
-	for(uint32_t code : codes)
-		lua_pushinteger(pduel->lua->current_state, code);
-	return codes.size();
 }
 static inline bool match_setcode(uint16_t set_code, uint16_t to_match) {
 	return (set_code & 0xfffu) == (to_match & 0xfffu) && (set_code & to_match) == set_code;
@@ -437,53 +433,37 @@ int32_t card::is_sumon_set_card(uint16_t set_code, card* scard, uint64_t sumtype
 			return TRUE;
 	return FALSE;
 }
-uint32_t card::get_set_card() {
-	uint32_t count = 0;
+void card::get_set_card(std::set<uint16_t>& setcodes) {
 	uint32_t code = get_code();
-	for(auto& setcode : (code != data.code) ? pduel->read_card(code).setcodes : data.setcodes) {
-		++count;
-		lua_pushinteger(pduel->lua->current_state, setcode);
-	}
+	setcodes = (code != data.code) ? pduel->read_card(code).setcodes : data.setcodes;
 	//add set code
 	effect_set eset;
 	filter_effect(EFFECT_ADD_SETCODE, &eset);
 	for(auto& eff : eset) {
 		uint32_t value = eff->get_value(this);
-		for(; value > 0; ++count, value = value >> 16)
-			lua_pushinteger(pduel->lua->current_state, value & 0xffff);
+		for(; value > 0; value >>= 16)
+			setcodes.insert(value & 0xffff);
 	}
 	//another code
 	uint32_t code2 = get_another_code();
 	if (code2 != 0) {
-		for(auto& setcode : pduel->read_card(code2).setcodes) {
-			++count;
-			lua_pushinteger(pduel->lua->current_state, setcode);
-		}
+		for(auto& setcode : pduel->read_card(code2).setcodes)
+			setcodes.insert(setcode);
 	}
-	return count;
 }
-uint32_t card::get_pre_set_card() {
+void card::get_pre_set_card(std::set<uint16_t>& setcodes) {
 	uint32_t count = 0;
 	uint32_t code = previous.code;
-	for(auto& setcode : (code != data.code) ? pduel->read_card(code).setcodes : data.setcodes) {
-		++count;
-		lua_pushinteger(pduel->lua->current_state, setcode);
-	}
+	setcodes = (code != data.code) ? pduel->read_card(code).setcodes : data.setcodes;
 	//add set code
-	for(auto& setcode : previous.setcodes) {
-		++count;
-		lua_pushinteger(pduel->lua->current_state, setcode);
-	}
+	setcodes.insert(previous.setcodes.begin(), previous.setcodes.end());
 	//another code
 	if (previous.code2 != 0) {
-		for(auto& setcode : pduel->read_card(previous.code2).setcodes) {
-			++count;
-			lua_pushinteger(pduel->lua->current_state, setcode);
-		}
+		const auto& other_setcodes = pduel->read_card(previous.code2).setcodes;
+		setcodes.insert(other_setcodes.begin(), other_setcodes.end());
 	}
-	return count;
 }
-uint32_t card::get_summon_set_card(card* scard, uint64_t sumtype, uint8_t playerid) {
+void card::get_summon_set_card(std::set<uint16_t>& setcodes, card* scard, uint64_t sumtype, uint8_t playerid) {
 	effect_set eset;
 	std::set<uint32_t> codes;
 	bool changed = false;
@@ -510,7 +490,6 @@ uint32_t card::get_summon_set_card(card* scard, uint64_t sumtype, uint8_t player
 			changed = true;
 		}
 	}
-	std::set<uint16_t> setcodes;
 	for (uint32_t code : codes) {
 		const auto& sets = pduel->read_card(code).setcodes;
 		if(sets.size())
@@ -534,12 +513,7 @@ uint32_t card::get_summon_set_card(card* scard, uint64_t sumtype, uint8_t player
 		}
 		setcodes.insert(setcode & 0xffff);
 	}
-	for (uint16_t setcode : setcodes)
-		lua_pushinteger(pduel->lua->current_state, setcode);
-	uint32_t count = setcodes.size();
-	if(!changed)
-		count += get_set_card();
-	return count;
+	get_set_card(setcodes);
 }
 uint32_t card::get_type(card* scard, uint64_t sumtype, uint8_t playerid) {
 	auto search = assume.find(ASSUME_TYPE);
@@ -3126,32 +3100,25 @@ effect* card::is_affected_by_effect(int32_t code, card* target) {
 	}
 	return 0;
 }
-int32_t card::get_card_effect(uint32_t code) {
+void card::get_card_effect(uint32_t code, effect_set* eset) {
 	effect* peffect;
-	int32_t i = 0;
 	for (auto rg = single_effect.begin(); rg != single_effect.end();) {
 		peffect = rg->second;
 		++rg;
-		if ((code == 0 || peffect->code == code) && peffect->is_available() && (!peffect->is_flag(EFFECT_FLAG_SINGLE_RANGE) || is_affect_by_effect(peffect))) {
-			interpreter::pushobject(pduel->lua->current_state, peffect);
-			++i;
-		}
+		if ((code == 0 || peffect->code == code) && peffect->is_available() && (!peffect->is_flag(EFFECT_FLAG_SINGLE_RANGE) || is_affect_by_effect(peffect)))
+			eset->push_back(peffect);
 	}
 	for (auto rg = field_effect.begin(); rg != field_effect.end(); ++rg) {
 		peffect = rg->second;
-		if ((code == 0 || peffect->code == code) && is_affect_by_effect(peffect)) {
-			interpreter::pushobject(pduel->lua->current_state, peffect);
-			++i;
-		}
+		if ((code == 0 || peffect->code == code) && is_affect_by_effect(peffect))
+			eset->push_back(peffect);
 	}
 	for (auto cit = equiping_cards.begin(); cit != equiping_cards.end(); ++cit) {
 		for (auto rg = (*cit)->equip_effect.begin(); rg != (*cit)->equip_effect.end();) {
 			peffect = rg->second;
 			++rg;
-			if ((code == 0 || peffect->code == code) && peffect->is_available() && is_affect_by_effect(peffect)) {
-				interpreter::pushobject(pduel->lua->current_state, peffect);
-				++i;
-			}
+			if ((code == 0 || peffect->code == code) && peffect->is_available() && is_affect_by_effect(peffect))
+				eset->push_back(peffect);
 		}
 	}
 	for(auto& pcard : effect_target_owner) {
@@ -3159,10 +3126,8 @@ int32_t card::get_card_effect(uint32_t code) {
 		for(auto eit = rg.first; eit != rg.second;) {
 			peffect = eit->second;
 			++eit;
-			if((code == 0 || peffect->code == code) && peffect->is_available() && peffect->is_target(this) && is_affect_by_effect(peffect)) {
-				interpreter::pushobject(pduel->lua->current_state, peffect);
-				++i;
-			}
+			if((code == 0 || peffect->code == code) && peffect->is_available() && peffect->is_target(this) && is_affect_by_effect(peffect))
+				eset->push_back(peffect);
 		}
 	}
 	for (auto cit = xyz_materials.begin(); cit != xyz_materials.end(); ++cit) {
@@ -3171,22 +3136,17 @@ int32_t card::get_card_effect(uint32_t code) {
 			++rg;
 			if (peffect->type & EFFECT_TYPE_FIELD)
 				continue;
-			if ((code == 0 || peffect->code == code) && peffect->is_available() && is_affect_by_effect(peffect)) {
-				interpreter::pushobject(pduel->lua->current_state, peffect);
-				++i;
-			}
+			if ((code == 0 || peffect->code == code) && peffect->is_available() && is_affect_by_effect(peffect))
+				eset->push_back(peffect);
 		}
 	}
 	for (auto rg = pduel->game_field->effects.aura_effect.begin(); rg != pduel->game_field->effects.aura_effect.end();) {
 		peffect = rg->second;
 		++rg;
 		if ((code == 0 || peffect->code == code) && !peffect->is_flag(EFFECT_FLAG_PLAYER_TARGET) && peffect->is_target(this)
-			&& peffect->is_available() && is_affect_by_effect(peffect)) {
-			interpreter::pushobject(pduel->lua->current_state, peffect);
-			++i;
-		}
+			&& peffect->is_available() && is_affect_by_effect(peffect))
+			eset->push_back(peffect);
 	}
-	return i;
 }
 int32_t card::fusion_check(group* fusion_m, group* cg, uint32_t chkf) {
 	effect* peffect = 0;
