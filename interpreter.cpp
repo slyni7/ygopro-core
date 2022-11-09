@@ -61,6 +61,8 @@ interpreter::interpreter(duel* pd, const OCG_DuelOptions& options): coroutines(2
 	//effects
 	lua_pushinteger(lua_state, EFFECT_SUMMONABLE_CARD);
 	lua_setglobal(lua_state, "EFFECT_SUMMONABLE_CARD");
+	lua_pushinteger(lua_state, EVENT_ANYTIME);
+	lua_setglobal(lua_state, "EVENT_ANYTIME");
 }
 interpreter::~interpreter() {
 	lua_close(lua_state);

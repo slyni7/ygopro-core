@@ -209,10 +209,13 @@ LUA_FUNCTION(AddCardEx) {
 	field->add_card(playerid, t_card, location, sequence);
 	return 0;
 }
-/*LUA_FUNCTION(NewTsukasaDuel) {
+LUA_FUNCTION(NewTsukasaDuel) {
 	auto pduel = lua_get<duel*>(L);
 	OCG_DuelOptions options;
-	options.seed = 0;
+	options.seed[0] = 0;
+	options.seed[1] = 0;
+	options.seed[2] = 0;
+	options.seed[3] = 0;
 	options.cardReader = pduel->read_card_callback;
 	options.scriptReader = pduel->read_script_callback;
 	options.logHandler = pduel->handle_message_callback;
@@ -226,7 +229,7 @@ LUA_FUNCTION(AddCardEx) {
 	qduel->read_script("utility.lua");
 	delete qduel;
 	return 0;
-}*/
+}
 template<int message_code, size_t max_len>
 int32_t write_string_message(lua_State* L) {
 	check_param_count(L, 1);
