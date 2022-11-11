@@ -41,7 +41,7 @@ bool check_param(lua_State* L, LuaParamType param_type, int32_t index, bool retf
 		type = "Int";
 		break;
 	case PARAM_TYPE_BOOLEAN:
-		if(!lua_isnone(L, index))
+		if(lua_gettop(L) >= index)
 			return true;
 		type = "boolean";
 		break;
@@ -75,7 +75,7 @@ int32_t push_return_cards(lua_State* L, int32_t/* status*/, lua_KContext ctx) {
 }
 int32_t is_deleted_object(lua_State* L) {
 	if(auto obj = lua_touserdata(L, 1)) {
-		auto* ret = *static_cast<lua_obj**>(obj);
+		auto* ret = *reinterpret_cast<lua_obj**>(obj);
 		lua_pushboolean(L, ret->lua_type == PARAM_TYPE_DELETED);
 	} else {
 		lua_pushboolean(L, false);

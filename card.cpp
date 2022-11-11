@@ -16,6 +16,15 @@
 bool card_sort::operator()(const card* c1, const card* c2) const {
 	return c1->cardid < c2->cardid;
 }
+bool card_state::is_location(int32_t loc) const {
+	if((loc & LOCATION_FZONE) && location == LOCATION_SZONE && sequence == 5)
+		return true;
+	if((loc & LOCATION_PZONE) && location == LOCATION_SZONE && pzone)
+		return true;
+	if(location & loc)
+		return true;
+	return false;
+}
 template<typename T>
 static constexpr void set_max_property_val(T& val) {
 	val = (T)~T();
@@ -310,6 +319,9 @@ void card::get_summon_code(std::set<uint32_t>& codes, card* scard, uint64_t sumt
 			codes.insert(code);
 	}
 }
+static inline bool match_setcode(uint16_t set_code, uint16_t to_match) {
+	return (set_code & 0xfffu) == (to_match & 0xfffu) && (set_code & to_match) == set_code;
+}
 int32_t card::is_set_card(uint16_t set_code) {
 	uint32_t code = get_code();
 	for(auto& setcode : (code != data.code) ? pduel->read_card(code).setcodes : data.setcodes) {
@@ -361,7 +373,9 @@ int32_t card::is_pre_set_card(uint16_t set_code) {
 	}
 	return FALSE;
 }
-int32_t card::is_summon_set_card(uint16_t set_code, card* scard, uint64_t sumtype, uint8_t playerid) {
+int32_t card::is_sumon_set_card(uint16_t set_code, card* scard, uint64_t sumtype, uint8_t playerid) {
+	uint32_t settype = set_code & 0xfff;
+	uint32_t setsubtype = set_code & 0xf000;
 	effect_set eset;
 	std::set<uint32_t> codes;
 	bool changed = false;
@@ -415,14 +429,13 @@ int32_t card::is_summon_set_card(uint16_t set_code, card* scard, uint64_t sumtyp
 	if (!changed && is_set_card(set_code))
 		return TRUE;
 	for (uint16_t setcode : setcodes)
-		if(match_setcode(set_code, setcode))
+		if ((setcode & 0xfffu) == settype && (setcode & 0xf000u & setsubtype) == setsubtype)
 			return TRUE;
 	return FALSE;
 }
 void card::get_set_card(std::set<uint16_t>& setcodes) {
 	uint32_t code = get_code();
-	const auto& og_setcodes = (code != data.code) ? pduel->read_card(code).setcodes : data.setcodes;
-	setcodes.insert(og_setcodes.begin(), og_setcodes.end());
+	setcodes = (code != data.code) ? pduel->read_card(code).setcodes : data.setcodes;
 	//add set code
 	effect_set eset;
 	filter_effect(EFFECT_ADD_SETCODE, &eset);
@@ -439,9 +452,9 @@ void card::get_set_card(std::set<uint16_t>& setcodes) {
 	}
 }
 void card::get_pre_set_card(std::set<uint16_t>& setcodes) {
+	uint32_t count = 0;
 	uint32_t code = previous.code;
-	const auto& og_setcodes = (code != data.code) ? pduel->read_card(code).setcodes : data.setcodes;
-	setcodes.insert(og_setcodes.begin(), og_setcodes.end());
+	setcodes = (code != data.code) ? pduel->read_card(code).setcodes : data.setcodes;
 	//add set code
 	setcodes.insert(previous.setcodes.begin(), previous.setcodes.end());
 	//another code
@@ -500,8 +513,7 @@ void card::get_summon_set_card(std::set<uint16_t>& setcodes, card* scard, uint64
 		}
 		setcodes.insert(setcode & 0xffff);
 	}
-	if(!changed)
-		get_set_card(setcodes);
+	get_set_card(setcodes);
 }
 uint32_t card::get_type(card* scard, uint64_t sumtype, uint8_t playerid) {
 	auto search = assume.find(ASSUME_TYPE);
@@ -1676,6 +1688,97 @@ int32_t card::get_old_union_count() {
 			++count;
 	}
 	return count;
+}
+void card::xyz_overlay(const card_set& materials) {
+	if(materials.size() == 0)
+		return;
+	card_set des, from_grave;
+	card_vector cv;
+	cv.reserve(materials.size());
+	std::copy_if(materials.begin(), materials.end(), std::back_inserter(cv), [this](const card* pcard) {return pcard->overlay_target != this; });
+	{
+		const auto prev_size = cv.size();
+		for(auto& pcard : materials) {
+			if(pcard->xyz_materials.size())
+				cv.insert(cv.begin(), pcard->xyz_materials.begin(), pcard->xyz_materials.end());
+		}
+		const auto cur_size = cv.size();
+		if(cur_size - prev_size >= 2)
+			std::sort(cv.begin(), cv.begin() + ((cur_size - prev_size) - 1), card::card_operation_sort);
+		if(prev_size >= 2)
+			std::sort(cv.begin() + (cur_size - prev_size), cv.end(), card::card_operation_sort);
+	}
+	const auto& player = pduel->game_field->player;
+	duel::duel_message* decktop[2] = { nullptr, nullptr };
+	const size_t s[2] = { player[0].list_main.size(), player[1].list_main.size() };
+	if(pduel->game_field->core.global_flag & GLOBALFLAG_DECK_REVERSE_CHECK) {
+		const auto m_end = materials.end();
+		if(s[0] > 0 && materials.find(player[0].list_main.back()) != m_end) {
+			decktop[0] = pduel->new_message(MSG_DECK_TOP);
+			decktop[0]->write<uint8_t>(0);
+		}
+		if(s[1] > 0 && materials.find(player[1].list_main.back()) != m_end) {
+			decktop[1] = pduel->new_message(MSG_DECK_TOP);
+			decktop[1]->write<uint8_t>(1);
+		}
+	}
+	for(auto& pcard : cv) {
+		pcard->current.reason = REASON_XYZ + REASON_MATERIAL;
+		pcard->reset(RESET_LEAVE + RESET_OVERLAY, RESET_EVENT);
+		if(pcard->unique_code)
+			pduel->game_field->remove_unique_card(pcard);
+		if(pcard->equiping_target)
+			pcard->unequip();
+		for(auto cit = pcard->equiping_cards.begin(); cit != pcard->equiping_cards.end();) {
+			card* equipc = *cit++;
+			des.insert(equipc);
+			equipc->unequip();
+		}
+		pcard->clear_card_target();
+		auto message = pduel->new_message(MSG_MOVE);
+		message->write<uint32_t>(pcard->data.code);
+		message->write(pcard->get_info_location());
+		if(pcard->overlay_target) {
+			pcard->overlay_target->xyz_remove(pcard);
+		} else {
+			pcard->enable_field_effect(false);
+			pduel->game_field->remove_card(pcard);
+			pduel->game_field->add_to_disable_check_list(pcard);
+			if(pcard->previous.location == LOCATION_GRAVE) {
+				from_grave.insert(pcard);
+				pduel->game_field->raise_single_event(pcard, 0, EVENT_LEAVE_GRAVE, pduel->game_field->core.reason_effect, 0, pduel->game_field->core.reason_player, 0, 0);
+			}
+		}
+		xyz_add(pcard);
+		message->write(pcard->get_info_location());
+		message->write<uint32_t>(pcard->current.reason);
+	}
+	auto writetopcard = [rev=pduel->game_field->core.deck_reversed, &decktop, &player, &s](int playerid) {
+		if(!decktop[playerid])
+			return;
+		auto& msg = decktop[playerid];
+		const auto& list = player[playerid].list_main;
+		if(list.empty() || (!rev && list.back()->current.position != POS_FACEUP_DEFENSE))
+			msg->data.clear();
+		else {
+			auto& prevcount = s[playerid];
+			const auto* ptop = list.back();
+			msg->write<uint32_t>(prevcount - list.size());
+			msg->write<uint32_t>(ptop->data.code);
+			msg->write<uint32_t>(ptop->current.position);
+		}
+	};
+	writetopcard(0);
+	writetopcard(1);
+	if(from_grave.size()) {
+		pduel->game_field->raise_event(&from_grave, EVENT_LEAVE_GRAVE, pduel->game_field->core.reason_effect, 0, pduel->game_field->core.reason_player, 0, 0);
+		pduel->game_field->process_single_event();
+		pduel->game_field->process_instant_event();
+	}
+	if(des.size())
+		pduel->game_field->destroy(std::move(des), 0, REASON_LOST_TARGET + REASON_RULE, PLAYER_NONE);
+	else
+		pduel->game_field->adjust_instant();
 }
 void card::xyz_add(card* mat) {
 	if(mat->current.location != 0)
@@ -3353,7 +3456,7 @@ int32_t card::is_can_be_flip_summoned(uint8_t playerid) {
 	if(is_status(STATUS_FORM_CHANGED))
 		return FALSE;
 	if((is_status(STATUS_SUMMON_TURN) || is_status(STATUS_FLIP_SUMMON_TURN) || is_status(STATUS_SPSUMMON_TURN)) &&
-		(summon.player == current.controler || !pduel->game_field->is_flag(DUEL_CAN_REPOS_IF_NON_SUMPLAYER)))
+		(summon_player == current.controler || !pduel->game_field->is_flag(DUEL_CAN_REPOS_IF_NON_SUMPLAYER)))
 		return FALSE;
 	if(announce_count > 0)
 		return FALSE;
@@ -3848,7 +3951,7 @@ int32_t card::is_capable_change_position(uint8_t playerid) {
 	if(is_status(STATUS_FORM_CHANGED))
 		return FALSE;
 	if((is_status(STATUS_SUMMON_TURN) || is_status(STATUS_FLIP_SUMMON_TURN) || is_status(STATUS_SPSUMMON_TURN)) &&
-		(summon.player == current.controler || !pduel->game_field->is_flag(DUEL_CAN_REPOS_IF_NON_SUMPLAYER)))
+		(summon_player == current.controler || !pduel->game_field->is_flag(DUEL_CAN_REPOS_IF_NON_SUMPLAYER)))
 		return FALSE;
 	if((data.type & TYPE_LINK) && (data.type & TYPE_MONSTER))
 		return FALSE;

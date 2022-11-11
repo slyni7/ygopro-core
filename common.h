@@ -35,9 +35,7 @@
 #define LOCATION_ONFIELD 0x0c
 #define LOCATION_FZONE   0x100
 #define LOCATION_PZONE   0x200
-#define LOCATION_STZONE  0x400
-#define LOCATION_MMZONE  0x800
-#define LOCATION_EMZONE  0x1000
+#define LOCATION_ALL     0x3ff
 //For redirect
 #define LOCATION_DECKBOT	0x10001		//Return to deck bottom
 #define LOCATION_DECKSHF	0x20001		//Return to deck and shuffle

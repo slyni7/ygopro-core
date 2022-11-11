@@ -1703,17 +1703,17 @@ LUA_FUNCTION(NegateSummon) {
 	const auto pduel = lua_get<duel*>(L);
 	uint8_t sumplayer = PLAYER_NONE;
 	if(pcard) {
-		sumplayer = pcard->summon.player;
+		sumplayer = pcard->summon_player;
 		pcard->set_status(STATUS_SUMMONING, FALSE);
 		pcard->set_status(STATUS_SUMMON_DISABLED, TRUE);
-		if((pcard->summon.type & SUMMON_TYPE_PENDULUM) != SUMMON_TYPE_PENDULUM)
+		if((pcard->summon_info & SUMMON_TYPE_PENDULUM) != SUMMON_TYPE_PENDULUM)
 			pcard->set_status(STATUS_PROC_COMPLETE, FALSE);
 	} else {
 		for(auto& _pcard : pgroup->container) {
-			sumplayer = _pcard->summon.player;
+			sumplayer = _pcard->summon_player;
 			_pcard->set_status(STATUS_SUMMONING, FALSE);
 			_pcard->set_status(STATUS_SUMMON_DISABLED, TRUE);
-			if((_pcard->summon.type & SUMMON_TYPE_PENDULUM) != SUMMON_TYPE_PENDULUM)
+			if((_pcard->summon_info & SUMMON_TYPE_PENDULUM) != SUMMON_TYPE_PENDULUM)
 				_pcard->set_status(STATUS_PROC_COMPLETE, FALSE);
 		}
 	}
@@ -1783,8 +1783,7 @@ LUA_FUNCTION(GetMZoneCount) {
 	bool swapped = false;
 	card* mcard = nullptr;
 	group* mgroup = nullptr;
-	const uint32_t default_loc = 0x1111 * pduel->game_field->is_flag(DUEL_3_COLUMNS_FIELD);
-	uint32_t used_location[2] = { default_loc, default_loc };
+	uint32_t used_location[2] = { 0, 0 };
 	card_vector list_mzone[2];
 	if(!lua_isnoneornil(L, 2)) {
 		get_card_or_group(L, 2, mcard, mgroup);
@@ -1828,8 +1827,7 @@ LUA_FUNCTION(GetLocationCountFromEx) {
 	bool swapped = false;
 	card* mcard = nullptr;
 	group* mgroup = nullptr;
-	const uint32_t default_loc = 0x1111 * pduel->game_field->is_flag(DUEL_3_COLUMNS_FIELD);
-	uint32_t used_location[2] = { default_loc, default_loc };
+	uint32_t used_location[2] = { 0, 0 };
 	card_vector list_mzone[2];
 	if(!lua_isnoneornil(L, 3)) {
 		get_card_or_group(L, 3, mcard, mgroup);
@@ -1987,15 +1985,14 @@ LUA_FUNCTION(GetCurrentChain) {
 }
 LUA_FUNCTION(GetChainInfo) {
 	check_param_count(L, 1);
+	uint32_t args = lua_gettop(L) - 1;
 	const auto pduel = lua_get<duel*>(L);
 	chain* ch = pduel->game_field->get_chain(lua_get<uint8_t>(L, 1));
 	if(!ch)
 		return 0;
-	auto top = lua_gettop(L);
-	uint32_t args = lua_istable(L, 2) ? lua_rawlen(L, 2) : top - 1;
 	luaL_checkstack(L, args, nullptr);
-	lua_iterate_table_or_stack(L, 2, top, [L, ch, pduel]() -> int {
-		auto flag = lua_get<uint32_t>(L, -1);
+	for(uint32_t i = 0; i < args; ++i) {
+		auto flag = lua_get<uint32_t>(L, 2 + i);
 		switch(flag) {
 		case CHAININFO_CHAIN_COUNT:
 			lua_pushinteger(L, ch->chain_count);
@@ -2010,30 +2007,10 @@ LUA_FUNCTION(GetChainInfo) {
 			lua_pushinteger(L, ch->triggering_controler);
 			break;
 		case CHAININFO_TRIGGERING_LOCATION:
-			lua_pushinteger(L, ch->triggering_location & ~(LOCATION_STZONE | LOCATION_MMZONE | LOCATION_EMZONE));
-			break;
-		case CHAININFO_TRIGGERING_LOCATION_SYMBOLIC:
-			lua_pushinteger(L, ch->triggering_location & ~(LOCATION_MZONE | LOCATION_SZONE));
+			lua_pushinteger(L, ch->triggering_location);
 			break;
 		case CHAININFO_TRIGGERING_SEQUENCE:
 			lua_pushinteger(L, ch->triggering_sequence);
-			break;
-		case CHAININFO_TRIGGERING_SEQUENCE_SYMBOLIC:
-			if(pduel->game_field->is_flag(DUEL_3_COLUMNS_FIELD) && (ch->triggering_location & ~(LOCATION_STZONE | LOCATION_MMZONE)))
-				lua_pushinteger(L, ch->triggering_sequence + 1);
-			else if(ch->triggering_location & LOCATION_PZONE) {
-				if(ch->triggering_sequence == pduel->game_field->get_pzone_index(0, ch->triggering_controler))
-					lua_pushinteger(L, 0);
-				else
-					lua_pushinteger(L, 1);
-			}
-			else if(ch->triggering_location & LOCATION_FZONE) {
-				lua_pushinteger(L, 0);
-			}
-			else if(ch->triggering_location & LOCATION_EMZONE) {
-				lua_pushinteger(L, ch->triggering_sequence - 5);
-			} else
-				lua_pushinteger(L, ch->triggering_sequence);
 			break;
 		case CHAININFO_TRIGGERING_POSITION:
 			lua_pushinteger(L, ch->triggering_position);
@@ -2091,8 +2068,7 @@ LUA_FUNCTION(GetChainInfo) {
 		default:
 			lua_error(L, "Passed invalid CHAININFO flag.");
 		}
-		return 1;
-	});
+	}
 	return args;
 }
 LUA_FUNCTION(GetChainEvent) {
@@ -2455,9 +2431,8 @@ LUA_FUNCTION(SelectCardsFromCodes) {
 	auto max = lua_get<uint16_t>(L, 3);
 	bool cancelable = lua_get<bool>(L, 4);
 	/*bool ret_index = */(void)lua_get<bool>(L, 5);
-	lua_iterate_table_or_stack(L, 6, lua_gettop(L), [L, &select_codes = pduel->game_field->core.select_cards_codes]{
-		select_codes.emplace_back(lua_get<uint32_t>(L, -1), select_codes.size() + 1);
-	});
+	for(int32_t i = 6, tot = lua_gettop(L); i <= tot; ++i)
+		pduel->game_field->core.select_cards_codes.emplace_back(lua_get<uint32_t>(L, i), i - 5);
 	pduel->game_field->add_process(PROCESSOR_SELECT_CARD_CODES, 0, 0, 0, playerid + (cancelable << 16), min + (max << 16));
 	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
 		const auto pduel = lua_get<duel*>(L);
@@ -3106,16 +3081,17 @@ LUA_FUNCTION(Overlay) {
 	card* pcard = nullptr;
 	group* pgroup = nullptr;
 	get_card_or_group(L, 2, pcard, pgroup);
-	bool send_materials_to_grave = lua_get<bool, false>(L, 3);
 	if(pcard) {
 		if(pcard == target)
 			lua_error(L, "Attempt to overlay a card with itself.");
-		pduel->game_field->xyz_overlay(target, pcard, send_materials_to_grave);
+		target->xyz_overlay(card_set{ pcard });
 	} else {
 		if(pgroup->has_card(target))
 			lua_error(L, "Attempt to overlay a card with itself.");
-		pduel->game_field->xyz_overlay(target, pgroup->container, send_materials_to_grave);
+		target->xyz_overlay(pgroup->container);
 	}
+	if(target->current.location & LOCATION_ONFIELD)
+		pduel->game_field->adjust_all();
 	return lua_yield(L, 0);
 }
 LUA_FUNCTION(GetOverlayGroup) {
@@ -3243,14 +3219,15 @@ LUA_FUNCTION(SelectYesNo) {
 LUA_FUNCTION(SelectOption) {
 	check_action_permission(L);
 	check_param_count(L, 1);
+	uint32_t count = lua_gettop(L) - 1;
 	auto playerid = lua_get<uint8_t>(L, 1);
 	if(playerid != 0 && playerid != 1)
 		return 0;
+	uint8_t i = lua_isboolean(L, 2);
 	const auto pduel = lua_get<duel*>(L);
 	pduel->game_field->core.select_options.clear();
-	lua_iterate_table_or_stack(L, 2 + lua_isboolean(L, 2), lua_gettop(L), [L, &select_options = pduel->game_field->core.select_options] {
-		select_options.push_back(lua_get<uint64_t>(L, -1));
-	});
+	for(; i < count; ++i)
+		pduel->game_field->core.select_options.push_back(lua_get<uint64_t>(L, i + 2));
 	pduel->game_field->add_process(PROCESSOR_SELECT_OPTION, 0, 0, 0, playerid, 0);
 	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
 		const auto pduel = lua_get<duel*>(L);
@@ -3457,7 +3434,7 @@ LUA_FUNCTION(AnnounceAttribute) {
 		return 1;
 	});
 }
-LUA_FUNCTION(AnnounceNumberRange) {
+LUA_FUNCTION(AnnounceLevel) {
 	check_action_permission(L);
 	check_param_count(L, 1);
 	auto playerid = lua_get<uint8_t>(L, 1);
@@ -3495,7 +3472,6 @@ LUA_FUNCTION(AnnounceNumberRange) {
 		return 2;
 	});
 }
-LUA_FUNCTION_ALIAS(AnnounceLevel);
 LUA_FUNCTION(AnnounceCard) {
 	check_action_permission(L);
 	check_param_count(L, 1);
@@ -3593,9 +3569,8 @@ LUA_FUNCTION(AnnounceNumber) {
 	auto playerid = lua_get<uint8_t>(L, 1);
 	const auto pduel = lua_get<duel*>(L);
 	pduel->game_field->core.select_options.clear();
-	lua_iterate_table_or_stack(L, 2, lua_gettop(L), [L, &select_options = pduel->game_field->core.select_options] {
-		select_options.push_back(lua_get<uint64_t>(L, -1));
-	});
+	for(int32_t i = 2, tot = lua_gettop(L); i <= tot; ++i)
+		pduel->game_field->core.select_options.push_back(lua_get<uint64_t>(L, i));
 	pduel->game_field->add_process(PROCESSOR_ANNOUNCE_NUMBER, 0, 0, 0, playerid, 0);
 	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
 		const auto pduel = lua_get<duel*>(L);
@@ -3609,25 +3584,18 @@ LUA_FUNCTION(AnnounceCoin) {
 	check_param_count(L, 1);
 	const auto pduel = lua_get<duel*>(L);
 	auto playerid = lua_get<uint8_t>(L, 1);
-	auto desc = lua_get<uint64_t, 552>(L, 2);
-	auto message = pduel->new_message(MSG_HINT);
-	message->write<uint8_t>(HINT_SELECTMSG);
-	message->write<uint8_t>(playerid);
-	message->write<uint64_t>(desc);
 	pduel->game_field->core.select_options.clear();
 	pduel->game_field->core.select_options.push_back(60);
 	pduel->game_field->core.select_options.push_back(61);
 	pduel->game_field->add_process(PROCESSOR_SELECT_OPTION, 0, 0, 0, playerid, 0);
 	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
 		const auto pduel = lua_get<duel*>(L);
-		if(/*bool sel_hint = */lua_get<bool, true>(L, 2)) {
-			auto playerid = lua_get<uint8_t>(L, 1);
-			auto message = pduel->new_message(MSG_HINT);
-			message->write<uint8_t>(HINT_OPSELECTED);
-			message->write<uint8_t>(playerid);
-			message->write<uint64_t>(pduel->game_field->core.select_options[pduel->game_field->returns.at<int32_t>(0)]);
-		}
-		lua_pushinteger(L, 1 - pduel->game_field->returns.at<int32_t>(0));
+		auto playerid = lua_get<uint8_t>(L, 1);
+		auto message = pduel->new_message(MSG_HINT);
+		message->write<uint8_t>(HINT_OPSELECTED);
+		message->write<uint8_t>(playerid);
+		message->write<uint64_t>(pduel->game_field->core.select_options[pduel->game_field->returns.at<int32_t>(0)]);
+		lua_pushinteger(L, pduel->game_field->returns.at<int32_t>(0));
 		return 1;
 	});
 }
@@ -3642,13 +3610,13 @@ LUA_FUNCTION(TossCoin) {
 	if(count > 5)
 		count = 5;
 	pduel->game_field->add_process(PROCESSOR_TOSS_COIN, 0, pduel->game_field->core.reason_effect, 0, (pduel->game_field->core.reason_player << 16) + playerid, count);
-	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) -> int {
+	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
 		const auto pduel = lua_get<duel*>(L);
-		const auto& coin_results = pduel->game_field->core.coin_results;
-		luaL_checkstack(L, coin_results.size(), nullptr);
-		for(const auto& result : coin_results)
-			lua_pushinteger(L, static_cast<int8_t>(result));
-		return coin_results.size();
+		int32_t count = lua_get<uint8_t>(L, 2);
+		luaL_checkstack(L, count, nullptr);
+		for(int32_t i = 0; i < count; ++i)
+			lua_pushinteger(L, pduel->game_field->core.coin_result[i]);
+		return count;
 	});
 }
 LUA_FUNCTION(TossDice) {
@@ -3656,18 +3624,23 @@ LUA_FUNCTION(TossDice) {
 	check_param_count(L, 2);
 	auto playerid = lua_get<uint8_t>(L, 1);
 	auto count1 = lua_get<uint8_t>(L, 2);
-	if(playerid != 0 && playerid != 1)
+	if((playerid != 0 && playerid != 1) || count1 <= 0)
 		return 0;
-	auto count2 = lua_get<uint8_t, 0>(L, 3);
 	const auto pduel = lua_get<duel*>(L);
+	auto count2 = lua_get<uint8_t, 0>(L, 3);
+	if(count1 > 5)
+		count1 = 5;
+	if(count2 > 5 - count1)
+		count2 = 5 - count1;
 	pduel->game_field->add_process(PROCESSOR_TOSS_DICE, 0, pduel->game_field->core.reason_effect, 0, (pduel->game_field->core.reason_player << 16) + playerid, count1 + (count2 << 16));
-	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) -> int {
+	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
 		const auto pduel = lua_get<duel*>(L);
-		const auto& dice_results = pduel->game_field->core.dice_results;
-		luaL_checkstack(L, dice_results.size(), nullptr);
-		for(const auto& result : dice_results)
-			lua_pushinteger(L, result);
-		return dice_results.size();
+		auto count1 = lua_get<uint8_t>(L, 2);
+		auto count2 = lua_get<uint8_t, 0>(L, 3);
+		luaL_checkstack(L, count1 + count2, nullptr);
+		for(int32_t i = 0; i < count1 + count2; ++i)
+			lua_pushinteger(L, pduel->game_field->core.dice_result[i]);
+		return count1 + count2;
 	});
 }
 LUA_FUNCTION(RockPaperScissors) {
@@ -3680,33 +3653,33 @@ LUA_FUNCTION(RockPaperScissors) {
 	});
 }
 LUA_FUNCTION(GetCoinResult) {
-	const auto& coin_results = lua_get<duel*>(L)->game_field->core.coin_results;
-	luaL_checkstack(L, coin_results.size(), nullptr);
-	for(const auto& coin : coin_results)
-		lua_pushinteger(L, static_cast<int>(coin));
-	return coin_results.size();
+	const auto pduel = lua_get<duel*>(L);
+	for(const auto& coin : pduel->game_field->core.coin_result)
+		lua_pushinteger(L, coin);
+	return 5;
 }
 LUA_FUNCTION(GetDiceResult) {
-	const auto& dice_results = lua_get<duel*>(L)->game_field->core.dice_results;
-	luaL_checkstack(L, dice_results.size(), nullptr);
-	for(const auto& dice : dice_results)
+	const auto pduel = lua_get<duel*>(L);
+	for(const auto& dice : pduel->game_field->core.dice_result)
 		lua_pushinteger(L, dice);
-	return dice_results.size();
+	return 5;
 }
 LUA_FUNCTION(SetCoinResult) {
-	auto& coin_results = lua_get<duel*>(L)->game_field->core.coin_results;
-	if(lua_gettop(L) != (int)coin_results.size())
-		lua_error(L, "The number of coin results passed didn't match the expected amount of %d. (Passed %d)", coin_results.size(), lua_gettop(L));
-	for(size_t i = 0; i < coin_results.size(); ++i)
-		coin_results[i] = static_cast<bool>(lua_get<uint8_t>(L, i + 1));
+	const auto pduel = lua_get<duel*>(L);
+	for(int32_t i = 0; i < 5; ++i) {
+		auto res = lua_get<uint8_t>(L, i + 1);
+		if(res != 0 && res != 1)
+			res = 0;
+		pduel->game_field->core.coin_result[i] = res;
+	}
 	return 0;
 }
 LUA_FUNCTION(SetDiceResult) {
-	auto& dice_results = lua_get<duel*>(L)->game_field->core.dice_results;
-	if(lua_gettop(L) != (int)dice_results.size())
-		lua_error(L, "The number of dice results passed didn't match the expected amount of %d. (Passed %d)", dice_results.size(), lua_gettop(L));
-	for(size_t i = 0; i < dice_results.size(); ++i)
-		dice_results[i] = lua_get<uint8_t>(L, i + 1);
+	const auto pduel = lua_get<duel*>(L);
+	for(int32_t i = 0; i < 5; ++i) {
+		auto res = lua_get<uint8_t>(L, i + 1);
+		pduel->game_field->core.dice_result[i] = res;
+	}
 	return 0;
 }
 LUA_FUNCTION(IsDuelType) {
@@ -4118,36 +4091,34 @@ LUA_FUNCTION(GetActivityCount) {
 	if(playerid != 0 && playerid != 1)
 		return 0;
 	const auto pduel = lua_get<duel*>(L);
-	auto top = lua_gettop(L);
-	uint32_t retct = lua_istable(L, 2) ? lua_rawlen(L, 2) : top - 1;
+	int32_t retct = lua_gettop(L) - 1;
 	luaL_checkstack(L, retct, nullptr);
-	lua_iterate_table_or_stack(L, 2, top, [L, &core = pduel->game_field->core, playerid]() -> int {
-		auto activity_type = static_cast<ActivityType>(lua_get<uint8_t>(L, -1));
+	for(int32_t i = 0; i < retct; ++i) {
+		auto activity_type = static_cast<ActivityType>(lua_get<uint8_t>(L, 2 + i));
 		switch(activity_type) {
-		case ACTIVITY_SUMMON:
-			lua_pushinteger(L, core.summon_state_count[playerid]);
-			break;
-		case ACTIVITY_NORMALSUMMON:
-			lua_pushinteger(L, core.normalsummon_state_count[playerid]);
-			break;
-		case ACTIVITY_SPSUMMON:
-			lua_pushinteger(L, core.spsummon_state_count[playerid]);
-			break;
-		case ACTIVITY_FLIPSUMMON:
-			lua_pushinteger(L, core.flipsummon_state_count[playerid]);
-			break;
-		case ACTIVITY_ATTACK:
-			lua_pushinteger(L, core.attack_state_count[playerid]);
-			break;
-		case ACTIVITY_BATTLE_PHASE:
-			lua_pushinteger(L, core.battle_phase_count[playerid]);
-			break;
-		default:
-			lua_error(L, "Passed invalid ACTIVITY flag.");
-			break;
+			case ACTIVITY_SUMMON:
+				lua_pushinteger(L, pduel->game_field->core.summon_state_count[playerid]);
+				break;
+			case ACTIVITY_NORMALSUMMON:
+				lua_pushinteger(L, pduel->game_field->core.normalsummon_state_count[playerid]);
+				break;
+			case ACTIVITY_SPSUMMON:
+				lua_pushinteger(L, pduel->game_field->core.spsummon_state_count[playerid]);
+				break;
+			case ACTIVITY_FLIPSUMMON:
+				lua_pushinteger(L, pduel->game_field->core.flipsummon_state_count[playerid]);
+				break;
+			case ACTIVITY_ATTACK:
+				lua_pushinteger(L, pduel->game_field->core.attack_state_count[playerid]);
+				break;
+			case ACTIVITY_BATTLE_PHASE:
+				lua_pushinteger(L, pduel->game_field->core.battle_phase_count[playerid]);
+				break;
+			default:
+				lua_error(L, "Passed invalid ACTIVITY flag.");
+				break;
 		}
-		return 1;
-	});
+	}
 	return retct;
 }
 LUA_FUNCTION(CheckPhaseActivity) {
@@ -4234,9 +4205,10 @@ LUA_FUNCTION(LoadScript) {
 	using SLS = duel::SCRIPT_LOAD_STATUS;
 	check_param_count(L, 1);
 	const auto pduel = lua_get<duel*>(L);
-	const auto* string = lua_tolstring(L, 1, nullptr);
-	if(!string)
-		lua_error(L, "Parameter 1 should be \"String\".");
+	lua_getglobal(L, "tostring");
+	lua_pushvalue(L, 1);
+	lua_call(L, 1, 1);
+	auto string = lua_tostring_or_empty(L, -1);
 	if(/*auto check_cache = */lua_get<bool, true>(L, 2)) {
 		auto hash = [](const char* str)->uint32_t {
 			uint32_t hash = 5381, c;

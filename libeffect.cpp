@@ -186,9 +186,8 @@ LUA_FUNCTION(SetLabel) {
 	check_param_count(L, 2);
 	auto peffect = lua_get<effect*, true>(L, 1);
 	peffect->label.clear();
-	lua_iterate_table_or_stack(L, 2, lua_gettop(L), [L, peffect] {
-		peffect->label.push_back(lua_get<lua_Integer>(L, -1));
-	});
+	for(int32_t i = 2; i <= lua_gettop(L); ++i)
+		peffect->label.push_back(lua_get<lua_Integer>(L, i));
 	return 0;
 }
 LUA_FUNCTION(SetLabelObject) {
@@ -339,15 +338,13 @@ LUA_FUNCTION(GetProperty) {
 LUA_FUNCTION(GetLabel) {
 	check_param_count(L, 1);
 	auto peffect = lua_get<effect*, true>(L, 1);
-	const auto& label = peffect->label;
-	if(label.empty()) {
+	if(peffect->label.empty()) {
 		lua_pushinteger(L, 0);
 		return 1;
 	}
-	luaL_checkstack(L, label.size(), nullptr);
-	for(const auto& lab : label)
+	for(const auto& lab : peffect->label)
 		lua_pushinteger(L, lab);
-	return label.size();
+	return peffect->label.size();
 }
 LUA_FUNCTION(GetLabelObject) {
 	check_param_count(L, 1);

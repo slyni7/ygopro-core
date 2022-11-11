@@ -29,22 +29,25 @@ void assert_readonly_group(lua_State* L, group* pgroup) {
 LUA_FUNCTION(CreateGroup) {
 	const auto pduel = lua_get<duel*>(L);
 	group* pgroup = pduel->new_group();
-	lua_iterate_table_or_stack(L, 1, lua_gettop(L), [L, &container = pgroup->container] {
-		if(!lua_isnil(L, -1)) {
-			auto pcard = lua_get<card*, true>(L, -1);
-			container.insert(pcard);
-		}
-	});
 	interpreter::pushobject(L, pgroup);
 	return 1;
 }
-LUA_FUNCTION_ALIAS(FromCards);
 LUA_FUNCTION(Clone) {
 	check_param_count(L, 1);
 	const auto pduel = lua_get<duel*>(L);
 	auto pgroup = lua_get<group*, true>(L, 1);
 	group* newgroup = pduel->new_group(pgroup);
 	interpreter::pushobject(L, newgroup);
+	return 1;
+}
+LUA_FUNCTION(FromCards) {
+	const auto pduel = lua_get<duel*>(L);
+	group* pgroup = pduel->new_group();
+	for(int32_t i = 0; i < lua_gettop(L); ++i) {
+		auto pcard = lua_get<card*, true>(L, i + 1);
+		pgroup->container.insert(pcard);
+	}
+	interpreter::pushobject(L, pgroup);
 	return 1;
 }
 LUA_FUNCTION(DeleteGroup) {
@@ -829,17 +832,16 @@ LUA_FUNCTION(Split) {
 		}
 	}
 	const auto pduel = lua_get<duel*>(L);
+	group* new_group = pduel->new_group();
 	uint32_t extraargs = lua_gettop(L) - 3;
-	for(auto it = cset.begin(); it != cset.end();) {
-		auto pcard = *it;
+	for(auto& pcard : cset) {
 		if(pduel->lua->check_matching(pcard, findex, extraargs)) {
-			++it;
+			new_group->container.insert(pcard);
 		} else {
 			notmatching.insert(pcard);
-			it = cset.erase(it);
 		}
 	}
-	interpreter::pushobject(L, pduel->new_group(std::move(cset)));
+	interpreter::pushobject(L, new_group);
 	interpreter::pushobject(L, pduel->new_group(std::move(notmatching)));
 	return 2;
 }

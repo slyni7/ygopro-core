@@ -59,25 +59,7 @@ struct card_state {
 	card* reason_card{};
 	uint8_t reason_player{};
 	effect* reason_effect{};
-	template<typename T>
-	static bool is_location(const T& loc_info, uint16_t loc) {
-		if(loc_info.location & static_cast<uint8_t>(loc))
-			return true;
-		if((loc & LOCATION_EMZONE) && loc_info.location == LOCATION_MZONE && loc_info.sequence >= 5)
-			return true;
-		if((loc & LOCATION_MMZONE) && loc_info.location == LOCATION_MZONE && loc_info.sequence < 5)
-			return true;
-		if((loc & LOCATION_STZONE) && loc_info.location == LOCATION_SZONE && loc_info.sequence < 5)
-			return true;
-		if((loc & LOCATION_FZONE) && loc_info.location == LOCATION_SZONE && loc_info.sequence == 5)
-			return true;
-		if((loc & LOCATION_PZONE) && loc_info.location == LOCATION_SZONE && loc_info.pzone)
-			return true;
-		return false;
-	}
-	bool is_location(uint16_t loc) const {
-		return is_location(*this, loc);
-	}
+	bool is_location(int32_t loc) const;
 	void set0xff();
 };
 
@@ -121,14 +103,8 @@ public:
 	card_state temp{};
 	card_state current{};
 	uint8_t owner{ PLAYER_NONE };
-	struct summon_info {
-		uint32_t type{};
-		uint8_t player{};
-		uint8_t location{};
-		uint8_t sequence{};
-		bool pzone{};
-	};
-	summon_info summon;
+	uint8_t summon_player{};
+	uint32_t summon_info{};
 	uint32_t status{};
 	uint32_t cover{};
 	sendto_param_t sendto_param{};
@@ -184,9 +160,6 @@ public:
 	explicit card(duel* pd);
 	~card() = default;
 	static bool card_operation_sort(card* c1, card* c2);
-	static bool match_setcode(uint16_t set_code, uint16_t to_match) {
-		return (set_code & 0xfffu) == (to_match & 0xfffu) && (set_code & to_match) == set_code;
-	}
 	bool is_extra_deck_monster() const { return !!(data.type & (TYPE_FUSION | TYPE_SYNCHRO | TYPE_XYZ | TYPE_LINK)) && !!(data.type & TYPE_MONSTER); }
 
 	void get_infos(int32_t query_flag);
@@ -199,7 +172,7 @@ public:
 	int32_t is_set_card(uint16_t set_code);
 	int32_t is_origin_set_card(uint16_t set_code);
 	int32_t is_pre_set_card(uint16_t set_code);
-	int32_t is_summon_set_card(uint16_t set_code, card* scard = 0, uint64_t sumtype = 0, uint8_t playerid = 2);
+	int32_t is_sumon_set_card(uint16_t set_code, card* scard = 0, uint64_t sumtype = 0, uint8_t playerid = 2);
 	void get_set_card(std::set<uint16_t>& setcodes);
 	const std::set<uint16_t>& get_origin_set_card() const { return data.setcodes; }
 	void get_pre_set_card(std::set<uint16_t>& setcodes);
@@ -256,6 +229,7 @@ public:
 	void unequip();
 	int32_t get_union_count();
 	int32_t get_old_union_count();
+	void xyz_overlay(const card_set& materials);
 	void xyz_add(card* mat);
 	void xyz_remove(card* mat);
 	void apply_field_effect();

@@ -341,8 +341,8 @@ struct processor {
 	uint32_t last_control_changed_id;
 	uint32_t set_group_used_zones;
 	uint8_t set_group_seq[7];
-	std::vector<uint8_t> dice_results;
-	std::vector<bool> coin_results;
+	uint8_t dice_result[5];
+	uint8_t coin_result[5];
 	uint8_t to_bp;
 	uint8_t to_m2;
 	uint8_t to_ep;
@@ -460,7 +460,7 @@ public:
 	bool is_flag(uint64_t flag) const;
 	bool has_separate_pzone(uint8_t p) const;
 	uint32_t get_pzone_zones_flag() const;
-	uint8_t get_pzone_index(uint8_t seq, uint8_t p) const;
+	int32_t get_pzone_index(uint8_t seq, uint8_t p) const;
 
 	void add_effect(effect* peffect, uint8_t owner_player = 2);
 	void remove_effect(effect* peffect);
@@ -606,8 +606,6 @@ public:
 	void change_target_param(uint8_t chaincount, int32_t param);
 	void remove_counter(uint32_t reason, card* pcard, uint32_t rplayer, uint8_t self, uint8_t oppo, uint32_t countertype, uint32_t count);
 	void remove_overlay_card(uint32_t reason, group* pgroup, uint32_t rplayer, uint8_t self, uint8_t oppo, uint16_t min, uint16_t max);
-	void xyz_overlay(card* target, card_set materials, bool send_materials_to_grave);
-	void xyz_overlay(card* target, card* material, bool send_materials_to_grave);
 	void get_control(card_set targets, effect* reason_effect, uint32_t reason_player, uint32_t playerid, uint32_t reset_phase, uint32_t reset_count, uint32_t zone);
 	void get_control(card* target, effect* reason_effect, uint32_t reason_player, uint32_t playerid, uint32_t reset_phase, uint32_t reset_count, uint32_t zone);
 	void swap_control(effect* reason_effect, uint32_t reason_player, card_set targets1, card_set targets2, uint32_t reset_phase, uint32_t reset_count);
@@ -637,7 +635,6 @@ public:
 
 	int32_t remove_counter(uint16_t step, uint32_t reason, card* pcard, uint8_t rplayer, uint8_t s, uint8_t o, uint16_t countertype, uint16_t count);
 	int32_t remove_overlay_card(uint16_t step, uint32_t reason, group* pgroup, uint8_t rplayer, uint8_t s, uint8_t o, uint16_t min, uint16_t max);
-	int32_t xyz_overlay(uint16_t step, card* target, group* materials, bool send_materials_to_grave);
 	int32_t get_control(uint16_t step, effect* reason_effect, uint8_t chose_player, group* targets, uint8_t playerid, uint16_t reset_phase, uint8_t reset_count, uint32_t zone);
 	int32_t swap_control(uint16_t step, effect* reason_effect, uint8_t reason_player, group* targets1, group* targets2, uint16_t reset_phase, uint8_t reset_count);
 	int32_t control_adjust(uint16_t step);
@@ -712,9 +709,7 @@ public:
 #define CHAININFO_TRIGGERING_PLAYER		0x04
 #define CHAININFO_TRIGGERING_CONTROLER	0x08
 #define CHAININFO_TRIGGERING_LOCATION	0x10
-#define CHAININFO_TRIGGERING_LOCATION_SYMBOLIC	0x11
 #define CHAININFO_TRIGGERING_SEQUENCE	0x20
-#define CHAININFO_TRIGGERING_SEQUENCE_SYMBOLIC	0x21
 #define CHAININFO_TARGET_CARDS			0x40
 #define CHAININFO_TARGET_PLAYER			0x80
 #define CHAININFO_TARGET_PARAM			0x100
@@ -864,7 +859,6 @@ public:
 #define PROCESSOR_DISCARD_DECK	151
 #define PROCESSOR_SORT_DECK		152
 #define PROCESSOR_REMOVE_OVERLAY		160
-#define PROCESSOR_XYZ_OVERLAY		161
 
 #define PROCESSOR_REFRESH_RELAY		170
 
