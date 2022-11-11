@@ -26,7 +26,7 @@ LUA_FUNCTION(GetCode) {
 	if (lua_gettop(L) > 1) {
 		card* scard = 0;
 		uint8_t playerid = PLAYER_NONE;
-		if (lua_gettop(L) > 1 && !lua_isnoneornil(L, 2))
+		if (!lua_isnoneornil(L, 2))
 			scard = lua_get<card*, true>(L, 2);
 		auto sumtype = lua_get<uint64_t, 0>(L, 3);
 		if (lua_gettop(L) > 3)
@@ -94,7 +94,7 @@ LUA_FUNCTION(GetSetCard) {
 	if (lua_gettop(L) > 1) {
 		card* scard = 0;
 		uint8_t playerid = PLAYER_NONE;
-		if (lua_gettop(L) > 1 && !lua_isnoneornil(L, 2))
+		if (!lua_isnoneornil(L, 2))
 			scard = lua_get<card*, true>(L, 2);
 		auto sumtype = lua_get<uint64_t, 0>(L, 3);
 		if (lua_gettop(L) > 3)
@@ -655,19 +655,19 @@ LUA_FUNCTION(GetPreviousSequence) {
 LUA_FUNCTION(GetSummonType) {
 	check_param_count(L, 1);
 	auto pcard = lua_get<card*, true>(L, 1);
-	lua_pushinteger(L, pcard->summon_info & 0xff00ffff);
+	lua_pushinteger(L, pcard->summon.type & 0xff00ffff);
 	return 1;
 }
 LUA_FUNCTION(GetSummonLocation) {
 	check_param_count(L, 1);
 	auto pcard = lua_get<card*, true>(L, 1);
-	lua_pushinteger(L, (pcard->summon_info >> 16) & 0xff);
+	lua_pushinteger(L, pcard->summon.location);
 	return 1;
 }
 LUA_FUNCTION(GetSummonPlayer) {
 	check_param_count(L, 1);
 	auto pcard = lua_get<card*, true>(L, 1);
-	lua_pushinteger(L, pcard->summon_player);
+	lua_pushinteger(L, pcard->summon.player);
 	return 1;
 }
 LUA_FUNCTION(GetDestination) {
@@ -721,17 +721,34 @@ LUA_FUNCTION(IsOriginalCodeRule) {
 		if(eset.size())
 			code2 = eset.back()->get_value(pcard);
 	}
-	uint32_t count = lua_gettop(L) - 1;
-	for(uint32_t i = 0; i < count; ++i) {
-		if(lua_isnoneornil(L, i + 2))
-			continue;
-		auto tcode = lua_get<uint32_t>(L, i + 2);
-		if(code1 == tcode || (code2 && code2 == tcode)) {
-			lua_pushboolean(L, TRUE);
-			return 1;
-		}
-	}
-	lua_pushboolean(L, FALSE);
+	bool found = lua_find_in_table_or_in_stack(L, 2, lua_gettop(L), [L, code1, code2] {
+		if(lua_isnoneornil(L, -1))
+			return false;
+		uint32_t tcode = lua_get<uint32_t>(L, -1);
+		return code1 == tcode || (code2 && code2 == tcode);
+	});
+	lua_pushboolean(L, found);
+	return 1;
+}
+LUA_FUNCTION(IsOriginalCode) {
+	check_param_count(L, 2);
+	auto pcard = lua_get<card*, true>(L, 1);
+	const auto original_code = [pcard]() {
+		if(pcard->data.alias) {
+			int32_t dif = pcard->data.code - pcard->data.alias;
+			if(dif > -10 && dif < 10)
+				return pcard->data.alias;
+			else
+				return pcard->data.code;
+		} else
+			return pcard->data.code;
+	}();
+	bool found = lua_find_in_table_or_in_stack(L, 2, lua_gettop(L), [L, original_code] {
+		if(lua_isnoneornil(L, -1))
+			return false;
+		return original_code == lua_get<uint32_t>(L, -1);
+	});
+	lua_pushboolean(L, found);
 	return 1;
 }
 LUA_FUNCTION(IsCode) {
@@ -739,17 +756,13 @@ LUA_FUNCTION(IsCode) {
 	auto pcard = lua_get<card*, true>(L, 1);
 	uint32_t code1 = pcard->get_code();
 	uint32_t code2 = pcard->get_another_code();
-	uint32_t count = lua_gettop(L) - 1;
-	for(uint32_t i = 0; i < count; ++i) {
-		if(lua_isnoneornil(L, i + 2))
-			continue;
-		uint32_t tcode = lua_get<uint32_t>(L, i + 2);
-		if(code1 == tcode || (code2 && code2 == tcode)) {
-			lua_pushboolean(L, TRUE);
-			return 1;
-		}
-	}
-	lua_pushboolean(L, FALSE);
+	bool found = lua_find_in_table_or_in_stack(L, 2, lua_gettop(L), [L, code1, code2] {
+		if(lua_isnoneornil(L, -1))
+			return false;
+		uint32_t tcode = lua_get<uint32_t>(L, -1);
+		return code1 == tcode || (code2 && code2 == tcode);
+	});
+	lua_pushboolean(L, found);
 	return 1;
 }
 LUA_FUNCTION(IsSummonCode) {
@@ -788,47 +801,69 @@ LUA_FUNCTION(IsSummonCode) {
 			codes.insert(peff->get_value(pcard));
 		}
 	}
-	uint32_t count = lua_gettop(L) - 4;
-	for(uint32_t i = 0; i < count; ++i) {
-		if(lua_isnoneornil(L, i + 5))
-			continue;
-		auto tcode = lua_get<uint32_t>(L, i + 5);
-		if(codes.find(tcode) != codes.end()) {
-			lua_pushboolean(L, TRUE);
-			return 1;
-		}
-	}
-	lua_pushboolean(L, FALSE);
+	bool found = lua_find_in_table_or_in_stack(L, 5, lua_gettop(L), [L, &codes] {
+		if(lua_isnoneornil(L, -1))
+			return false;
+		uint32_t tcode = lua_get<uint32_t>(L, -1);
+		return codes.find(tcode) != codes.end();
+	});
+	lua_pushboolean(L, found);
 	return 1;
 }
 LUA_FUNCTION(IsSetCard) {
 	check_param_count(L, 2);
 	auto pcard = lua_get<card*, true>(L, 1);
-	uint32_t set_code = lua_get<uint32_t>(L, 2);
+	std::set<uint16_t> setcodes;
 	if (lua_gettop(L) > 2) {
 		card* scard = 0;
 		uint8_t playerid = PLAYER_NONE;
-		if (lua_gettop(L) > 2 && !lua_isnoneornil(L, 3))
+		if (!lua_isnoneornil(L, 3))
 			scard = lua_get<card*, true>(L, 3);
 		auto sumtype = lua_get<uint64_t, 0>(L, 4);
 		playerid = lua_get<uint8_t, PLAYER_NONE>(L, 5);
-		lua_pushboolean(L, pcard->is_sumon_set_card(set_code, scard, sumtype, playerid));
+		pcard->get_summon_set_card(setcodes, scard, sumtype, playerid);
 	} else
-		lua_pushboolean(L, pcard->is_set_card(set_code));
+		pcard->get_set_card(setcodes);
+	bool found = lua_find_in_table_or_in_stack(L, 2, 2, [L, &setcodes] {
+		const auto set_code = lua_get<uint16_t>(L, -1);
+		for(auto setcode : setcodes) {
+			if(card::match_setcode(set_code, setcode))
+				return true;
+		}
+		return false;
+	});
+	lua_pushboolean(L, found);
 	return 1;
 }
 LUA_FUNCTION(IsOriginalSetCard) {
 	check_param_count(L, 2);
 	auto pcard = lua_get<card*, true>(L, 1);
-	uint32_t set_code = lua_get<uint32_t>(L, 2);
-	lua_pushboolean(L, pcard->is_origin_set_card(set_code));
+	const auto& setcodes = pcard->get_origin_set_card();
+	bool found = lua_find_in_table_or_in_stack(L, 2, lua_gettop(L), [L, &setcodes] {
+		const auto set_code = lua_get<uint16_t>(L, -1);
+		for(auto setcode : setcodes) {
+			if(card::match_setcode(set_code, setcode))
+				return true;
+		}
+		return false;
+	});
+	lua_pushboolean(L, found);
 	return 1;
 }
 LUA_FUNCTION(IsPreviousSetCard) {
 	check_param_count(L, 2);
 	auto pcard = lua_get<card*, true>(L, 1);
-	uint32_t set_code = lua_get<uint32_t>(L, 2);
-	lua_pushboolean(L, pcard->is_pre_set_card(set_code));
+	std::set<uint16_t> setcodes;
+	pcard->get_pre_set_card(setcodes);
+	bool found = lua_find_in_table_or_in_stack(L, 2, 2, [L, &setcodes] {
+		const auto set_code = lua_get<uint16_t>(L, -1);
+		for(auto setcode : setcodes) {
+			if(card::match_setcode(set_code, setcode))
+				return true;
+		}
+		return false;
+	});
+	lua_pushboolean(L, found);
 	return 1;
 }
 LUA_FUNCTION(IsType) {
@@ -848,17 +883,37 @@ LUA_FUNCTION(IsType) {
 	lua_pushboolean(L, pcard->get_type(scard, sumtype, playerid) & ttype);
 	return 1;
 }
+LUA_FUNCTION(IsExactType) {
+	check_param_count(L, 2);
+	const auto pduel = lua_get<duel*>(L);
+	auto pcard = lua_get<card*, true>(L, 1);
+	auto ttype = lua_get<uint32_t>(L, 2);
+	card* scard = 0;
+	uint8_t playerid = PLAYER_NONE;
+	if (lua_gettop(L) > 2 && !lua_isnoneornil(L, 3))
+		scard = lua_get<card*, true>(L, 3);
+	auto sumtype = lua_get<uint64_t, 0>(L, 4);
+	if (lua_gettop(L) > 4)
+		playerid = lua_get<uint8_t>(L, 5);
+	else if (sumtype == SUMMON_TYPE_FUSION)
+		playerid = pduel->game_field->core.reason_player;
+	lua_pushboolean(L, (pcard->get_type(scard, sumtype, playerid) & ttype) == ttype);
+	return 1;
+}
+LUA_FUNCTION(IsOriginalType) {
+	check_param_count(L, 2);
+	auto pcard = lua_get<card*, true>(L, 1);
+	auto ttype = lua_get<uint32_t>(L, 2);
+	lua_pushboolean(L, pcard->data.type & ttype);
+	return 1;
+}
 inline int32_t is_prop(lua_State* L, uint32_t val) {
-	uint32_t count = lua_gettop(L) - 1;
-	for(uint32_t i = 0; i < count; ++i) {
-		if(lua_isnoneornil(L, i + 2))
-			continue;
-		if(val == lua_get<uint32_t>(L, i + 2)) {
-			lua_pushboolean(L, TRUE);
-			return 1;
-		}
-	}
-	lua_pushboolean(L, FALSE);
+	bool found = lua_find_in_table_or_in_stack(L, 2, lua_gettop(L), [L, val] {
+		if(lua_isnoneornil(L, -1))
+			return false;
+		return val == lua_get<uint32_t>(L, -1);
+	});
+	lua_pushboolean(L, found);
 	return 1;
 }
 LUA_FUNCTION(IsLevel) {
@@ -909,6 +964,16 @@ LUA_FUNCTION(IsRace) {
 	lua_pushboolean(L, pcard->get_race(scard, sumtype, playerid) & trace);
 	return 1;
 }
+LUA_FUNCTION(IsOriginalRace) {
+	check_param_count(L, 2);
+	auto pcard = lua_get<card*, true>(L, 1);
+	auto trace = lua_get<uint64_t>(L, 2);
+	if(pcard->status & STATUS_NO_LEVEL)
+		lua_pushboolean(L, FALSE);
+	else
+		lua_pushboolean(L, pcard->data.race & trace);
+	return 1;
+}
 LUA_FUNCTION(IsAttribute) {
 	check_param_count(L, 2);
 	const auto pduel = lua_get<duel*>(L);
@@ -926,6 +991,16 @@ LUA_FUNCTION(IsAttribute) {
 	lua_pushboolean(L, pcard->get_attribute(scard, sumtype, playerid) & tattrib);
 	return 1;
 }
+LUA_FUNCTION(IsOriginalAttribute) {
+	check_param_count(L, 2);
+	auto pcard = lua_get<card*, true>(L, 1);
+	auto tattrib = lua_get<uint32_t>(L, 2);
+	if(pcard->status & STATUS_NO_LEVEL)
+		lua_pushboolean(L, FALSE);
+	else
+		lua_pushboolean(L, pcard->data.attribute & tattrib);
+	return 1;
+}
 LUA_FUNCTION(IsReason) {
 	check_param_count(L, 2);
 	auto pcard = lua_get<card*, true>(L, 1);
@@ -936,18 +1011,27 @@ LUA_FUNCTION(IsReason) {
 LUA_FUNCTION(IsSummonType) {
 	check_param_count(L, 2);
 	auto pcard = lua_get<card*, true>(L, 1);
-	uint32_t count = lua_gettop(L) - 1;
-	uint32_t result = FALSE;
-	for(uint32_t i = 0; i < count; ++i) {
-		if(lua_isnoneornil(L, i + 2))
-			continue;
-		auto ttype = lua_get<uint32_t>(L, i + 2);
-		if(((pcard->summon_info & 0xff00ffff) & ttype) == ttype) {
-			result = TRUE;
-			break;
-		}
-	}
-	lua_pushboolean(L, result);
+	bool found = lua_find_in_table_or_in_stack(L, 2, lua_gettop(L), [L, summon_info = pcard->summon.type & 0xff00ffff] {
+		if(lua_isnoneornil(L, -1))
+			return false;
+		auto ttype = lua_get<uint32_t>(L, -1);
+		return (summon_info & ttype) == ttype;
+	});
+	lua_pushboolean(L, found);
+	return 1;
+}
+LUA_FUNCTION(IsSummonLocation) {
+	check_param_count(L, 1);
+	auto pcard = lua_get<card*, true>(L, 1);
+	auto loc = lua_get<uint16_t>(L, 2);
+	lua_pushboolean(L, card_state::is_location(pcard->summon, loc));
+	return 1;
+}
+LUA_FUNCTION(IsSummonPlayer) {
+	check_param_count(L, 1);
+	auto pcard = lua_get<card*, true>(L, 1);
+	auto player = lua_get<uint8_t>(L, 2);
+	lua_pushboolean(L, pcard->summon.player == player);
 	return 1;
 }
 LUA_FUNCTION(IsStatus) {
@@ -1908,6 +1992,13 @@ LUA_FUNCTION(IsControler) {
 	lua_pushboolean(L, pcard->current.controler == con);
 	return 1;
 }
+LUA_FUNCTION(IsPreviousControler) {
+	check_param_count(L, 2);
+	auto pcard = lua_get<card*, true>(L, 1);
+	auto con = lua_get<uint8_t>(L, 2);
+	lua_pushboolean(L, pcard->previous.controler == con);
+	return 1;
+}
 LUA_FUNCTION(IsOnField) {
 	check_param_count(L, 1);
 	auto pcard = lua_get<card*, true>(L, 1);
@@ -1923,7 +2014,7 @@ LUA_FUNCTION(IsLocation) {
 	auto pcard = lua_get<card*, true>(L, 1);
 	auto loc = lua_get<uint16_t>(L, 2);
 	if(pcard->current.location == LOCATION_MZONE) {
-		if((loc & LOCATION_MZONE) && !pcard->get_status(STATUS_SUMMONING | STATUS_SUMMON_DISABLED | STATUS_SPSUMMON_STEP))
+		if(pcard->current.is_location(loc) && !pcard->get_status(STATUS_SUMMONING | STATUS_SUMMON_DISABLED | STATUS_SPSUMMON_STEP))
 			lua_pushboolean(L, 1);
 		else
 			lua_pushboolean(L, 0);
@@ -2521,9 +2612,9 @@ LUA_FUNCTION(CheckUniqueOnField) {
 LUA_FUNCTION(ResetNegateEffect) {
 	check_param_count(L, 1);
 	auto pcard = lua_get<card*, true>(L, 1);
-	int32_t count = lua_gettop(L) - 1;
-	for(int32_t i = 0; i < count; ++i)
-		pcard->reset(lua_get<uint32_t>(L, i + 2), RESET_CARD);
+	lua_iterate_table_or_stack(L, 2, lua_gettop(L), [L, pcard] {
+		pcard->reset(lua_get<uint32_t>(L, -1), RESET_CARD);
+	});
 	return 0;
 }
 LUA_FUNCTION(AssumeProperty) {
