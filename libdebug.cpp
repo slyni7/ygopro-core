@@ -18,13 +18,17 @@ namespace {
 using namespace scriptlib;
 
 LUA_FUNCTION(Message) {
-	if(lua_gettop(L) == 0)
+	int top = lua_gettop(L);
+	if(top == 0)
 		return 0;
+	luaL_checkstack(L, 1, nullptr);
 	const auto pduel = lua_get<duel*>(L);
-	lua_getglobal(L, "tostring");
-	lua_pushvalue(L, -2);
-	lua_pcall(L, 1, 1, 0);
-	pduel->handle_message(lua_tostring_or_empty(L, -1), OCG_LOG_TYPE_FROM_SCRIPT);
+	for(int i = 1; i <= top; ++i) {
+		const auto* str = luaL_tolstring(L, i, nullptr);
+		if(str)
+			pduel->handle_message(str, OCG_LOG_TYPE_FROM_SCRIPT);
+		lua_pop(L, 1);
+	}
 	return 0;
 }
 LUA_FUNCTION(AddCard) {
@@ -48,16 +52,28 @@ LUA_FUNCTION(AddCard) {
 		if(location == LOCATION_EXTRA && (position == 0 || (pcard->data.type & TYPE_PENDULUM) == 0))
 			position = POS_FACEDOWN_DEFENSE;
 		pcard->sendto_param.position = position;
+		bool pzone = false;
 		if(location == LOCATION_PZONE) {
-			int32_t seq = field->get_pzone_index(sequence, playerid);
-			field->add_card(playerid, pcard, LOCATION_SZONE, seq, TRUE);
+			location = LOCATION_SZONE;
+			sequence = field->get_pzone_index(sequence, playerid);
 		} else if(location == LOCATION_FZONE) {
-			int32_t loc = LOCATION_SZONE;
-			field->add_card(playerid, pcard, loc, 5);
-		} else
-			field->add_card(playerid, pcard, location, sequence);
+			location = LOCATION_SZONE;
+			sequence = 5;
+		} else if(location == LOCATION_STZONE) {
+			location = LOCATION_SZONE;
+			sequence += 1 * pduel->game_field->is_flag(DUEL_3_COLUMNS_FIELD);
+
+		} else if(location == LOCATION_MMZONE) {
+			location = LOCATION_MZONE;
+			sequence += 1 * pduel->game_field->is_flag(DUEL_3_COLUMNS_FIELD);
+
+		} else if(location == LOCATION_EMZONE) {
+			location = LOCATION_MZONE;
+			sequence += 5;
+		}
+		field->add_card(playerid, pcard, location, sequence, pzone);
 		pcard->current.position = position;
-		if(!(location & (LOCATION_ONFIELD | LOCATION_PZONE)) || (position & POS_FACEUP)) {
+		if(!(location & LOCATION_ONFIELD) || (position & POS_FACEUP)) {
 			pcard->enable_field_effect(true);
 			field->adjust_instant();
 		}
@@ -98,7 +114,12 @@ LUA_FUNCTION(PreSummon) {
 	auto pcard = lua_get<card*, true>(L, 1);
 	auto summon_type = lua_get<uint32_t>(L, 2);
 	auto summon_location = lua_get<uint8_t, 0>(L, 3);
-	pcard->summon_info = summon_type | (summon_location << 16);
+	auto summon_sequence = lua_get<uint8_t, 0>(L, 4);
+	auto summon_pzone = lua_get<bool, false>(L, 5);
+	pcard->summon.location = summon_location;
+	pcard->summon.type = summon_type;
+	pcard->summon.sequence = summon_sequence;
+	pcard->summon.pzone = summon_pzone;
 	return 0;
 }
 LUA_FUNCTION(PreEquip) {
@@ -252,6 +273,25 @@ LUA_FUNCTION_EXISTING(ShowHint, write_string_message<MSG_SHOW_HINT, 1024>);
 LUA_FUNCTION(PrintStacktrace) {
 	interpreter::print_stacktrace(L);
 	return 0;
+}
+
+LUA_FUNCTION(CardToStringWrapper) {
+	const auto pcard = lua_get<card*>(L, 1);
+	if(pcard) {
+		luaL_checkstack(L, 4, nullptr);
+		lua_getglobal(L, "Debug");
+		lua_pushstring(L, "CardToString");
+		lua_rawget(L, -2);
+		if(!lua_isnil(L, -1)) {
+			lua_pushvalue(L, 1);
+			lua_call(L, 1, 1);
+			return 1;
+		}
+		lua_settop(L, 1);
+	}
+	const char* kind = luaL_typename(L, 1);
+	lua_pushfstring(L, "%s: %p", kind, lua_topointer(L, 1));
+	return 1;
 }
 
 }
