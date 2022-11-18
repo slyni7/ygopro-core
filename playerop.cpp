@@ -134,13 +134,6 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 		while (fgets(line, 400, fp) != NULL) {
 			line_count++;
 			if (line_count == pduel->playerop_line) {
-				char fc[40];
-				sprintf_s(fc, "./playerop_line.log");
-				FILE *fp = NULL;
-				fopen_s(&fp, fc, "a+");
-				fprintf(fp, "currentop_line : %d", pduel->playerop_line);
-				fprintf(fp, "\n");
-				fclose(fp);
 				int currval1, currval2;
 				char curr[25];
 				sscanf(line, "%s : %d,%d", curr, &currval1, &currval2);

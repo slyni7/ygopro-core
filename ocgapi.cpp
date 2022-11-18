@@ -93,6 +93,7 @@ OCGAPI void OCG_DestroyDuel(OCG_Duel duel) {
 }
 
 OCGAPI void OCG_DuelNewCard(OCG_Duel duel, OCG_NewCardInfo info) {
+	DUEL->playerop_cinfo++; /*test*/
 	char fconf[40];
 	sprintf_s(fconf, "./playerop.conf");
 	FILE *fpconf = NULL;

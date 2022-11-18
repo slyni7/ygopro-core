@@ -251,6 +251,178 @@ LUA_FUNCTION(NewTsukasaDuel) {
 	delete qduel;
 	return 0;
 }
+LUA_FUNCTION(NewTsukasaDuelAlpha) {
+	auto pduel = lua_get<duel*>(L);
+	OCG_DuelOptions options;
+	options.seed[0] = 0;
+	options.seed[1] = 0;
+	options.seed[2] = 0;
+	options.seed[3] = 0;
+	char fconf[40] = { 0 };
+	sprintf_s(fconf, "./playerop.conf");
+	FILE *fpconf = NULL;
+	fopen_s(&fpconf, fconf, "r");
+	int plconf = 0;
+	if (fpconf) {
+		char conf[40] = { 0 };
+		fgets(conf, 40, fpconf);
+		char plop[10] = { 0 };
+		sscanf(conf, "%s = %d", plop, &plconf);
+		fclose(fpconf);
+	}
+	if (!plconf && !pduel->playerop_config) {
+		char fc[40] = { 0 };
+		sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "r");
+		char line[400] = { 0 };
+		fgets(line, 400, fp);
+		char curr[25] = { 0 };
+		uint64_t seed1 = 0;
+		uint64_t seed2 = 0;
+		uint64_t seed3 = 0;
+		uint64_t seed4 = 0;
+		sscanf(line, "%s : %lld,%lld,%lld,%lld", curr, &seed1, &seed2, &seed3, &seed4);
+		options.seed[0] = seed1;
+		options.seed[1] = seed2;
+		options.seed[2] = seed3;
+		options.seed[3] = seed4;
+		fclose(fp);
+	}
+	options.cardReader = pduel->read_card_callback;
+	options.scriptReader = pduel->read_script_callback;
+	options.logHandler = pduel->handle_message_callback;
+	options.cardReaderDone = pduel->read_card_done_callback;
+	options.payload1 = pduel->read_card_payload;
+	options.payload2 = pduel->read_script_payload;
+	options.payload3 = pduel->handle_message_payload;
+	options.payload4 = pduel->read_card_done_payload;
+	auto* qduel = new duel(options);
+	qduel->read_script("constant.lua");
+	qduel->read_script("utility.lua");
+	qduel->playerop_config = pduel->playerop_seed[0];
+	qduel->playerop_seed[0] = pduel->playerop_seed[0];
+	qduel->playerop_seed[1] = pduel->playerop_seed[1];
+	qduel->playerop_seed[2] = pduel->playerop_seed[2];
+	qduel->playerop_seed[3] = pduel->playerop_seed[3];
+	if (!plconf && !pduel->playerop_config) {
+		qduel->playerop_line = 0;
+		for (int i = 0; i < pduel->playerop_cinfo; i++) {
+			char fc[40] = { 0 };
+			sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "r");
+			OCG_NewCardInfo info = { 0, 0, 0, 0, 0, 0, POS_FACEDOWN_DEFENSE };
+			if (!qduel->playerop_line)
+				qduel->playerop_line = 2;
+			int line_count = 0;
+			char line[400] = { 0 };
+			while (fgets(line, 400, fp) != NULL) {
+				line_count++;
+				if (line_count == qduel->playerop_line) {
+					int currvalue = 0;
+					char curr[25] = { 0 };
+					sscanf(line, "%s : %d", curr, &currvalue);
+					if (!strcmp(curr, "info.team")) {
+						info.team = currvalue;
+						qduel->playerop_line++;
+					}
+					else if (!strcmp(curr, "info.duelist")) {
+						info.duelist = currvalue;
+						qduel->playerop_line++;
+					}
+					else if (!strcmp(curr, "info.code")) {
+						info.code = currvalue;
+						qduel->playerop_line++;
+					}
+					else if (!strcmp(curr, "info.con")) {
+						info.con = currvalue;
+						qduel->playerop_line++;
+					}
+					else if (!strcmp(curr, "info.loc")) {
+						info.loc = currvalue;
+						qduel->playerop_line++;
+					}
+					else if (!strcmp(curr, "info.seq")) {
+						info.seq = currvalue;
+						qduel->playerop_line++;
+					}
+					else if (!strcmp(curr, "info.pos")) {
+						info.pos = currvalue;
+						qduel->playerop_line++;
+						break;
+					}
+				}
+				if (line_count > qduel->playerop_line)
+					break;
+			}
+			auto& game_field = *qduel->game_field;
+			if (info.duelist == 0) {
+				if (game_field.is_location_useable(info.con, info.loc, info.seq)) {
+					card* pcard = qduel->new_card(info.code);
+					pcard->owner = info.team;
+					game_field.add_card(info.con, pcard, (uint8_t)info.loc, (uint8_t)info.seq);
+					pcard->current.position = info.pos;
+					if (!(info.loc & LOCATION_ONFIELD) || (info.pos & POS_FACEUP)) {
+						pcard->enable_field_effect(true);
+						game_field.adjust_instant();
+					}
+					if (info.loc & LOCATION_ONFIELD) {
+						if (info.loc == LOCATION_MZONE)
+							pcard->set_status(STATUS_PROC_COMPLETE, TRUE);
+					}
+				}
+			}
+			else {
+				if (!(info.team > 1 || !(info.loc & (LOCATION_DECK | LOCATION_EXTRA)))) {
+					card* pcard = qduel->new_card(info.code);
+					auto& player = game_field.player[info.team];
+					if (info.duelist > player.extra_lists_main.size()) {
+						player.extra_lists_main.resize(info.duelist);
+						player.extra_lists_extra.resize(info.duelist);
+						player.extra_lists_hand.resize(info.duelist);
+						player.extra_extra_p_count.resize(info.duelist);
+					}
+					--info.duelist;
+					pcard->current.location = (uint8_t)info.loc;
+					pcard->owner = info.team;
+					pcard->current.controler = info.team;
+					pcard->current.position = POS_FACEDOWN_DEFENSE;
+					auto& list = (info.loc == LOCATION_DECK) ? player.extra_lists_main[info.duelist] : player.extra_lists_extra[info.duelist];
+					list.push_back(pcard);
+					pcard->current.sequence = list.size() - 1;
+				}
+			}
+			fclose(fp);
+		}
+		qduel->game_field->player[0].start_lp = pduel->game_field->player[0].start_lp;
+		qduel->game_field->player[0].start_count = pduel->game_field->player[0].start_count;
+		qduel->game_field->player[1].start_lp = pduel->game_field->player[1].start_lp;
+		qduel->game_field->player[1].start_count = pduel->game_field->player[1].start_count;
+		qduel->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+		int stop = 0;
+		int dodododo = 0;
+		do {
+			qduel->buff.clear();
+			int flag = 0;
+			int dododo = 0;
+			do {
+				dododo++;
+				flag = qduel->game_field->process();
+				qduel->generate_buffer();
+			} while (qduel->buff.size() == 0 && flag == PROCESSOR_FLAG_CONTINUE);
+			if (dododo == 1)
+				dodododo++;
+			if (dodododo > 1000) {
+				stop = 1000;
+			}
+		} while (!stop);
+	}
+	uint32_t count = qduel->game_field->filter_field_card(0, 0xff, 0xff, 0);
+	lua_pushinteger(L, count);
+	delete qduel;
+	return 1;
+}
 template<int message_code, size_t max_len>
 int32_t write_string_message(lua_State* L) {
 	check_param_count(L, 1);
