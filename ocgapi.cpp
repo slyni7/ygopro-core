@@ -71,7 +71,7 @@ OCGAPI int OCG_CreateDuel(OCG_Duel* return_duel_ptr, OCG_DuelOptions options) {
 	if(duelPtr == nullptr)
 		return OCG_DUEL_CREATION_NOT_CREATED;
 	*return_duel_ptr = static_cast<OCG_Duel>(duelPtr);
-	if ((plconf == 2) || (/*!plconf &&*/ !duelPtr->playerop_config)) {
+	if ((plconf == 2) || (!plconf && !duelPtr->playerop_config)) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", options.seed[0]);
 		FILE *fp = NULL;
@@ -106,7 +106,7 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel duel, OCG_NewCardInfo info) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fpconf);
 	}
-	if ((plconf == 2) || (/*!plconf &&*/ !DUEL->playerop_config)) {
+	if ((plconf == 2) || (!plconf && !DUEL->playerop_config)) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", DUEL->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -120,7 +120,7 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel duel, OCG_NewCardInfo info) {
 		fprintf(fp, "info.pos : %d\n", info.pos);
 		fclose(fp);
 	}
-	else if ((plconf == 1) || (/*!plconf &&*/ DUEL->playerop_config)) {
+	else if ((plconf == 1) || (!plconf && DUEL->playerop_config)) {
 		if (!DUEL->playerop_line)
 			DUEL->playerop_line = 2;
 		int line_count = 0;
