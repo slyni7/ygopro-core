@@ -62,6 +62,7 @@ public:
 		}
 	};
 	uint32_t playerop_line = 0;
+	uint32_t qlayerop_line = 0;
 	RNG::Xoshiro256StarStar::StateType playerop_seed;
 	uint32_t playerop_config = 0;
 	uint32_t playerop_cinfo = 0;

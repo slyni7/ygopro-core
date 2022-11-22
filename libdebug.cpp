@@ -253,6 +253,9 @@ LUA_FUNCTION(NewTsukasaDuel) {
 }
 LUA_FUNCTION(NewTsukasaDuelAlpha) {
 	auto pduel = lua_get<duel*>(L);
+	if (pduel->playerop_config) {
+		return 0;
+	}
 	OCG_DuelOptions options;
 	options.seed[0] = 0;
 	options.seed[1] = 0;
@@ -270,9 +273,9 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fpconf);
 	}
-	if (!plconf && !pduel->playerop_config) {
-		char fc[40] = { 0 };
-		sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+	if (!pduel->playerop_config) {
+		char fc[50] = { 0 };
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400] = { 0 };
@@ -297,19 +300,39 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 	options.payload2 = pduel->read_script_payload;
 	options.payload3 = pduel->handle_message_payload;
 	options.payload4 = pduel->read_card_done_payload;
+	options.enableUnsafeLibraries = 1;
 	auto* qduel = new duel(options);
+	qduel->game_field->core.duel_options = pduel->game_field->core.duel_options;
 	qduel->read_script("constant.lua");
 	qduel->read_script("utility.lua");
-	qduel->playerop_config = pduel->playerop_seed[0];
+	qduel->playerop_config = 1;
 	qduel->playerop_seed[0] = pduel->playerop_seed[0];
 	qduel->playerop_seed[1] = pduel->playerop_seed[1];
 	qduel->playerop_seed[2] = pduel->playerop_seed[2];
 	qduel->playerop_seed[3] = pduel->playerop_seed[3];
-	if (!plconf && !pduel->playerop_config) {
+	int line_count = 0;
+	char kfc[50];
+	if (plconf) sprintf_s(kfc, "./playerop.log"); else sprintf_s(kfc, "./playerop %lld.log", pduel->playerop_seed[0]);
+	FILE *kfp = NULL;
+	fopen_s(&kfp, kfc, "r");
+	char line[400];
+	while (fgets(line, 400, kfp) != NULL) {
+		line_count++;
+	}
+	fclose(kfp);
+	qduel->qlayerop_line = line_count;
+	char dfc[50];
+	if (plconf) sprintf_s(dfc, "./playeropline.log"); else sprintf_s(dfc, "./playeropline %lld.log", options.seed[0]);
+	FILE *dfp = NULL;
+	fopen_s(&dfp, dfc, "a+");
+	fprintf(dfp, "%d", qduel->qlayerop_line);
+	fprintf(dfp, "\n");
+	fclose(dfp);
+	if (!pduel->playerop_config) {
 		qduel->playerop_line = 0;
 		for (int i = 0; i < pduel->playerop_cinfo; i++) {
-			char fc[40] = { 0 };
-			sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+			char fc[50] = { 0 };
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
 			FILE *fp = NULL;
 			fopen_s(&fp, fc, "r");
 			OCG_NewCardInfo info = { 0, 0, 0, 0, 0, 0, POS_FACEDOWN_DEFENSE };
@@ -407,18 +430,27 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 			int flag = 0;
 			int dododo = 0;
 			do {
+				/*char dfc[50];
+				if (plconf) sprintf_s(dfc, "./playeropdebug.log"); else sprintf_s(dfc, "./playeropdebug %lld.log", options.seed[0]);
+				FILE *dfp = NULL;
+				fopen_s(&dfp, dfc, "a+");
+				fprintf(dfp, "%d,%d", qduel->playerop_line, qduel->qlayerop_line);
+				fprintf(dfp, "\n");
+				fclose(dfp);*/
 				dododo++;
 				flag = qduel->game_field->process();
 				qduel->generate_buffer();
 			} while (qduel->buff.size() == 0 && flag == PROCESSOR_FLAG_CONTINUE);
 			if (dododo == 1)
 				dodododo++;
-			if (dodododo > 1000) {
-				stop = 1000;
+			else
+				dodododo = 0;
+			if (dodododo > 500) {
+				stop = 500;
 			}
 		} while (!stop);
 	}
-	uint32_t count = qduel->game_field->filter_field_card(0, 0xff, 0xff, 0);
+	uint32_t count = qduel->game_field->filter_field_card(0, LOCATION_MZONE, 0, 0);
 	lua_pushinteger(L, count);
 	delete qduel;
 	return 1;
