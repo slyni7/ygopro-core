@@ -45,9 +45,10 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 		fprintf(fp, "%d,%d", 3, core.to_ep);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -55,6 +56,8 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -64,6 +67,7 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -71,12 +75,31 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 2) {
+			int currval1 = currvals[0];
+			int currval2 = currvals[1];
+			std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+			returns.clear();
+			returns.set<int32_t>(0, currval1 | (currval2 << 16));
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "select_battle_command : %d,%d", currval1, currval2);
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -189,7 +212,6 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_battle_command : %d,%d", t, s);
 			fprintf(fp, "\n");
-
 			fclose(fp);
 		}
 		return TRUE;
@@ -225,9 +247,10 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 		fprintf(fp, "%d,%d", 7, core.to_ep);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -235,6 +258,8 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -244,6 +269,7 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -251,12 +277,31 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 2) {
+			int currval1 = currvals[0];
+			int currval2 = currvals[1];
+			std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+			returns.clear();
+			returns.set<int32_t>(0, currval1 | (currval2 << 16));
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "select_idle_command : %d,%d", currval1, currval2);
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -409,7 +454,6 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_idle_command : %d,%d", t, s);
 			fprintf(fp, "\n");
-
 			fclose(fp);
 		}
 		return TRUE;
@@ -438,9 +482,10 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 		fprintf(fp, "%d", 2);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -448,6 +493,8 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -457,6 +504,7 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -464,12 +512,32 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			returns.clear();
+			returns.data.push_back(currvalue);
+			returns.data.push_back(currvalue >> 8);
+			returns.data.push_back(currvalue >> 16);
+			returns.data.push_back(currvalue >> 24);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "select_effect_yes_no : %d", currvalue);
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		if (pduel->qlayerop_line && (pduel->playerop_line > pduel->qlayerop_line)) {
@@ -554,7 +622,6 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_effect_yes_no : %d", returns.at<int32_t>(0));
 			fprintf(fp, "\n");
-
 			fclose(fp);
 		}
 		return TRUE;
@@ -583,9 +650,10 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 		fprintf(fp, "%d", 2);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -593,6 +661,8 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -602,6 +672,7 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -609,12 +680,32 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			returns.clear();
+			returns.data.push_back(currvalue);
+			returns.data.push_back(currvalue >> 8);
+			returns.data.push_back(currvalue >> 16);
+			returns.data.push_back(currvalue >> 24);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "select_yes_no : %d", currvalue);
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -729,9 +820,10 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 		fprintf(fp, "%d", core.select_options.size());
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -739,6 +831,8 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -748,6 +842,7 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -755,12 +850,32 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			returns.clear();
+			returns.data.push_back(currvalue);
+			returns.data.push_back(currvalue >> 8);
+			returns.data.push_back(currvalue >> 16);
+			returns.data.push_back(currvalue >> 24);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "select_option : %d", currvalue);
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -855,7 +970,6 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_option : %d", returns.at<int32_t>(0));
 			fprintf(fp, "\n");
-
 			fclose(fp);
 		}
 		return TRUE;
@@ -930,15 +1044,19 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 		fprintf(fp, "select_card : ");
 		fprintf(fp, "%d,", playerid);
 		fprintf(fp, "%d,%d", min, max);
-		fprintf(fp, ",%d", core.select_cards.size());
+		int cs = core.select_cards.size();
+		if (cancelable)
+			cs = -cs;
+		fprintf(fp, ",%d", cs);
 		for (auto& pcard : core.select_cards) {
 			fprintf(fp, ",%d", pcard->fieldid_r);
 		}
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -946,6 +1064,8 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -955,6 +1075,7 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -962,12 +1083,44 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li >= 1) {
+			return_cards.clear();
+			returns.clear();
+			for (auto& pcard : core.select_cards) {
+				for (auto currval : currvals) {
+					if (pcard->fieldid_r == currval) {
+						return_cards.list.push_back(pcard);
+					}
+				}
+			}
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "select_card : ");
+				for (auto& currval : currvals) {
+					if (first) {
+						first = false;
+						fprintf(fp, "%d", currval);
+					}
+					else
+						fprintf(fp, ",%d", currval);
+				}
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -1109,7 +1262,6 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 				bool first = true;
 				fprintf(fp, "select_card : ");
 				fprintf(fp, "\n");
-
 				fclose(fp);
 			}
 			return TRUE;
@@ -1135,7 +1287,6 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 					fprintf(fp, ",%d", pcard->fieldid_r);
 			}
 			fprintf(fp, "\n");
-
 			fclose(fp);
 		}
 		return TRUE;
@@ -1168,9 +1319,10 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 		}
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -1178,6 +1330,8 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -1187,6 +1341,7 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -1194,12 +1349,43 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li >= 1) {
+			return_card_codes.clear();
+			returns.clear();
+			for (auto& pcard : core.select_cards) {
+				for (auto currval : currvals) {
+					if (pcard->fieldid_r == currval) {
+						return_cards.list.push_back(pcard);
+					}
+				}
+			}
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "select_card_codes : ");
+				for (auto& currval : currvals) {
+					if (first) {
+						first = false;
+						fprintf(fp, "%d", currval);
+					}
+					else
+						fprintf(fp, ",%d", currval);
+				}
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -1405,13 +1591,19 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 		fprintf(fp, "select_unselect_card : ");
 		int32_t _max = (int32_t)(core.select_cards.size() + core.unselect_cards.size());
 		fprintf(fp, "%d,", playerid);
-		//fprintf(fp, "%d", _max);
-		fprintf(fp, "%d,%d", core.select_cards.size(), core.unselect_cards.size());
+		int cs = core.select_cards.size();
+		int us = core.unselect_cards.size();
+		if (cancelable) {
+			cs = -cs;
+			us = -us;
+		}
+		fprintf(fp, "%d,%d", cs, us);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -1419,6 +1611,8 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -1428,6 +1622,7 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -1435,12 +1630,36 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			return_cards.clear();
+			returns.clear();
+			if (currvalue == -1) {
+				return_cards.canceled = true;
+			}
+			else {
+				std::sort(core.select_cards.begin(), core.select_cards.end(), card::card_operation_sort);
+				return_cards.list.push_back((currvalue >= (int32_t)core.select_cards.size()) ? core.unselect_cards[currvalue - core.select_cards.size()] : core.select_cards[currvalue]);
+			}
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "select_unselect_card : %d", currvalue);
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -1588,7 +1807,6 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "select_unselect_card : %d", returns.at<int32_t>(1));
 			fprintf(fp, "\n");
-
 			fclose(fp);
 		}
 		return TRUE;
@@ -1614,12 +1832,16 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 		fopen_s(&fp, fc, "a+");
 		fprintf(fp, "select_chain : ");
 		fprintf(fp, "%d,", playerid);
-		fprintf(fp, "%d", core.select_chains.size());
+		int cs = core.select_chains.size();
+		if (!forced)
+			cs = -cs;
+		fprintf(fp, "%d", cs);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -1627,6 +1849,8 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -1636,6 +1860,7 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -1643,12 +1868,30 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+			returns.clear();
+			returns.set<int32_t>(0, currvalue);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "select_chain : %d", currvalue);
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -1753,7 +1996,6 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 				fopen_s(&fp, fc, "a+");
 				fprintf(fp, "select_chain : %d", returns.at<int32_t>(0));
 				fprintf(fp, "\n");
-
 				fclose(fp);
 			}
 			return TRUE;
@@ -1798,9 +2040,10 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 		fprintf(fp, "%d,%d", count, flag);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -1808,6 +2051,8 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -1817,6 +2062,7 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -1824,12 +2070,38 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 3) {
+			returns.clear();
+			for (auto currval : currvals)
+				returns.data.push_back(currval);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "select_place : ");
+				for (auto& currval : currvals) {
+					if (first) {
+						first = false;
+						fprintf(fp, "%d", currval);
+					}
+					else
+						fprintf(fp, ",%d", currval);
+				}
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -2020,7 +2292,6 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 				pt += 3;
 			}
 			fprintf(fp, "\n");
-
 			fclose(fp);
 		}
 		return TRUE;
@@ -2051,9 +2322,10 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 		fprintf(fp, "%d", positions);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -2061,6 +2333,8 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -2070,6 +2344,7 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -2077,12 +2352,32 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			returns.clear();
+			returns.data.push_back(currvalue);
+			returns.data.push_back(currvalue >> 8);
+			returns.data.push_back(currvalue >> 16);
+			returns.data.push_back(currvalue >> 24);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "select_position : %d", currvalue);
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -2206,7 +2501,6 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 		fclose(fp);
 	}
 	if ((step == 0) && !(max == 0 || core.select_cards.empty())) {
-
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -2214,15 +2508,19 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 		fprintf(fp, "select_tribute : ");
 		fprintf(fp, "%d,", playerid);
 		fprintf(fp, "%d,%d", min, max);
-		fprintf(fp, ",%d", core.select_cards.size());
+		int cs = core.select_cards.size();
+		if (cancelable)
+			cs = -cs;
+		fprintf(fp, ",%d", cs);
 		for (auto& pcard : core.select_cards) {
 			fprintf(fp, ",%d", pcard->fieldid_r);
 		}
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -2230,6 +2528,8 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -2239,6 +2539,7 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -2246,12 +2547,44 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li >= 1) {
+			return_cards.clear();
+			returns.clear();
+			for (auto& pcard : core.select_cards) {
+				for (auto currval : currvals) {
+					if (pcard->fieldid_r == currval) {
+						return_cards.list.push_back(pcard);
+					}
+				}
+			}
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "select_tribute : ");
+				for (auto& currval : currvals) {
+					if (first) {
+						first = false;
+						fprintf(fp, "%d", currval);
+					}
+					else
+						fprintf(fp, ",%d", currval);
+				}
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -2470,9 +2803,10 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 		}
 		fprintf(ffp, "\n");
 		fclose(ffp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -2480,6 +2814,8 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -2489,6 +2825,7 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -2496,12 +2833,44 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			return_cards.clear();
+			returns.clear();
+			for (auto& pcard : core.select_cards) {
+				for (auto currval : currvals) {
+					if (pcard->fieldid_r == currval) {
+						return_cards.list.push_back(pcard);
+					}
+				}
+			}
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "select_counter : ");
+				for (auto& currval : currvals) {
+					if (first) {
+						first = false;
+						fprintf(fp, "%d", currval);
+					}
+					else
+						fprintf(fp, ",%d", currval);
+				}
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -2675,7 +3044,6 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 					fprintf(fp, ",%d", returns.at<int16_t>(i));
 			}
 			fprintf(fp, "\n");
-
 			fclose(fp);
 		}
 	}
@@ -2718,9 +3086,10 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 		}
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -2728,6 +3097,8 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -2737,6 +3108,7 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -2744,12 +3116,44 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li >= 1) {
+			return_cards.clear();
+			returns.clear();
+			for (auto& pcard : core.select_cards) {
+				for (auto currval : currvals) {
+					if (pcard->fieldid_r == currval) {
+						return_cards.list.push_back(pcard);
+					}
+				}
+			}
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "select_with_sum_limit : ");
+				for (auto& currval : currvals) {
+					if (first) {
+						first = false;
+						fprintf(fp, "%d", currval);
+					}
+					else
+						fprintf(fp, ",%d", currval);
+				}
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -2981,7 +3385,6 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 		fclose(fp);
 	}
 	if ((step == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) && !(core.select_cards.empty())) {
-
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -2991,9 +3394,10 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 		fprintf(fp, "%d", core.select_cards.size());
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -3001,6 +3405,8 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -3010,6 +3416,7 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -3017,12 +3424,43 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			returns.clear();
+			for (auto& pcard : core.select_cards) {
+				for (auto currval : currvals) {
+					if (pcard->fieldid_r == currval) {
+						returns.data.push_back(currval);
+					}
+				}
+			}
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				bool first = true;
+				fprintf(fp, "sort_card : ");
+				for (auto& currval : currvals) {
+					if (first) {
+						first = false;
+						fprintf(fp, "%d", currval);
+					}
+					else
+						fprintf(fp, ",%d", currval);
+				}
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -3209,9 +3647,10 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, uint
 		fprintf(fp, "%d,%lld", count, available);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -3219,6 +3658,8 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, uint
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -3228,6 +3669,7 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, uint
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -3235,12 +3677,35 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, uint
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			returns.clear();
+			returns.data.push_back(currvalue);
+			returns.data.push_back(currvalue >> 8);
+			returns.data.push_back(currvalue >> 16);
+			returns.data.push_back(currvalue >> 24);
+			auto message = pduel->new_message(MSG_HINT);
+			message->write<uint8_t>(HINT_RACE);
+			message->write<uint8_t>(playerid);
+			message->write<uint64_t>(core.select_options[returns.at<int32_t>(0)]);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "announce_race : %d", currvalue);
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -3383,9 +3848,10 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count,
 		fprintf(fp, "%d,%d", count, available);
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -3393,6 +3859,8 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count,
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -3402,6 +3870,7 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count,
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -3409,12 +3878,35 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count,
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			returns.clear();
+			returns.data.push_back(currvalue);
+			returns.data.push_back(currvalue >> 8);
+			returns.data.push_back(currvalue >> 16);
+			returns.data.push_back(currvalue >> 24);
+			auto message = pduel->new_message(MSG_HINT);
+			message->write<uint8_t>(HINT_ATTRIB);
+			message->write<uint8_t>(playerid);
+			message->write<uint64_t>(core.select_options[returns.at<int32_t>(0)]);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "announce_attribute : %d", currvalue);
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -3661,9 +4153,10 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 		}
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -3671,6 +4164,8 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -3680,6 +4175,7 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -3687,12 +4183,35 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			returns.clear();
+			returns.data.push_back(currvalue);
+			returns.data.push_back(currvalue >> 8);
+			returns.data.push_back(currvalue >> 16);
+			returns.data.push_back(currvalue >> 24);
+			auto message = pduel->new_message(MSG_HINT);
+			message->write<uint8_t>(HINT_CODE);
+			message->write<uint8_t>(playerid);
+			message->write<uint64_t>(core.select_options[returns.at<int32_t>(0)]);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "announce_card : %d", currvalue);
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -3832,9 +4351,10 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 		}
 		fprintf(fp, "\n");
 		fclose(fp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, playerid);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -3842,6 +4362,8 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -3851,6 +4373,7 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -3858,12 +4381,35 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 1) {
+			int currvalue = currvals[0];
+			returns.clear();
+			returns.data.push_back(currvalue);
+			returns.data.push_back(currvalue >> 8);
+			returns.data.push_back(currvalue >> 16);
+			returns.data.push_back(currvalue >> 24);
+			auto message = pduel->new_message(MSG_HINT);
+			message->write<uint8_t>(HINT_NUMBER);
+			message->write<uint8_t>(playerid);
+			message->write<uint64_t>(core.select_options[returns.at<int32_t>(0)]);
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "announce_number : %d", currvalue);
+				fclose(fp);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -3988,9 +4534,10 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 		fprintf(ffp, "%d", 3);
 		fprintf(ffp, "\n");
 		fclose(ffp);
-		int li = 1;
+		int li = 0;
+		std::vector<uint32_t> currvals;
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
-		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
 			lua_pushinteger(pduel->lua->lua_state, step);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_call(pduel->lua->lua_state, 2, 0);
@@ -3998,6 +4545,8 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 			while (ln) {
 				lua_getglobal(pduel->lua->lua_state, "playerop_table");
 				if (lua_istable(pduel->lua->lua_state, -1)) {
+					if (!li)
+						li++;
 					lua_pushinteger(pduel->lua->lua_state, li);
 					lua_gettable(pduel->lua->lua_state, -2);
 					if (!lua_isnil(pduel->lua->lua_state, -1)) {
@@ -4007,6 +4556,7 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 							lua_pushinteger(pduel->lua->lua_state, lj);
 							lua_call(pduel->lua->lua_state, 1, 0);
 						}
+						currvals.push_back(lj);
 						lua_pop(pduel->lua->lua_state, -1);
 						li++;
 					}
@@ -4014,12 +4564,47 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 						ln = false;
 					lua_pop(pduel->lua->lua_state, -1);
 				}
-				else
+				else {
+					
 					ln = false;
+				}
 				lua_pop(pduel->lua->lua_state, -1);
 			}
 		}
 		lua_pop(pduel->lua->lua_state, -1);
+		if (li > 2) {
+			int currval1 = currvals[0];
+			int currval2 = currvals[1];
+			int32_t hand0 = currval1;
+			int32_t hand1 = currval2;
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "rock_paper_scissors : %d,%d", hand0, hand1);
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			auto message = pduel->new_message(MSG_HAND_RES);
+			message->write<uint8_t>(hand0 + (hand1 << 2));
+			if (hand0 == hand1) {
+				if (repeat) {
+					pduel->playerop_line++;
+					fclose(fp);
+					return FALSE;
+				}
+				else
+					returns.set<int32_t>(0, PLAYER_NONE);
+			}
+			else if ((hand0 == 1 && hand1 == 2) || (hand0 == 2 && hand1 == 3) || (hand0 == 3 && hand1 == 1)) {
+				returns.set<int32_t>(0, 1);
+			}
+			else {
+				returns.set<int32_t>(0, 0);
+			}
+			return TRUE;
+		}
 	}
 	if ((plconf == 1) || (/*!plconf &&*/ pduel->playerop_config)) {
 		char vfc[50];
@@ -4145,7 +4730,6 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 			fopen_s(&fp, fc, "a+");
 			fprintf(fp, "rock_paper_scissors : %d,%d", hand0, hand1);
 			fprintf(fp, "\n");
-
 			fclose(fp);
 		}
 		auto message = pduel->new_message(MSG_HAND_RES);

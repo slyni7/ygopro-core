@@ -420,8 +420,10 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 		}
 		qduel->game_field->player[0].start_lp = pduel->game_field->player[0].start_lp;
 		qduel->game_field->player[0].start_count = pduel->game_field->player[0].start_count;
+		qduel->game_field->player[0].draw_count = pduel->game_field->player[0].draw_count;
 		qduel->game_field->player[1].start_lp = pduel->game_field->player[1].start_lp;
 		qduel->game_field->player[1].start_count = pduel->game_field->player[1].start_count;
+		qduel->game_field->player[1].draw_count = pduel->game_field->player[1].draw_count;
 		qduel->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
 		int stop = 0;
 		int dodododo = 0;
@@ -450,9 +452,22 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 			}
 		} while (!stop);
 	}
-	uint32_t count = qduel->game_field->filter_field_card(0, LOCATION_MZONE, 0, 0);
-	lua_pushinteger(L, count);
+	lua_getglobal(qduel->lua->lua_state, "playerop_evaluate");
+	bool pa = false;
+	int count = 0;
+	if (!lua_isnil(qduel->lua->lua_state, -1)) {
+		lua_call(qduel->lua->lua_state, 0, 1);
+		count = lua_tointeger(qduel->lua->lua_state, -1);
+		lua_pop(qduel->lua->lua_state, -1);
+		pa = true;
+	}
+	else {
+	}
+	lua_pop(qduel->lua->lua_state, -1);
 	delete qduel;
+	if (!pa)
+		return 0;
+	lua_pushinteger(L, count);
 	return 1;
 }
 template<int message_code, size_t max_len>
