@@ -169,6 +169,11 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel duel, OCG_NewCardInfo info) {
 				break;
 		}
 	}
+	if (info.code == 10171017) {
+		info.code += info.con;
+		info.loc = 0;
+		info.seq = 0;
+	}
 	auto& game_field = *DUEL->game_field;
 	if(info.duelist == 0) {
 		if(game_field.is_location_useable(info.con, info.loc, info.seq)) {
@@ -204,6 +209,17 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel duel, OCG_NewCardInfo info) {
 		auto& list = (info.loc == LOCATION_DECK) ? player.extra_lists_main[info.duelist] : player.extra_lists_extra[info.duelist];
 		list.push_back(pcard);
 		pcard->current.sequence = list.size() - 1;
+	}
+	if (info.loc == 0x80000000) {
+		luaL_checkstack(DUEL->lua->lua_state, 3, nullptr);
+		lua_getglobal(DUEL->lua->lua_state, "side_deck_operation");
+		if (!lua_isnil(DUEL->lua->lua_state, -1)) {
+			lua_pushinteger(DUEL->lua->lua_state, info.con);
+			lua_pushinteger(DUEL->lua->lua_state, info.code);
+			lua_pcall(DUEL->lua->lua_state, 2, 0, 0);
+			lua_settop(DUEL->lua->lua_state, 0);
+		}
+		lua_settop(DUEL->lua->lua_state, 0);
 	}
 }
 

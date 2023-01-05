@@ -4355,6 +4355,13 @@ LUA_FUNCTION(OneCardCheck) {
 	lua_pushinteger(L, pduel->game_field->core.one_card_check);
 	return 1;
 }
+LUA_FUNCTION(SetSkipAnnounce) {
+	check_param_count(L, 1);
+	auto skip = lua_get<bool>(L, 1);
+	const auto pduel = lua_get<duel*>(L);
+	pduel->game_field->core.skip_announce = skip;
+	return 0;
+}
 #define INFO_FUNC_FROM_CODE(lua_name,attr) \
 LUA_FUNCTION(GetCard ##lua_name ##FromCode) { \
 	check_param_count(L, 1); \

@@ -386,6 +386,7 @@ struct processor {
 	processor_list recover_damage_reserve;
 	effect_vector dec_count_reserve;
 	uint8_t one_card_check;
+	bool skip_announce = false;
 	action_counter_t& get_counter_map(ActivityType counter_type) {
 		switch(counter_type) {
 			case ACTIVITY_SUMMON:

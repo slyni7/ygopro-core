@@ -321,13 +321,13 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 	}
 	fclose(kfp);
 	qduel->qlayerop_line = line_count;
-	char dfc[50];
+	/*char dfc[50];
 	if (plconf) sprintf_s(dfc, "./playeropline.log"); else sprintf_s(dfc, "./playeropline %lld.log", options.seed[0]);
 	FILE *dfp = NULL;
 	fopen_s(&dfp, dfc, "a+");
 	fprintf(dfp, "%d", qduel->qlayerop_line);
 	fprintf(dfp, "\n");
-	fclose(dfp);
+	fclose(dfp);*/
 	if (!pduel->playerop_config) {
 		qduel->playerop_line = 0;
 		for (int i = 0; i < pduel->playerop_cinfo; i++) {
@@ -379,6 +379,11 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 				if (line_count > qduel->playerop_line)
 					break;
 			}
+			if (info.code == 10171017) {
+				info.code += info.con;
+				info.loc = 0;
+				info.seq = 0;
+			}
 			auto& game_field = *qduel->game_field;
 			if (info.duelist == 0) {
 				if (game_field.is_location_useable(info.con, info.loc, info.seq)) {
@@ -419,18 +424,27 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 			fclose(fp);
 		}
 		qduel->game_field->player[0].start_lp = pduel->game_field->player[0].start_lp;
+		qduel->game_field->player[0].lp = qduel->game_field->player[0].start_lp;
 		qduel->game_field->player[0].start_count = pduel->game_field->player[0].start_count;
 		qduel->game_field->player[0].draw_count = pduel->game_field->player[0].draw_count;
 		qduel->game_field->player[1].start_lp = pduel->game_field->player[1].start_lp;
+		qduel->game_field->player[1].lp = qduel->game_field->player[1].start_lp;
 		qduel->game_field->player[1].start_count = pduel->game_field->player[1].start_count;
 		qduel->game_field->player[1].draw_count = pduel->game_field->player[1].draw_count;
 		qduel->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
 		int stop = 0;
-		int dodododo = 0;
+		/*int dodododo = 0;
+		int dododododo = 50;
+		luaL_checkstack(qduel->lua->lua_state, 1, nullptr);
+		lua_getglobal(qduel->lua->lua_state, "playerop_dododododo");
+		if (!lua_isnil(qduel->lua->lua_state, -1)) {
+			dododododo = lua_tointeger(qduel->lua->lua_state, -1);
+		}
+		lua_settop(qduel->lua->lua_state, 0);*/
 		do {
 			qduel->buff.clear();
 			int flag = 0;
-			int dododo = 0;
+			//int dododo = 0;
 			do {
 				/*char dfc[50];
 				if (plconf) sprintf_s(dfc, "./playeropdebug.log"); else sprintf_s(dfc, "./playeropdebug %lld.log", options.seed[0]);
@@ -439,36 +453,58 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 				fprintf(dfp, "%d,%d", qduel->playerop_line, qduel->qlayerop_line);
 				fprintf(dfp, "\n");
 				fclose(dfp);*/
-				dododo++;
+				//dododo++;
 				flag = qduel->game_field->process();
 				qduel->generate_buffer();
 			} while (qduel->buff.size() == 0 && flag == PROCESSOR_FLAG_CONTINUE);
-			if (dododo == 1)
+			/*if (dododo == 1)
 				dodododo++;
 			else
 				dodododo = 0;
-			if (dodododo > 500) {
-				stop = 500;
-			}
+			if (dodododo > dododododo) {
+				stop = dododododo;
+			}*/
+			/*if (qduel->playerop_line >= 0xfffffff)
+				stop = 0xfffffff;*/
+			stop = (qduel->buff.size() != 0 && flag == PROCESSOR_FLAG_WAITING) || (qduel->playerop_config >= 0xfffffff);
 		} while (!stop);
 	}
+	luaL_checkstack(qduel->lua->lua_state, 2, nullptr);
 	lua_getglobal(qduel->lua->lua_state, "playerop_evaluate");
 	bool pa = false;
-	int count = 0;
+	int count1 = 0;
+	int count2 = 0;
+	int count3 = 0;
+	int count4 = 0;
+	int count5 = 0;
+	int count6 = 0;
+	int count7 = 0;
 	if (!lua_isnil(qduel->lua->lua_state, -1)) {
-		lua_call(qduel->lua->lua_state, 0, 1);
-		count = lua_tointeger(qduel->lua->lua_state, -1);
-		lua_pop(qduel->lua->lua_state, -1);
+		lua_pcall(qduel->lua->lua_state, 0, 7, 0);
+		count1 = lua_tointeger(qduel->lua->lua_state, -7);
+		count2 = lua_tointeger(qduel->lua->lua_state, -6);
+		count3 = lua_tointeger(qduel->lua->lua_state, -5);
+		count4 = lua_tointeger(qduel->lua->lua_state, -4);
+		count5 = lua_tointeger(qduel->lua->lua_state, -3);
+		count6 = lua_tointeger(qduel->lua->lua_state, -2);
+		count7 = lua_tointeger(qduel->lua->lua_state, -1);
+		lua_settop(qduel->lua->lua_state, 0);
 		pa = true;
 	}
 	else {
 	}
-	lua_pop(qduel->lua->lua_state, -1);
+	lua_settop(qduel->lua->lua_state, 0);
 	delete qduel;
 	if (!pa)
 		return 0;
-	lua_pushinteger(L, count);
-	return 1;
+	lua_pushinteger(L, count1);
+	lua_pushinteger(L, count2);
+	lua_pushinteger(L, count3);
+	lua_pushinteger(L, count4);
+	lua_pushinteger(L, count5);
+	lua_pushinteger(L, count6);
+	lua_pushinteger(L, count7);
+	return 7;
 }
 template<int message_code, size_t max_len>
 int32_t write_string_message(lua_State* L) {
