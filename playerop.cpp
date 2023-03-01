@@ -161,7 +161,12 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 	}
 	if (step == 0) {
 		auto message = pduel->new_message(MSG_SELECT_BATTLECMD);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		//Activatable
 		message->write<uint32_t>(core.select_chains.size());
 		std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
@@ -390,7 +395,12 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 	}
 	if (step == 0) {
 		auto message = pduel->new_message(MSG_SELECT_IDLECMD);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		//idle summon
 		message->write<uint32_t>(core.summonable_cards.size());
 		for (auto& pcard : core.summonable_cards) {
@@ -445,11 +455,11 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 			message->write<uint8_t>(peffect->get_client_mode());
 		}
 		//To BP
-		if (infos.phase == PHASE_MAIN1 && core.to_bp)
+		if (((infos.phase == PHASE_MAIN1 && core.to_bp) || ((infos.idlecmd_player != PLAYER_NONE) && is_player_affected_by_effect(infos.idlecmd_player, EFFECT_GENKAI_BATTLE))) && (infos.btlcmd_player == PLAYER_NONE))
 			message->write<uint8_t>(1);
 		else
 			message->write<uint8_t>(0);
-		if (core.to_ep)
+		if (core.to_ep || (infos.idlecmd_player != PLAYER_NONE))
 			message->write<uint8_t>(1);
 		else
 			message->write<uint8_t>(0);
@@ -469,8 +479,8 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 			|| (t == 3 && s >= core.msetable_cards.size())
 			|| (t == 4 && s >= core.ssetable_cards.size())
 			|| (t == 5 && s >= core.select_chains.size())
-			|| (t == 6 && (infos.phase != PHASE_MAIN1 || !core.to_bp))
-			|| (t == 7 && !core.to_ep)
+			|| (t == 6 && !(((infos.phase == PHASE_MAIN1 && core.to_bp) || ((infos.idlecmd_player != PLAYER_NONE) && is_player_affected_by_effect(infos.idlecmd_player, EFFECT_GENKAI_BATTLE))) && (infos.btlcmd_player == PLAYER_NONE)))
+			|| (t == 7 && !core.to_ep && (infos.idlecmd_player == PLAYER_NONE))
 			|| (t == 8 && !(infos.can_shuffle && player[playerid].list_hand.size() > 1))) {
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
@@ -635,7 +645,12 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 			return TRUE;
 		}
 		auto message = pduel->new_message(MSG_SELECT_EFFECTYN);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint32_t>(pcard->data.code);
 		message->write(pcard->get_info_location());
 		message->write<uint64_t>(description);
@@ -798,7 +813,12 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 			return TRUE;
 		}
 		auto message = pduel->new_message(MSG_SELECT_YESNO);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint64_t>(description);
 		returns.set<int32_t>(0, -1);
 		return FALSE;
@@ -976,7 +996,12 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 			return TRUE;
 		}
 		auto message = pduel->new_message(MSG_SELECT_OPTION);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(static_cast<uint8_t>(core.select_options.size()));
 		for (auto& option : core.select_options)
 			message->write<uint64_t>(option);
@@ -1293,7 +1318,12 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 		}
 		core.units.begin()->arg2 = ((uint32_t)min) + (((uint32_t)max) << 16);
 		auto message = pduel->new_message(MSG_SELECT_CARD);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(cancelable || min == 0);
 		message->write<uint32_t>(min);
 		message->write<uint32_t>(max);
@@ -1573,7 +1603,12 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 		}
 		core.units.begin()->arg2 = ((uint32_t)min) + (((uint32_t)max) << 16);
 		auto message = pduel->new_message(MSG_SELECT_CARD);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(cancelable || min == 0);
 		message->write<uint32_t>(min);
 		message->write<uint32_t>(max);
@@ -1811,7 +1846,12 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 			return TRUE;
 		}
 		auto message = pduel->new_message(MSG_SELECT_UNSELECT_CARD);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(finishable);
 		message->write<uint8_t>(cancelable);
 		message->write<uint32_t>(min);
@@ -2041,7 +2081,12 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 			return TRUE;
 		}
 		auto message = pduel->new_message(MSG_SELECT_CHAIN);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(spe_count);
 		message->write<uint8_t>(forced);
 		message->write<uint32_t>(core.hint_timing[playerid]);
@@ -2314,9 +2359,17 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 			return TRUE;
 		}
 		auto message = pduel->new_message((core.units.begin()->type == PROCESSOR_SELECT_PLACE) ? MSG_SELECT_PLACE : MSG_SELECT_DISFIELD);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(count);
-		message->write<uint32_t>(flag);
+		if (eset.size())
+			message->write<uint32_t>((flag >> 16) | ((flag & 0xffff) << 16));
+		else
+			message->write<uint32_t>(flag);
 		returns.set<int8_t>(0, 0);
 		return FALSE;
 	}
@@ -2535,7 +2588,12 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 			return TRUE;
 		}
 		auto message = pduel->new_message(MSG_SELECT_POSITION);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint32_t>(code);
 		message->write<uint8_t>(positions);
 		returns.set<int32_t>(0, 0);
@@ -2782,7 +2840,12 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 			min = max;
 		core.units.begin()->arg2 = ((uint32_t)min) + (((uint32_t)max) << 16);
 		auto message = pduel->new_message(MSG_SELECT_TRIBUTE);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(cancelable || min == 0);
 		message->write<uint32_t>(min);
 		message->write<uint32_t>(max);
@@ -3085,7 +3148,12 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 		if (count > total)
 			count = total;
 		auto message = pduel->new_message(MSG_SELECT_COUNTER);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint16_t>(countertype);
 		message->write<uint16_t>(count);
 		message->write<uint32_t>(core.select_cards.size());
@@ -3342,7 +3410,12 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 			return TRUE;
 		}
 		auto message = pduel->new_message(MSG_SELECT_SUM);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		if (max)
 			message->write<uint8_t>(0);
 		else
@@ -3653,7 +3726,12 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 			return TRUE;
 		}
 		auto message = pduel->new_message((is_chain) ? MSG_SORT_CHAIN : MSG_SORT_CARD);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint32_t>(core.select_cards.size());
 		for (auto& pcard : core.select_cards) {
 			message->write<uint32_t>(pcard->data.code);
@@ -3875,7 +3953,12 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, uint
 			core.units.begin()->arg1 = (count << 16) + playerid;
 		}
 		auto message = pduel->new_message(MSG_ANNOUNCE_RACE);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(count);
 		message->write<uint64_t>(available);
 		return FALSE;
@@ -4077,7 +4160,12 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count,
 			core.units.begin()->arg1 = (count << 16) + playerid;
 		}
 		auto message = pduel->new_message(MSG_ANNOUNCE_ATTRIB);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(count);
 		message->write<uint32_t>(available);
 		return FALSE;
@@ -4381,7 +4469,12 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 	}
 	if (step == 0) {
 		auto message = pduel->new_message(MSG_ANNOUNCE_CARD);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(static_cast<uint8_t>(core.select_options.size()));
 		for (auto& option : core.select_options)
 			message->write<uint64_t>(option);
@@ -4583,7 +4676,12 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 	}
 	if (step == 0) {
 		auto message = pduel->new_message(MSG_ANNOUNCE_NUMBER);
-		message->write<uint8_t>(playerid);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
 		message->write<uint8_t>(static_cast<uint8_t>(core.select_options.size()));
 		for (auto& option : core.select_options)
 			message->write<uint64_t>(option);

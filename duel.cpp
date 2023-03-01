@@ -30,6 +30,14 @@ duel::~duel() {
 		delete pgroup;
 	for(auto& peffect : effects)
 		delete peffect;
+	for (auto& pduel : dummy_duels)
+		delete pduel;
+	for (auto& pcard : dummy_cards)
+		delete pcard;
+	for (auto& pgroup : dummy_groups)
+		delete pgroup;
+	for (auto& peffect : dummy_effects)
+		delete peffect;
 	delete game_field;
 	delete lua;
 }
@@ -55,6 +63,71 @@ void duel::clear() {
 	effects.clear();
 	game_field = new field(this, default_options);
 	game_field->temp_card = new_card(0);
+}
+void duel::dummy() {
+	OCG_DuelOptions default_options{ {},0,{8000,5,1},{8000,5,1} };
+	cards.clear();
+	groups.clear();
+	effects.clear();
+	lua = new interpreter(this, default_options);
+	game_field = new field(this, default_options);
+	random = std::array<uint64_t, 4>{ { playerop_seed[0], playerop_seed[1], playerop_seed[2], playerop_seed[3] } };
+	game_field->temp_card = new_card(0);
+}
+void duel::shahrazad() {
+	static constexpr OCG_DuelOptions default_options{ {},0,{8000,5,1},{8000,5,1} };
+	std::unordered_set<card*> scards;
+	for (auto& pcard : cards)
+		scards.insert(pcard);
+	shahrazad_cards.push_back(scards);
+	cards.clear();
+	std::unordered_set<group*> sgroups;
+	for (auto& pgroup : groups)
+		sgroups.insert(pgroup);
+	shahrazad_groups.push_back(sgroups);
+	groups.clear();
+	std::unordered_set<effect*> seffects;
+	for (auto& peffect : effects)
+		seffects.insert(peffect);
+	shahrazad_effects.push_back(seffects);
+	effects.clear();
+	shahrazad_fields.push_back(game_field);
+	game_field = new field(this, default_options);
+	game_field->temp_card = new_card(0);
+	shahrazad_count++;
+}
+void duel::shahrazad_out() {
+	for (auto& pcard : cards)
+		delete pcard;
+	for (auto& pgroup : groups) {
+		lua->unregister_group(pgroup);
+		delete pgroup;
+	}
+	for (auto& peffect : effects) {
+		lua->unregister_effect(peffect);
+		delete peffect;
+	}
+	delete game_field;
+	cards.clear();
+	groups.clear();
+	effects.clear();
+	auto scards = shahrazad_cards.back();
+	for (auto& pcard : scards)
+		cards.insert(pcard);
+	auto sgroups = shahrazad_groups.back();
+	for (auto& pgroup : sgroups)
+		groups.insert(pgroup);
+	auto seffects = shahrazad_effects.back();
+	for (auto& peffect : seffects)
+		effects.insert(peffect);
+	game_field = shahrazad_fields.back();
+	shahrazad_cards.pop_back();
+	shahrazad_groups.pop_back();
+	shahrazad_effects.pop_back();
+	shahrazad_fields.pop_back();
+	shahrazad_count--;
+	game_field->reload_field_info();
+	game_field->raise_event((card*)0, 18453728, 0, REASON_EFFECT, shahrazad_result, shahrazad_result, 0);
 }
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
@@ -141,9 +214,9 @@ int32_t duel::get_next_integer(int32_t l, int32_t h) {
 	return static_cast<int32_t>((n % range) + l);
 }
 duel::duel_message* duel::new_message(uint8_t message) {
-	/*if (game_field->infos.turn_id > 1)
+	if (skipmsg)
 		messages.emplace_back(0xff);
-	else*/
+	else
 		messages.emplace_back(message);
 	return &(messages.back());
 }
@@ -190,7 +263,9 @@ card_data::card_data(const OCG_CardData& data) {
 	COPY(lscale);
 	COPY(rscale);
 	COPY(link_marker);
+	COPY(ot);
 #undef COPY
+	//this->name = data.name;
 	if(data.setcodes == nullptr)
 		return;
 	uint16_t sc = 0;

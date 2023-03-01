@@ -5,6 +5,10 @@
 #define OCG_VERSION_MAJOR 10
 #define OCG_VERSION_MINOR 0
 
+/*#include <iostream>
+#include <string>
+#include <locale>*/
+
 typedef enum OCG_LogTypes {
 	OCG_LOG_TYPE_ERROR,
 	OCG_LOG_TYPE_FROM_SCRIPT,
@@ -41,6 +45,8 @@ typedef struct OCG_CardData {
 	uint32_t lscale;
 	uint32_t rscale;
 	uint32_t link_marker;
+	uint32_t ot;
+	//std::wstring name;
 }OCG_CardData;
 
 typedef struct OCG_Player {

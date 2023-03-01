@@ -40,7 +40,7 @@ interpreter::interpreter(duel* pd, const OCG_DuelOptions& options): coroutines(2
 	open_lib(LUA_STRLIBNAME, luaopen_string);
 	open_lib(LUA_TABLIBNAME, luaopen_table);
 	open_lib(LUA_MATHLIBNAME, luaopen_math);
-	if(options.enableUnsafeLibraries != 0)
+	if(1)//(options.enableUnsafeLibraries != 0)
 		open_lib(LUA_IOLIBNAME, luaopen_io);
 	else {
 		// Remove "dangerous" functions
@@ -61,8 +61,22 @@ interpreter::interpreter(duel* pd, const OCG_DuelOptions& options): coroutines(2
 	//effects
 	lua_pushinteger(lua_state, EFFECT_SUMMONABLE_CARD);
 	lua_setglobal(lua_state, "EFFECT_SUMMONABLE_CARD");
+	lua_pushinteger(lua_state, EVENT_IDLE_TIMING);
+	lua_setglobal(lua_state, "EVENT_IDLE_TIMING");
+	lua_pushinteger(lua_state, EFFECT_CAPABLE_CHANGE_POSITION);
+	lua_setglobal(lua_state, "EFFECT_CAPABLE_CHANGE_POSITION");
+	lua_pushinteger(lua_state, EFFECT_CHANGE_RECOVER);
+	lua_setglobal(lua_state, "EFFECT_CHANGE_RECOVER");
+	lua_pushinteger(lua_state, EFFECT_EXTRA_TURN);
+	lua_setglobal(lua_state, "EFFECT_EXTRA_TURN");
+	lua_pushinteger(lua_state, EFFECT_PROMISED_END);
+	lua_setglobal(lua_state, "EFFECT_PROMISED_END");
 	lua_pushinteger(lua_state, EVENT_ANYTIME);
 	lua_setglobal(lua_state, "EVENT_ANYTIME");
+	lua_pushinteger(lua_state, EFFECT_GENKAI_BATTLE);
+	lua_setglobal(lua_state, "EFFECT_GENKAI_BATTLE");
+	lua_pushinteger(lua_state, EVENT_ANYCALL);
+	lua_setglobal(lua_state, "EVENT_ANYCALL");
 }
 interpreter::~interpreter() {
 	lua_close(lua_state);
@@ -509,6 +523,7 @@ int32_t interpreter::call_coroutine(int32_t f, uint32_t param_count, lua_Integer
 		auto ret = coroutines.emplace(f, std::make_pair(rthread, threadref));
 		it = ret.first;
 	} else {
+		/*danger level*/
 		if(step == 0) {
 			auto ref = it->second.second;
 			coroutines.erase(it);

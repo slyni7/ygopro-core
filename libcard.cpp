@@ -2681,6 +2681,7 @@ CARD_INFO_FUNC(Defense, defense)
 CARD_INFO_FUNC(Rscale, rscale)
 CARD_INFO_FUNC(Lscale, lscale)
 CARD_INFO_FUNC(LinkMarker, link_marker)
+CARD_INFO_FUNC(OT, ot)
 #undef CARD_INFO_FUNC
 LUA_FUNCTION(Recreate) {
 	check_param_count(L, 2);

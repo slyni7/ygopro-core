@@ -236,6 +236,9 @@ OCGAPI void OCG_OneCard(OCG_Duel duel, uint8_t playerid) {
 		else
 			DUEL->game_field->core.one_card_check = 1;
 	}
+	/*auto message = DUEL->new_message(MSG_DAMAGE);
+	message->write<uint8_t>(1 - playerid);
+	message->write<uint32_t>(100);*/
 }
 
 OCGAPI int OCG_DuelProcess(OCG_Duel duel) {

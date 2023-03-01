@@ -634,6 +634,20 @@ int32_t field::recover(uint16_t step, effect* reason_effect, uint32_t reason, ui
 				}
 			}
 		}
+		uint32_t val = amount;
+		eset.clear();
+		filter_player_effect(playerid, EFFECT_CHANGE_RECOVER, &eset);
+		for (const auto& peff : eset) {
+			pduel->lua->add_param<PARAM_TYPE_EFFECT>(reason_effect);
+			pduel->lua->add_param<PARAM_TYPE_INT>(val);
+			pduel->lua->add_param<PARAM_TYPE_INT>(reason);
+			pduel->lua->add_param<PARAM_TYPE_INT>(reason_player);
+			val = static_cast<uint32_t>(peff->get_value(4));
+			returns.set<uint32_t>(0, val);
+			if (val == 0)
+				return TRUE;
+		}
+		core.units.begin()->arg3 = val;
 		if(is_step) {
 			core.units.begin()->step = 9;
 			return TRUE;
@@ -5101,7 +5115,7 @@ int32_t field::change_position(uint16_t step, group* targets, effect* reason_eff
 			uint8_t npos = pcard->position_param & 0xff;
 			uint8_t opos = pcard->current.position;
 			if((pcard->current.location != LOCATION_MZONE && pcard->current.location != LOCATION_SZONE)
-				|| ((pcard->data.type & TYPE_LINK) && (pcard->data.type & TYPE_MONSTER))
+				|| ((pcard->data.type & TYPE_LINK) && (pcard->data.type & TYPE_MONSTER) && !pcard->is_affected_by_effect(EFFECT_CAPABLE_CHANGE_POSITION))
 				|| pcard->get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP)
 				|| (reason_effect && !pcard->is_affect_by_effect(reason_effect)) || npos == opos
 				|| (!(pcard->data.type & TYPE_TOKEN) && (opos & POS_FACEUP) && (npos & POS_FACEDOWN) && !pcard->is_capable_turn_set(reason_player))

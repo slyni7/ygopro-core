@@ -169,8 +169,12 @@ struct field_info {
 	uint32_t card_id{ 1 };
 	uint16_t phase{ 0 };
 	uint8_t turn_player{ 0 };
+	uint8_t idlecmd_player{ PLAYER_NONE };
+	uint8_t btlcmd_player{ PLAYER_NONE };
+	uint16_t saved_phase{ 0 };
 	uint8_t priorities[2]{ 0,0 };
 	uint8_t can_shuffle{ TRUE };
+	uint8_t extra_turn{ 0 };
 };
 struct lpcost {
 	int32_t count{ 0 };
@@ -408,6 +412,7 @@ struct processor {
 };
 class field {
 public:
+
 	duel* pduel;
 	std::array<player_info,2> player;
 	card* temp_card;

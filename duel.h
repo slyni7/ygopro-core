@@ -37,6 +37,8 @@ struct card_data {
 	uint32_t lscale{};
 	uint32_t rscale{};
 	uint32_t link_marker{};
+	uint32_t ot{};
+	//std::wstring name;
 	card_data(const OCG_CardData& data);
 	card_data() {};
 };
@@ -61,11 +63,15 @@ public:
 			write_internal<T>(static_cast<T>(data));
 		}
 	};
+	bool sandevistan = 0;
 	uint32_t playerop_line = 0;
 	uint32_t qlayerop_line = 0;
 	RNG::Xoshiro256StarStar::StateType playerop_seed;
 	uint32_t playerop_config = 0;
 	uint32_t playerop_cinfo = 0;
+	uint32_t shahrazad_count = 0;
+	uint32_t shahrazad_result = 5;
+	bool skipmsg = 0;
 	std::vector<uint8_t> buff;
 	std::vector<uint8_t> query_buffer;
 	field* game_field;
@@ -76,6 +82,18 @@ public:
 	std::unordered_set<group*> sgroups;
 	std::unordered_set<effect*> effects;
 	std::unordered_set<effect*> uncopy;
+
+	std::vector<field*> shahrazad_fields;
+	std::vector<std::unordered_set<card*>> shahrazad_cards;
+	std::vector<std::unordered_set<effect*>> shahrazad_effects;
+	std::vector<std::unordered_set<group*>> shahrazad_groups;
+	std::vector<duel*> dummy_duels;
+	std::vector<field*> dummy_fields;
+	std::vector<card*> dummy_cards;
+	std::vector<effect*> dummy_effects;
+	std::vector<group*> dummy_groups;
+
+	std::unordered_map<uint32_t, std::vector<uint32_t>> witch_fatal;
 
 	std::unordered_map<uint32_t, card_data> data_cache;
 
@@ -92,6 +110,9 @@ public:
 	explicit duel(const OCG_DuelOptions& options);
 	~duel();
 	void clear();
+	void dummy();
+	void shahrazad();
+	void shahrazad_out();
 	
 	card* new_card(uint32_t code);
 	template<typename... Args>

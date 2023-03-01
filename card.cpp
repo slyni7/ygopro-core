@@ -3850,7 +3850,7 @@ int32_t card::is_capable_change_position(uint8_t playerid) {
 	if((is_status(STATUS_SUMMON_TURN) || is_status(STATUS_FLIP_SUMMON_TURN) || is_status(STATUS_SPSUMMON_TURN)) &&
 		(summon.player == current.controler || !pduel->game_field->is_flag(DUEL_CAN_REPOS_IF_NON_SUMPLAYER)))
 		return FALSE;
-	if((data.type & TYPE_LINK) && (data.type & TYPE_MONSTER))
+	if((data.type & TYPE_LINK) && (data.type & TYPE_MONSTER) && !is_affected_by_effect(EFFECT_CAPABLE_CHANGE_POSITION))
 		return FALSE;
 	if(announce_count > 0)
 		return FALSE;
@@ -3863,7 +3863,7 @@ int32_t card::is_capable_change_position(uint8_t playerid) {
 	return TRUE;
 }
 int32_t card::is_capable_change_position_by_effect(uint8_t /*playerid*/) {
-	if((data.type & TYPE_LINK) && (data.type & TYPE_MONSTER))
+	if((data.type & TYPE_LINK) && (data.type & TYPE_MONSTER) && !is_affected_by_effect(EFFECT_CAPABLE_CHANGE_POSITION))
 		return FALSE;
 	return TRUE;
 }
