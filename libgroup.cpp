@@ -61,11 +61,12 @@ LUA_FUNCTION(KeepAlive) {
 	check_param_count(L, 1);
 	const auto pduel = lua_get<duel*>(L);
 	auto pgroup = lua_get<group*, true>(L, 1);
-	if(pgroup->is_readonly == 1)
-		return 0;
-	pgroup->is_readonly = 2;
-	pduel->sgroups.erase(pgroup);
-	return 0;
+	if(pgroup->is_readonly != 1) {
+		pgroup->is_readonly = 2;
+		pduel->sgroups.erase(pgroup);
+	}
+	interpreter::pushobject(L, pgroup);
+	return 1;
 }
 LUA_FUNCTION(Clear) {
 	check_param_count(L, 1);
@@ -73,7 +74,8 @@ LUA_FUNCTION(Clear) {
 	assert_readonly_group(L, pgroup);
 	pgroup->is_iterator_dirty = true;
 	pgroup->container.clear();
-	return 0;
+	interpreter::pushobject(L, pgroup);
+	return 1;
 }
 LUA_FUNCTION(AddCard) {
 	check_param_count(L, 2);
@@ -426,7 +428,7 @@ LUA_FUNCTION(CheckWithSumEqual) {
 		max = min;
 	int32_t extraargs = lua_gettop(L) - 5;
 	card_vector cv(pduel->game_field->core.must_select_cards);
-	int32_t mcount = cv.size();
+	int32_t mcount = static_cast<int32_t>(cv.size());
 	const auto beginit = pduel->game_field->core.must_select_cards.begin();
 	const auto endit = pduel->game_field->core.must_select_cards.end();
 	for(auto& pcard : pgroup->container) {
@@ -464,7 +466,7 @@ LUA_FUNCTION(SelectWithSumEqual) {
 		pduel->game_field->core.select_cards.erase(it, pduel->game_field->core.select_cards.end());
 	}
 	card_vector cv(pduel->game_field->core.must_select_cards);
-	int32_t mcount = cv.size();
+	int32_t mcount = static_cast<int32_t>(cv.size());
 	cv.insert(cv.end(), pduel->game_field->core.select_cards.begin(), pduel->game_field->core.select_cards.end());
 	for(auto& pcard : cv)
 		pcard->sum_param = pduel->lua->get_operation_value(pcard, findex, extraargs);
@@ -491,7 +493,7 @@ LUA_FUNCTION(CheckWithSumGreater) {
 	auto acc = lua_get<uint32_t>(L, 3);
 	int32_t extraargs = lua_gettop(L) - 3;
 	card_vector cv(pduel->game_field->core.must_select_cards);
-	int32_t mcount = cv.size();
+	int32_t mcount = static_cast<int32_t>(cv.size());
 	const auto beginit = pduel->game_field->core.must_select_cards.begin();
 	const auto endit = pduel->game_field->core.must_select_cards.end();
 	for(auto& pcard : pgroup->container) {
@@ -523,7 +525,7 @@ LUA_FUNCTION(SelectWithSumGreater) {
 		pduel->game_field->core.select_cards.erase(it, pduel->game_field->core.select_cards.end());
 	}
 	card_vector cv(pduel->game_field->core.must_select_cards);
-	int32_t mcount = cv.size();
+	int32_t mcount = static_cast<int32_t>(cv.size());
 	cv.insert(cv.end(), pduel->game_field->core.select_cards.begin(), pduel->game_field->core.select_cards.end());
 	for(auto& pcard : cv)
 		pcard->sum_param = pduel->lua->get_operation_value(pcard, findex, extraargs);
@@ -881,7 +883,7 @@ LUA_FUNCTION_EXISTING(IsDeleted, is_deleted_object);
 void scriptlib::push_group_lib(lua_State* L) {
 	static constexpr auto grouplib = GET_LUA_FUNCTIONS_ARRAY();
 	static_assert(grouplib.back().name == nullptr, "");
-	lua_createtable(L, 0, grouplib.size() - 1);
+	lua_createtable(L, 0, static_cast<int>(grouplib.size() - 1));
 	luaL_setfuncs(L, grouplib.data(), 0);
 	lua_pushstring(L, "__index");
 	lua_pushvalue(L, -2);
