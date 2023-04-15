@@ -462,6 +462,27 @@ LUA_FUNCTION(AddWitchFatal) {
 	}
 	return 0;
 }
+LUA_FUNCTION(RemoveWitchFatal) {
+	auto pduel = lua_get<duel*>(L);
+	check_param_count(L, 2);
+	auto code = lua_get<uint32_t>(L, 1);
+	auto index = lua_get<uint32_t>(L, 2);
+	int result = 0;
+	if (pduel->witch_fatal.find(code) != pduel->witch_fatal.end()) {
+		int i = 0;
+		while (i < pduel->witch_fatal[code].size()) {
+			auto elem = pduel->witch_fatal[code][i];
+			if (elem == index) {
+				pduel->witch_fatal[code].erase(pduel->witch_fatal[code].begin() + i);
+				result++;
+			}
+			else
+				i++;
+		}
+	}
+	lua_pushinteger(L, result);
+	return 1;
+}
 LUA_FUNCTION(CheckWitchFatal) {
 	auto pduel = lua_get<duel*>(L);
 	check_param_count(L, 2);
@@ -635,13 +656,55 @@ LUA_FUNCTION(FromVirtualToReal) {
 	pduel->playerop_config = 0;
 	field->reload_field_info();
 	group* pgroup = pduel->new_group();
-	field->filter_field_card(0, 0x7e, 0x7e, pgroup);
+	field->filter_field_card(0, 0x3e, 0x3e, pgroup);
+	group* qgroup = pduel->new_group();
+	//pduel->game_field->get_overlay_group(0, 1, 1, &qgroup->container, 0);
+	//pgroup->container.insert(qgroup->container.begin(), qgroup->container.end());
+	/*if (pgroup->container.size()) {
+		for (uint8_t p = 0; p < 2; p++) {
+			auto message = pduel->new_message(MSG_SELECT_CARD);
+			message->write<uint8_t>(p);
+			message->write<uint8_t>(FALSE);
+			//server success
+			message->write<uint32_t>(0);
+			message->write<uint32_t>(0);
+			message->write<uint32_t>((uint32_t)pgroup->container.size());
+			group* kgroup = pduel->new_group();
+			kgroup->container.insert(pgroup->container.begin(), pgroup->container.end());
+			for (auto& pcard : kgroup->container) {
+				message->write<uint32_t>(pcard->data.code);
+				message->write(pcard->get_info_location());
+			}
+		}
+	}*/
+	/*if not for server*/
+	for (auto& pcard : pgroup->container) {
+		auto message = pduel->new_message(MSG_UPDATE_CARD);
+		message->write<uint8_t>(pcard->current.controler);
+		message->write<uint8_t>(pcard->current.location);
+		message->write<uint8_t>(pcard->current.sequence);
+		message->write<uint16_t>(8);
+		message->write<uint32_t>(QUERY_CODE);
+		message->write<uint32_t>(pcard->data.code);
+		message->write<uint16_t>(5);
+		message->write<uint32_t>(QUERY_IS_PUBLIC);
+		message->write<uint8_t>((pcard->is_position(POS_FACEUP) || pcard->is_related_to_chains() || (pcard->current.location == LOCATION_HAND && pcard->is_affected_by_effect(EFFECT_PUBLIC))));
+		message->write<uint16_t>(8 + 4 * pcard->xyz_materials.size());
+		message->write<uint32_t>(QUERY_OVERLAY_CARD);
+		message->write<uint32_t>(pcard->xyz_materials.size());
+		for (auto& xcard : pcard->xyz_materials)
+			message->write<uint32_t>(xcard->data.code);
+		message->write<uint16_t>(0);
+	}
+	/*
 	int hs0 = 0;
 	int hs1 = 0;
 	int gs0 = 0;
 	int gs1 = 0;
 	int rs0 = 0;
 	int rs1 = 0;
+	int es0 = 0;
+	int es1 = 0;
 	std::vector<uint32_t> hc0;
 	std::vector<uint32_t> hc1;
 	std::vector<uint32_t> gc0;
@@ -741,7 +804,7 @@ LUA_FUNCTION(FromVirtualToReal) {
 		message->write(pcard->get_info_location());
 		message->write(pcard->get_info_location());
 		message->write<uint32_t>(0);
-	}
+	}*/
 	field->process();
 	return 0;
 }

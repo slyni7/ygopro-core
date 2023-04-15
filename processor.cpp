@@ -1998,6 +1998,22 @@ int32_t field::process_quick_effect(int16_t step, int32_t skip_freechain, uint8_
 		}
 		if(core.current_chain.size() || (core.hint_timing[0] & TIMING_ATTACK) || (core.hint_timing[1] & TIMING_ATTACK))
 			core.spe_effect[priority] = static_cast<int32_t>(core.select_chains.size());
+		/*temp*/
+		if (!core.current_chain.size() || (core.current_chain.back().triggering_player == priority)) {
+			auto ar = effects.continuous_effect.equal_range(EVENT_ANYCALL);
+			for (auto eit = ar.first; eit != ar.second;) {
+				effect* peffect = eit->second;
+				if (peffect->is_activateable(peffect->get_handler_player(), nil_event)
+					&& (peffect->get_handler_player() == priority)
+					&& peffect->operation) {
+					core.sub_solving_event.push_back(nil_event);
+					execute_operation(0, peffect, peffect->get_handler_player());
+					core.units.begin()->step = -1;
+					return FALSE;
+				}
+				++eit;
+			}
+		}
 		add_process(PROCESSOR_SELECT_CHAIN, 0, 0, 0, priority, core.spe_effect[priority]);
 		return FALSE;
 	}
@@ -2892,6 +2908,8 @@ int32_t field::process_battle_command(uint16_t step) {
 			core.select_chains.clear();
 			return FALSE;
 		} else if(ctype == 1) {
+			if (infos.btlcmd_player != PLAYER_NONE)
+				core.select_chains.clear();
 			core.units.begin()->step = 2;
 			core.units.begin()->arg3 = FALSE;
 			if(!core.forced_attack)
@@ -4672,6 +4690,9 @@ int32_t field::add_chain(uint16_t step) {
 		return FALSE;
 	}
 	case 2: {
+		/*temp*/
+		if (!core.new_chains.size())
+			return TRUE;
 		auto& clit = core.new_chains.front();
 		effect* peffect = clit.triggering_effect;
 		card* phandler = peffect->get_handler();
@@ -5211,7 +5232,7 @@ int32_t field::solve_chain(uint16_t step, uint32_t chainend_arg1, uint32_t chain
 		return FALSE;
 	}
 	case 5: {
-		if(core.units.begin()->arg4 == 0) {
+		if((core.units.begin()->arg4 == 0) /*temp*/ && core.current_chain.size()) {
 			if(cait->opinfos.count(0x200) && cait->opinfos[0x200].op_count) {
 				if(is_flag(DUEL_CANNOT_SUMMON_OATH_OLD)) {
 					if(core.spsummon_state_count_tmp[cait->triggering_player] == core.spsummon_state_count[cait->triggering_player])
@@ -5274,6 +5295,13 @@ int32_t field::solve_chain(uint16_t step, uint32_t chainend_arg1, uint32_t chain
 		return FALSE;
 	}
 	case 10: {
+		/*temp*/
+		if (!core.current_chain.size()) {
+			for (auto& ch_lim : core.chain_limit)
+				luaL_unref(pduel->lua->lua_state, LUA_REGISTRYINDEX, ch_lim.function);
+			core.chain_limit.clear();
+			return FALSE;
+		}
 		auto message = pduel->new_message(MSG_CHAIN_SOLVED);
 		message->write<uint8_t>(cait->chain_count);
 		effect* peffect = cait->triggering_effect;
