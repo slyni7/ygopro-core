@@ -77,6 +77,8 @@ interpreter::interpreter(duel* pd, const OCG_DuelOptions& options): coroutines(2
 	lua_setglobal(lua_state, "EFFECT_GENKAI_BATTLE");
 	lua_pushinteger(lua_state, EVENT_ANYCALL);
 	lua_setglobal(lua_state, "EVENT_ANYCALL");
+	lua_pushinteger(lua_state, EFFECT_BRAVE);
+	lua_setglobal(lua_state, "EFFECT_BRAVE");
 }
 interpreter::~interpreter() {
 	lua_close(lua_state);

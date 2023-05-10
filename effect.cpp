@@ -247,8 +247,8 @@ int32_t effect::is_activateable(uint8_t playerid, const tevent& e, int32_t negle
 				if((code < 1134 || code > 1136) && pduel->game_field->infos.phase == PHASE_DAMAGE_CAL && !is_flag(EFFECT_FLAG_DAMAGE_CAL))
 					return FALSE;
 			}
-			if(phandler->current.location == LOCATION_OVERLAY)
-				return FALSE;
+			/*if(phandler->current.location == LOCATION_OVERLAY)
+				return FALSE;*/
 			if((type & EFFECT_TYPE_FIELD) && (phandler->current.controler != playerid) && !is_flag(EFFECT_FLAG_BOTH_SIDE | EFFECT_FLAG_EVENT_PLAYER))
 				return FALSE;
 			if(!pduel->game_field->is_flag(DUEL_TRIGGER_WHEN_PRIVATE_KNOWLEDGE) && !pduel->game_field->is_flag(DUEL_RETURN_TO_DECK_TRIGGERS) &&

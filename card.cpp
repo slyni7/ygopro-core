@@ -964,7 +964,7 @@ int32_t card::get_defense() {
 // 3. cards with EFFECT_PRE_MONSTER
 uint32_t card::get_level() {
 	if(((data.type & TYPE_XYZ) && !(is_affected_by_effect(EFFECT_RANK_LEVEL) || is_affected_by_effect(EFFECT_RANK_LEVEL_S)))
-		|| (data.type & TYPE_LINK) || (status & STATUS_NO_LEVEL)
+		|| ((data.type & TYPE_LINK) && !is_affected_by_effect(EFFECT_BRAVE)) || (status & STATUS_NO_LEVEL)
 		|| (!(data.type & TYPE_MONSTER) && !(get_type() & TYPE_MONSTER) && !is_affected_by_effect(EFFECT_PRE_MONSTER)))
 		return 0;
 	auto search = assume.find(ASSUME_LEVEL);
@@ -1076,7 +1076,7 @@ uint32_t card::get_rank() {
 	return rank;
 }
 uint32_t card::get_link() {
-	if(!(data.type & TYPE_LINK) || (status & STATUS_NO_LEVEL))
+	if(!(data.type & TYPE_LINK) || (status & STATUS_NO_LEVEL) || is_affected_by_effect(EFFECT_BRAVE))
 		return 0;
 	auto search = assume.find(ASSUME_LINK);
 	if(search != assume.end())
@@ -1685,6 +1685,8 @@ void card::xyz_add(card* mat) {
 	mat->current.controler = PLAYER_NONE;
 	mat->current.location = LOCATION_OVERLAY;
 	mat->current.sequence = static_cast<uint32_t>(xyz_materials.size() - 1);
+	mat->apply_field_effect();
+	mat->enable_field_effect(true);
 	for(auto& eit : mat->xmaterial_effect) {
 		effect* peffect = eit.second;
 		if(peffect->type & EFFECT_TYPE_FIELD)
@@ -1705,6 +1707,7 @@ void card::xyz_remove(card* mat) {
 	mat->current.location = 0;
 	mat->current.sequence = 0;
 	mat->overlay_target = 0;
+	mat->cancel_field_effect();
 	for(auto clit = xyz_materials.begin(); clit != xyz_materials.end(); ++clit)
 		(*clit)->current.sequence = clit - xyz_materials.begin();
 	for(auto eit = mat->xmaterial_effect.begin(); eit != mat->xmaterial_effect.end(); ++eit) {

@@ -2099,7 +2099,7 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 			message->write<uint32_t>(pcard->data.code);
 			message->write(pcard->get_info_location());
 			message->write<uint64_t>(peffect->description);
-			message->write<uint8_t>(peffect->get_client_mode());
+			message->write<uint8_t>(peffect->get_client_mode() || !pcard->current.location);
 		}
 		return FALSE;
 	}
