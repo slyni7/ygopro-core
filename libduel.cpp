@@ -13,6 +13,7 @@
 #include "card.h"
 #include "effect.h"
 #include "group.h"
+#include "bit.h"
 
 #define LUA_MODULE Duel
 #include "function_array_helper.h"
@@ -1384,7 +1385,10 @@ LUA_FUNCTION(Damage) {
 	auto reason = lua_get<uint32_t>(L, 3);
 	bool is_step = lua_get<bool, false>(L, 4);
 	const auto pduel = lua_get<duel*>(L);
-	pduel->game_field->damage(pduel->game_field->core.reason_effect, reason, pduel->game_field->core.reason_player, 0, playerid, actual_amount, is_step);
+	auto reason_player = lua_get<uint8_t>(L, 5, pduel->game_field->core.reason_player);
+	if (reason_player > PLAYER_NONE)
+		reason_player = pduel->game_field->core.reason_player;
+	pduel->game_field->damage(pduel->game_field->core.reason_effect, reason, reason_player, 0, playerid, actual_amount, is_step);
 	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
 		lua_pushinteger(L, lua_get<duel*>(L)->game_field->returns.at<uint32_t>(0));
 		return 1;
@@ -1403,7 +1407,10 @@ LUA_FUNCTION(Recover) {
 	auto reason = lua_get<uint32_t>(L, 3);
 	bool is_step = lua_get<bool, false>(L, 4);
 	const auto pduel = lua_get<duel*>(L);
-	pduel->game_field->recover(pduel->game_field->core.reason_effect, reason, pduel->game_field->core.reason_player, playerid, actual_amount, is_step);
+	auto reason_player = lua_get<uint8_t>(L, 5, pduel->game_field->core.reason_player);
+	if (reason_player > PLAYER_NONE)
+		reason_player = pduel->game_field->core.reason_player;
+	pduel->game_field->recover(pduel->game_field->core.reason_effect, reason, reason_player, playerid, actual_amount, is_step);
 	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
 		lua_pushinteger(L, lua_get<duel*>(L)->game_field->returns.at<uint32_t>(0));
 		return 1;
@@ -3613,8 +3620,10 @@ LUA_FUNCTION(AnnounceRace) {
 	check_action_permission(L);
 	check_param_count(L, 3);
 	auto playerid = lua_get<uint8_t>(L, 1);
-	auto count = lua_get<uint16_t>(L, 2);
 	auto available = lua_get<uint64_t>(L, 3);
+	if(bit::has_invalid_bits(available, RACE_ALL))
+		lua_error(L, "Passed an invalid race.");
+	auto count = std::min(lua_get<uint8_t>(L, 2), bit::popcnt(available));
 	const auto pduel = lua_get<duel*>(L);
 	pduel->game_field->add_process(PROCESSOR_ANNOUNCE_RACE, 0, 0, 0, playerid + (count << 16), available);
 	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
@@ -3626,8 +3635,10 @@ LUA_FUNCTION(AnnounceAttribute) {
 	check_action_permission(L);
 	check_param_count(L, 3);
 	auto playerid = lua_get<uint8_t>(L, 1);
-	auto count = lua_get<uint16_t>(L, 2);
 	auto available = lua_get<uint32_t>(L, 3);
+	if(bit::has_invalid_bits(available, ATTRIBUTE_ALL))
+		lua_error(L, "Passed an invalid attribute.");
+	auto count = std::min(lua_get<uint8_t>(L, 2), bit::popcnt(available));
 	const auto pduel = lua_get<duel*>(L);
 	pduel->game_field->add_process(PROCESSOR_ANNOUNCE_ATTRIB, 0, 0, 0, playerid + (count << 16), available);
 	return lua_yieldk(L, 0, 0, [](lua_State* L, int32_t/* status*/, lua_KContext/* ctx*/) {
@@ -4192,7 +4203,7 @@ LUA_FUNCTION(IsPlayerCanSendtoGrave) {
 	return 1;
 }
 LUA_FUNCTION(IsPlayerCanSendtoDeck) {
-	check_param_count(L, 2);
+	check_param_count(L, 1);
 	auto playerid = lua_get<uint8_t>(L, 1);
 	if(playerid != 0 && playerid != 1) {
 		lua_pushboolean(L, 0);

@@ -674,7 +674,7 @@ public:
 	int32_t change_position(uint16_t step, group* targets, effect* reason_effect, uint8_t reason_player, uint32_t enable);
 	int32_t operation_replace(uint16_t step, effect* replace_effect, group* targets, card* target, int32_t is_destroy);
 	int32_t activate_effect(uint16_t step, effect* peffect);
-	int32_t select_release_cards(int16_t step, uint8_t playerid, uint8_t cancelable, int32_t min, int32_t max, uint8_t check_field = FALSE, card* to_check = nullptr, uint8_t toplayer = PLAYER_NONE, uint8_t zone = 0xff);
+	int32_t select_release_cards(int16_t step, uint8_t playerid, uint8_t cancelable, int32_t min, int32_t max, uint8_t check_field, card* to_check, uint8_t toplayer, uint8_t zone);
 	int32_t select_tribute_cards(int16_t step, card* target, uint8_t playerid, uint8_t cancelable, int32_t min, int32_t max, uint8_t toplayer, uint32_t zone);
 	int32_t toss_coin(uint16_t step, effect* reason_effect, uint8_t reason_player, uint8_t playerid, uint8_t count);
 	int32_t toss_dice(uint16_t step, effect* reason_effect, uint8_t reason_player, uint8_t playerid, uint8_t count1, uint8_t count2);
@@ -696,8 +696,8 @@ public:
 	int32_t select_counter(uint16_t step, uint8_t playerid, uint16_t countertype, uint16_t count, uint8_t s, uint8_t o);
 	int32_t select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc, int32_t min, int32_t max);
 	int32_t sort_card(int16_t step, uint8_t playerid, uint8_t is_chain);
-	int32_t announce_race(int16_t step, uint8_t playerid, int32_t count, uint64_t available);
-	int32_t announce_attribute(int16_t step, uint8_t playerid, int32_t count, uint32_t available);
+	int32_t announce_race(int16_t step, uint8_t playerid, uint8_t count, uint64_t available);
+	int32_t announce_attribute(int16_t step, uint8_t playerid, uint8_t count, uint32_t available);
 	int32_t announce_card(int16_t step, uint8_t playerid);
 	int32_t announce_number(int16_t step, uint8_t playerid);
 };

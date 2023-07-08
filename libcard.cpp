@@ -952,7 +952,7 @@ LUA_FUNCTION(IsRace) {
 		playerid = lua_get<uint8_t>(L, 5);
 	else if(sumtype==SUMMON_TYPE_FUSION)
 		playerid = pduel->game_field->core.reason_player;
-	lua_pushboolean(L, pcard->get_race(scard, sumtype, playerid) & trace);
+	lua_pushboolean(L, (pcard->get_race(scard, sumtype, playerid) & trace) != 0);
 	return 1;
 }
 LUA_FUNCTION(IsOriginalRace) {
@@ -962,7 +962,7 @@ LUA_FUNCTION(IsOriginalRace) {
 	if(pcard->status & STATUS_NO_LEVEL)
 		lua_pushboolean(L, FALSE);
 	else
-		lua_pushboolean(L, pcard->data.race & trace);
+		lua_pushboolean(L, (pcard->data.race & trace) != 0);
 	return 1;
 }
 LUA_FUNCTION(IsAttribute) {
@@ -2398,7 +2398,8 @@ LUA_FUNCTION(IsCanBeDisabledByEffect) {
 	check_param_count(L, 2);
 	auto pcard = lua_get<card*, true>(L, 1);
 	auto peffect = lua_get<effect*, true>(L, 2);
-	lua_pushboolean(L, pcard->is_can_be_disabled_by_effect(peffect));
+	bool is_monster_effect = lua_get<bool, true>(L, 3);
+	lua_pushboolean(L, pcard->is_can_be_disabled_by_effect(peffect, is_monster_effect));
 	return 1;
 }
 LUA_FUNCTION(IsCanBeEffectTarget) {
