@@ -380,7 +380,8 @@ int32_t effect::is_activate_ready(uint8_t playerid, const tevent& e, int32_t neg
 // check functions: condition
 int32_t effect::is_condition_check(uint8_t playerid, const tevent& e) {
 	card* phandler = get_handler();
-	if(!(type & EFFECT_TYPE_ACTIVATE) && (phandler->current.location & (LOCATION_ONFIELD | LOCATION_REMOVED)) && !phandler->is_position(POS_FACEUP))
+	if(!(type & EFFECT_TYPE_ACTIVATE) && (phandler->current.location & (LOCATION_ONFIELD | LOCATION_REMOVED)) && !phandler->is_position(POS_FACEUP)
+		&& !is_flag(EFFECT_FLAG_SET_AVAILABLE))
 		return FALSE;
 	if(!is_in_range_of_symbolic_mzone(phandler))
 		return FALSE;

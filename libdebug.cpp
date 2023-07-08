@@ -238,6 +238,16 @@ LUA_FUNCTION(GetPlayerOpSeed) {
 	lua_pushinteger(L, pduel->playerop_seed[0]);
 	return 1;
 }
+LUA_FUNCTION(GetPlayerOpConfig) {
+	const auto pduel = lua_get<duel*>(L);
+	lua_pushinteger(L, pduel->playerop_config);
+	return 1;
+}
+LUA_FUNCTION(GetPlayerOpLine) {
+	const auto pduel = lua_get<duel*>(L);
+	lua_pushinteger(L, pduel->playerop_line);
+	return 1;
+}
 LUA_FUNCTION(GetInfosFieldID) {
 	const auto pduel = lua_get<duel*>(L);
 	lua_pushinteger(L, pduel->game_field->infos.field_id);
