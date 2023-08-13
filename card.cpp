@@ -632,7 +632,8 @@ int32_t card::get_attack() {
 		return search->second;
 	if(!(data.type & TYPE_MONSTER) && !(get_type() & TYPE_MONSTER) && !is_affected_by_effect(EFFECT_PRE_MONSTER))
 		return 0;
-	if (current.location != LOCATION_MZONE || get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP))
+	if ((current.location != LOCATION_MZONE && !is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+		|| get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP))
 		return data.attack;
 	if (has_valid_property_val(temp.attack))
 		return temp.attack;

@@ -3789,7 +3789,7 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 	}
 	return TRUE;
 }
-int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, uint64_t available) {
+int32_t field::announce_race(int16_t step, uint8_t playerid, uint8_t count, uint64_t available) {
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -3951,6 +3951,16 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, uint
 			message->write<uint64_t>(0);
 			return TRUE;
 		}
+		auto message = pduel->new_message(MSG_ANNOUNCE_RACE);
+		effect_set eset;
+		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
+		if (eset.size())
+			message->write<uint8_t>(1 - playerid);
+		else
+			message->write<uint8_t>(playerid);
+		message->write<uint8_t>(count);
+		message->write<uint32_t>(available);
+		return FALSE;
 	}
 	else {
 		uint64_t rc = returns.at<uint64_t>(0);
@@ -3964,34 +3974,36 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, int32_t count, uint
 			++sel;
 		}
 		if (sel != static_cast<uint8_t>(count)) {
-	} else {
-		uint64_t selected_races = returns.at<uint64_t>(0);
-		if(bit::has_invalid_bits(selected_races, available)) {
-			pduel->new_message(MSG_RETRY);
-			return FALSE;
 		}
-		if(bit::popcnt(selected_races) != count) {
-			pduel->new_message(MSG_RETRY);
-			return FALSE;
+		else {
+			uint64_t selected_races = returns.at<uint64_t>(0);
+			if (bit::has_invalid_bits(selected_races, available)) {
+				pduel->new_message(MSG_RETRY);
+				return FALSE;
+			}
+			if (bit::popcnt(selected_races) != count) {
+				pduel->new_message(MSG_RETRY);
+				return FALSE;
+			}
+			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
+				char fc[50];
+				if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+				FILE *fp = NULL;
+				fopen_s(&fp, fc, "a+");
+				fprintf(fp, "announce_race : %d", returns.at<int32_t>(0));
+				fprintf(fp, "\n");
+				fclose(fp);
+			}
+			auto message = pduel->new_message(MSG_HINT);
+			message->write<uint8_t>(HINT_RACE);
+			message->write<uint8_t>(playerid);
+			message->write<uint64_t>(returns.at<uint64_t>(0));
+			return TRUE;
 		}
-		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
-			char fc[50];
-			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
-			FILE *fp = NULL;
-			fopen_s(&fp, fc, "a+");
-			fprintf(fp, "announce_race : %d", returns.at<int32_t>(0));
-			fprintf(fp, "\n");
-			fclose(fp);
-		}
-		auto message = pduel->new_message(MSG_HINT);
-		message->write<uint8_t>(HINT_RACE);
-		message->write<uint8_t>(playerid);
-		message->write<uint64_t>(returns.at<uint64_t>(0));
-		return TRUE;
 	}
 	return TRUE;
 }
-int32_t field::announce_attribute(int16_t step, uint8_t playerid, int32_t count, uint32_t available) {
+int32_t field::announce_attribute(int16_t step, uint8_t playerid, uint8_t count, uint32_t available) {
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;

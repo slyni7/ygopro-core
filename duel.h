@@ -69,6 +69,7 @@ public:
 	uint32_t playerop_cinfo = 0;
 	uint32_t shahrazad_count = 0;
 	uint32_t shahrazad_result = 5;
+	uint32_t qlayerop_fid = 0;
 	bool skipmsg = 0;
 	std::vector<uint8_t> buff;
 	std::vector<uint8_t> query_buffer;

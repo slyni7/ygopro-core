@@ -79,6 +79,10 @@ interpreter::interpreter(duel* pd, const OCG_DuelOptions& options): coroutines(2
 	lua_setglobal(lua_state, "EVENT_ANYCALL");
 	lua_pushinteger(lua_state, EFFECT_BRAVE);
 	lua_setglobal(lua_state, "EFFECT_BRAVE");
+	lua_pushinteger(lua_state, EFFECT_RIKKA_CROSS);
+	lua_setglobal(lua_state, "EFFECT_RIKKA_CROSS");
+	lua_pushinteger(lua_state, EFFECT_RIKKA_CROSSED);
+	lua_setglobal(lua_state, "EFFECT_RIKKA_CROSSED");
 }
 interpreter::~interpreter() {
 	lua_close(lua_state);

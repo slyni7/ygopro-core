@@ -570,7 +570,7 @@ int32_t field::process() {
 			if(!attacker
 			        || core.effect_damage_step != 0
 			        || (attacker->fieldid_r != core.pre_field[0])
-			        || (attacker->current.location != LOCATION_MZONE)
+			        || ((attacker->current.location != LOCATION_MZONE) && !attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
 			        || !attacker->is_capable_attack()
 			        || !attacker->is_affect_by_effect(core.reason_effect)
 					|| attacker->is_affected_by_effect(EFFECT_UNSTOPPABLE_ATTACK)) {
@@ -2491,6 +2491,12 @@ int32_t field::process_idle_command(uint16_t step) {
 		        || (pcard->is_position(POS_FACEDOWN) && pcard->is_can_be_flip_summoned(idle_player))))
 				core.repositionable_cards.push_back(pcard);
 		}
+		for (auto& pcard : player[idle_player].list_szone) {
+			if (pcard && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED) &&
+				((pcard->is_position(POS_FACEUP | POS_FACEDOWN_ATTACK) && pcard->is_capable_change_position(idle_player))
+				|| (pcard->is_position(POS_FACEDOWN) && pcard->is_can_be_flip_summoned(idle_player))))
+				core.repositionable_cards.push_back(pcard);
+		}
 		core.msetable_cards.clear();
 		core.ssetable_cards.clear();
 		for(auto& pcard : player[idle_player].list_hand) {
@@ -2854,6 +2860,26 @@ int32_t field::process_battle_command(uint16_t step) {
 				if(pcard->is_affected_by_effect(EFFECT_FIRST_ATTACK))
 					first_attack.push_back(pcard);
 				if(pcard->is_affected_by_effect(EFFECT_MUST_ATTACK))
+					must_attack.push_back(pcard);
+			}
+			for (auto& pcard : player[btl_player].list_szone) {
+				if (!pcard)
+					continue;
+				if (!pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+					continue;
+				if (!pcard->is_capable_attack_announce(btl_player))
+					continue;
+				uint8_t chain_attack = FALSE;
+				if (core.chain_attack && core.chain_attacker_id == pcard->fieldid)
+					chain_attack = TRUE;
+				card_vector cv;
+				get_attack_target(pcard, &cv, chain_attack);
+				if (cv.size() == 0 && pcard->direct_attackable == 0)
+					continue;
+				core.attackable_cards.push_back(pcard);
+				if (pcard->is_affected_by_effect(EFFECT_FIRST_ATTACK))
+					first_attack.push_back(pcard);
+				if (pcard->is_affected_by_effect(EFFECT_MUST_ATTACK))
 					must_attack.push_back(pcard);
 			}
 			if(first_attack.size())
@@ -3483,7 +3509,8 @@ int32_t field::process_battle_command(uint16_t step) {
 		card_set des;
 		effect* peffect;
 		if(core.attacker->is_status(STATUS_BATTLE_RESULT)
-		        && core.attacker->current.location == LOCATION_MZONE && core.attacker->fieldid_r == core.pre_field[0]) {
+		    && (core.attacker->current.location == LOCATION_MZONE || core.attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+			&& core.attacker->fieldid_r == core.pre_field[0]) {
 			des.insert(core.attacker);
 			core.attacker->temp.reason = core.attacker->current.reason;
 			core.attacker->temp.reason_card = core.attacker->current.reason_card;
@@ -3504,7 +3531,8 @@ int32_t field::process_battle_command(uint16_t step) {
 			core.attacker->set_status(STATUS_DESTROY_CONFIRMED, TRUE);
 		}
 		if(core.attack_target && core.attack_target->is_status(STATUS_BATTLE_RESULT)
-		        && core.attack_target->current.location == LOCATION_MZONE && core.attack_target->fieldid_r == core.pre_field[1]) {
+		    && (core.attack_target->current.location == LOCATION_MZONE || core.attack_target->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+			&& core.attack_target->fieldid_r == core.pre_field[1]) {
 			des.insert(core.attack_target);
 			core.attack_target->temp.reason = core.attack_target->current.reason;
 			core.attack_target->temp.reason_card = core.attack_target->current.reason_card;
@@ -3612,7 +3640,8 @@ int32_t field::process_battle_command(uint16_t step) {
 		if(des) {
 			for(auto cit = des->container.begin(); cit != des->container.end();) {
 				auto rm = cit++;
-				if((*rm)->current.location != LOCATION_MZONE || ((*rm)->fieldid_r != core.pre_field[0] && (*rm)->fieldid_r != core.pre_field[1]))
+				if(((*rm)->current.location != LOCATION_MZONE && !(*rm)->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+					|| ((*rm)->fieldid_r != core.pre_field[0] && (*rm)->fieldid_r != core.pre_field[1]))
 					des->container.erase(rm);
 			}
 			add_process(PROCESSOR_DESTROY, 3, 0, des, REASON_BATTLE, PLAYER_NONE);
@@ -3849,7 +3878,9 @@ int32_t field::process_damage_step(uint16_t step, uint32_t new_attack) {
 		core.attack_target = (card*)core.units.begin()->ptarget;
 		core.units.begin()->ptarget = (group*)tmp;
 		core.units.begin()->arg1 = infos.phase;
-		if(core.attacker->current.location != LOCATION_MZONE || (core.attack_target && core.attack_target->current.location != LOCATION_MZONE)) {
+		if((core.attacker->current.location != LOCATION_MZONE && !core.attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+			|| (core.attack_target && core.attack_target->current.location != LOCATION_MZONE
+				&& !core.attack_target->is_affected_by_effect(EFFECT_RIKKA_CROSSED))) {
 			core.units.begin()->step = 2;
 			return FALSE;
 		}
@@ -6049,10 +6080,14 @@ int32_t field::adjust_step(uint16_t step) {
 			if(fidset != core.opp_mzone || !confirm_attack_target())
 				core.attack_rollback = TRUE;
 		} else {
-			if(core.attacker->current.location != LOCATION_MZONE || core.attacker->fieldid_r != core.pre_field[0]
+			if((core.attacker->current.location != LOCATION_MZONE
+				&& !core.attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+				|| core.attacker->fieldid_r != core.pre_field[0]
 				|| ((core.attacker->current.position & POS_DEFENSE) && !(core.attacker->is_affected_by_effect(EFFECT_DEFENSE_ATTACK)))
 				|| core.attacker->current.controler != core.attacker->attack_controler
-				|| (core.attack_target && (core.attack_target->current.location != LOCATION_MZONE
+				|| (core.attack_target && (
+					(core.attack_target->current.location != LOCATION_MZONE
+						&& !core.attack_target->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
 					|| core.attack_target->current.controler != core.attack_target->attack_controler
 					|| core.attack_target->fieldid_r != core.pre_field[1])))
 				core.attacker->set_status(STATUS_ATTACK_CANCELED, TRUE);

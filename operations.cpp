@@ -5120,7 +5120,7 @@ int32_t field::change_position(uint16_t step, group* targets, effect* reason_eff
 				|| ((pcard->data.type & TYPE_LINK) && (pcard->data.type & TYPE_MONSTER) && !pcard->is_affected_by_effect(EFFECT_CAPABLE_CHANGE_POSITION))
 				|| pcard->get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP)
 				|| (reason_effect && !pcard->is_affect_by_effect(reason_effect)) || npos == opos
-				|| (!(pcard->data.type & TYPE_TOKEN) && (opos & POS_FACEUP) && (npos & POS_FACEDOWN) && !pcard->is_capable_turn_set(reason_player)) {
+				|| (!(pcard->data.type & TYPE_TOKEN) && (opos & POS_FACEUP) && (npos & POS_FACEDOWN) && !pcard->is_capable_turn_set(reason_player))) {
 				targets->container.erase(pcard);
 				continue;
 			}

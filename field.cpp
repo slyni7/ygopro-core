@@ -2389,6 +2389,16 @@ int32_t field::get_attack_target(card* pcard, card_vector* v, uint8_t chain_atta
 				must_attack.push_back(atarget);
 		}
 	}
+	for (auto& atarget : player[1 - p].list_szone) {
+		if (atarget && atarget->is_affected_by_effect(EFFECT_RIKKA_CROSSED)) {
+			if (atarget->is_affected_by_effect(EFFECT_ONLY_BE_ATTACKED))
+				auto_attack.push_back(atarget);
+			if (pcard->is_affected_by_effect(EFFECT_ONLY_ATTACK_MONSTER, atarget))
+				only_attack.push_back(atarget);
+			if (pcard->is_affected_by_effect(EFFECT_MUST_ATTACK_MONSTER, atarget))
+				must_attack.push_back(atarget);
+		}
+	}
 	card_vector* pv = nullptr;
 	int32_t atype = 0;
 	if(auto_attack.size()) {
@@ -2408,9 +2418,14 @@ int32_t field::get_attack_target(card* pcard, card_vector* v, uint8_t chain_atta
 		pv = &must_attack;
 	} else {
 		atype = 4;
-		for(auto& atarget : player[1 - p].list_mzone)
-			if(atarget != core.attacker)
+		for (auto& atarget : player[1 - p].list_mzone) {
+			if (atarget != core.attacker)
 				attack_tg.push_back(atarget);
+		}
+		for (auto& atarget : player[1 - p].list_szone) {
+			if ((atarget != core.attacker) && atarget && atarget->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+				attack_tg.push_back(atarget);
+		}
 		if(is_player_affected_by_effect(p, EFFECT_SELF_ATTACK) && (!pcard->is_affected_by_effect(EFFECT_ATTACK_ALL) || !attack_tg.size())) {
 			for(auto& atarget : player[p].list_mzone)
 				if (atarget != core.attacker)
