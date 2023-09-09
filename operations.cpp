@@ -25,7 +25,7 @@ int32_t field::negate_chain(uint8_t chaincount) {
 		pchain.flag |= CHAIN_DISABLE_ACTIVATE;
 		pchain.disable_reason = core.reason_effect;
 		pchain.disable_player = core.reason_player;
-		if((pchain.triggering_effect->type & EFFECT_TYPE_ACTIVATE) && (effect_handler->current.location == LOCATION_SZONE)) {
+		if((pchain.triggering_effect->type & EFFECT_TYPE_ACTIVATE) && (effect_handler->is_has_relation(pchain)) && (effect_handler->current.location == LOCATION_SZONE)) {
 			effect_handler->set_status(STATUS_LEAVE_CONFIRMED, TRUE);
 			effect_handler->set_status(STATUS_ACTIVATE_DISABLED, TRUE);
 		}
@@ -5366,9 +5366,9 @@ int32_t field::operation_replace(uint16_t step, effect* replace_effect, group* t
 		return FALSE;
 	}
 	case 3: {
-		if(core.continuous_chain.rbegin()->target_cards)
-			pduel->delete_group(core.continuous_chain.rbegin()->target_cards);
-		for(auto& oit : core.continuous_chain.rbegin()->opinfos) {
+		if(core.continuous_chain.back().target_cards)
+			pduel->delete_group(core.continuous_chain.back().target_cards);
+		for(auto& oit : core.continuous_chain.back().opinfos) {
 			if(oit.second.op_cards)
 				pduel->delete_group(oit.second.op_cards);
 		}
@@ -5433,9 +5433,9 @@ int32_t field::operation_replace(uint16_t step, effect* replace_effect, group* t
 		return FALSE;
 	}
 	case 8: {
-		if(core.continuous_chain.rbegin()->target_cards)
-			pduel->delete_group(core.continuous_chain.rbegin()->target_cards);
-		for(auto& oit : core.continuous_chain.rbegin()->opinfos) {
+		if(core.continuous_chain.back().target_cards)
+			pduel->delete_group(core.continuous_chain.back().target_cards);
+		for(auto& oit : core.continuous_chain.back().opinfos) {
 			if(oit.second.op_cards)
 				pduel->delete_group(oit.second.op_cards);
 		}
@@ -5550,9 +5550,9 @@ int32_t field::operation_replace(uint16_t step, effect* replace_effect, group* t
 		return FALSE;
 	}
 	case 16: {
-		if(core.continuous_chain.rbegin()->target_cards)
-			pduel->delete_group(core.continuous_chain.rbegin()->target_cards);
-		for(auto& oit : core.continuous_chain.rbegin()->opinfos) {
+		if(core.continuous_chain.back().target_cards)
+			pduel->delete_group(core.continuous_chain.back().target_cards);
+		for(auto& oit : core.continuous_chain.back().opinfos) {
 			if(oit.second.op_cards)
 				pduel->delete_group(oit.second.op_cards);
 		}
@@ -5954,8 +5954,6 @@ int32_t field::select_tribute_cards(int16_t step, card* target, uint8_t playerid
 int32_t field::toss_coin(uint16_t step, effect* reason_effect, uint8_t reason_player, uint8_t playerid, uint8_t count) {
 	switch(step) {
 	case 0: {
-		effect_set eset;
-		effect* peffect = 0;
 		tevent e;
 		e.event_cards = 0;
 		e.event_player = playerid;
@@ -5966,48 +5964,46 @@ int32_t field::toss_coin(uint16_t step, effect* reason_effect, uint8_t reason_pl
 		core.coin_results.clear();
 		auto pr = effects.continuous_effect.equal_range(EFFECT_TOSS_COIN_REPLACE);
 		for(auto eit = pr.first; eit != pr.second;) {
-			effect* pe = eit->second;
+			auto* peffect = eit->second;
 			++eit;
-			if(pe->is_activateable(pe->get_handler_player(), e)) {
-				peffect = pe;
-				break;
+			auto handler_player = peffect->get_handler_player();
+			if(peffect->is_activateable(handler_player, e)) {
+				solve_continuous(handler_player, peffect, e);
+				return TRUE;
 			}
 		}
-		if(!peffect) {
-			pr = effects.continuous_effect.equal_range(EFFECT_TOSS_COIN_CHOOSE);
-			for(auto eit = pr.first; eit != pr.second;) {
-				effect* pe = eit->second;
-				++eit;
-				if(pe->is_activateable(pe->get_handler_player(), e)) {
-					peffect = pe;
-					break;
-				}
-			}
-			if(peffect) {
+		pr = effects.continuous_effect.equal_range(EFFECT_TOSS_COIN_CHOOSE);
+		for(auto eit = pr.first; eit != pr.second;) {
+			auto* peffect = eit->second;
+			++eit;
+			auto handler_player = peffect->get_handler_player();
+			if(peffect->is_activateable(handler_player, e)) {
 				core.coin_results.resize(count);
-				solve_continuous(peffect->get_handler_player(), peffect, e);
+				solve_continuous(handler_player, peffect, e);
 				core.units.begin()->step = 2;
 				return FALSE;
 			}
-			auto message = pduel->new_message(MSG_TOSS_COIN);
-			message->write<uint8_t>(playerid);
-			message->write<uint8_t>(count);
-			core.coin_results.reserve(count);
-			for(int32_t i = 0; i < count; ++i) {
-				auto coin = pduel->get_next_integer(0, 1);
-				core.coin_results.push_back(static_cast<bool>(coin));
-				message->write<uint8_t>(coin);
-			}
-			raise_event((card*)0, EVENT_TOSS_COIN_NEGATE, reason_effect, 0, reason_player, playerid, count);
-			process_instant_event();
-		} else {
-			solve_continuous(peffect->get_handler_player(), peffect, e);
-			return TRUE;
 		}
+		auto message = pduel->new_message(MSG_TOSS_COIN);
+		message->write<uint8_t>(playerid);
+		message->write<uint8_t>(count);
+		core.coin_results.reserve(count);
+		for(int32_t i = 0; i < count; ++i) {
+			auto coin = pduel->get_next_integer(0, 1);
+			core.coin_results.push_back(static_cast<bool>(coin));
+			message->write<uint8_t>(coin);
+		}
+		raise_event((card*)0, EVENT_TOSS_COIN_NEGATE, reason_effect, 0, reason_player, playerid, count);
+		process_instant_event();
 		return FALSE;
 	}
 	case 1: {
-		raise_event((card*)0, EVENT_TOSS_COIN, reason_effect, 0, reason_player, playerid, count);
+		uint8_t heads = 0, tails = 0;
+		for(auto result : core.coin_results) {
+			heads += (result == COIN_HEADS);
+			tails += (result == COIN_TAILS);
+		}
+		raise_event((card*)0, EVENT_TOSS_COIN, reason_effect, 0, reason_player, playerid, (tails << 16) | (heads << 8) | count);
 		process_instant_event();
 		return TRUE;
 	}
@@ -6029,8 +6025,6 @@ int32_t field::toss_coin(uint16_t step, effect* reason_effect, uint8_t reason_pl
 int32_t field::toss_dice(uint16_t step, effect* reason_effect, uint8_t reason_player, uint8_t playerid, uint8_t count1, uint8_t count2) {
 	switch(step) {
 	case 0: {
-		effect_set eset;
-		effect* peffect = 0;
 		tevent e;
 		e.event_cards = 0;
 		e.event_player = playerid;
@@ -6041,54 +6035,47 @@ int32_t field::toss_dice(uint16_t step, effect* reason_effect, uint8_t reason_pl
 		core.dice_results.clear();
 		auto pr = effects.continuous_effect.equal_range(EFFECT_TOSS_DICE_REPLACE);
 		for(auto eit = pr.first; eit != pr.second;) {
-			effect* pe = eit->second;
+			auto* peffect = eit->second;
 			++eit;
-			if(pe->is_activateable(pe->get_handler_player(), e)) {
-				peffect = pe;
-				break;
+			auto handler_player = peffect->get_handler_player();
+			if(peffect->is_activateable(handler_player, e)) {
+				solve_continuous(handler_player, peffect, e);
+				return TRUE;
 			}
 		}
-		if(!peffect) {
-			pr = effects.continuous_effect.equal_range(EFFECT_TOSS_DICE_CHOOSE);
-			for(auto eit = pr.first; eit != pr.second;) {
-				effect* pe = eit->second;
-				++eit;
-				if(pe->is_activateable(pe->get_handler_player(), e)) {
-					peffect = pe;
-					break;
-				}
-			}
-			if(peffect) {
+		pr = effects.continuous_effect.equal_range(EFFECT_TOSS_DICE_CHOOSE);
+		for(auto eit = pr.first; eit != pr.second;) {
+			auto* peffect = eit->second;
+			++eit;
+			auto handler_player = peffect->get_handler_player();
+			if(peffect->is_activateable(handler_player, e)) {
 				core.dice_results.resize(count1 + count2);
-				solve_continuous(peffect->get_handler_player(), peffect, e);
+				solve_continuous(handler_player, peffect, e);
 				core.units.begin()->step = 2;
 				return FALSE;
 			}
-			core.dice_results.reserve(count1 + count2);
-			auto message = pduel->new_message(MSG_TOSS_DICE);
-			message->write<uint8_t>(playerid);
-			message->write<uint8_t>(count1);
-			for(int32_t i = 0; i < count1; ++i) {
+		}
+		core.dice_results.reserve(count1 + count2);
+		auto message = pduel->new_message(MSG_TOSS_DICE);
+		message->write<uint8_t>(playerid);
+		message->write<uint8_t>(count1);
+		for(int32_t i = 0; i < count1; ++i) {
+			const auto dice = pduel->get_next_integer(1, 6);
+			core.dice_results.push_back(dice);
+			message->write<uint8_t>(dice);
+		}
+		if(count2 > 0) {
+			message = pduel->new_message(MSG_TOSS_DICE);
+			message->write<uint8_t>(1 - playerid);
+			message->write<uint8_t>(count2);
+			for(int32_t i = 0; i < count2; ++i) {
 				const auto dice = pduel->get_next_integer(1, 6);
 				core.dice_results.push_back(dice);
 				message->write<uint8_t>(dice);
 			}
-			if(count2 > 0) {
-				message = pduel->new_message(MSG_TOSS_DICE);
-				message->write<uint8_t>(1 - playerid);
-				message->write<uint8_t>(count2);
-				for(int32_t i = 0; i < count2; ++i) {
-					const auto dice = pduel->get_next_integer(1, 6);
-					core.dice_results.push_back(dice);
-					message->write<uint8_t>(dice);
-				}
-			}
-			raise_event((card*)0, EVENT_TOSS_DICE_NEGATE, reason_effect, 0, reason_player, playerid, count1 + (count2 << 16));
-			process_instant_event();
-		} else {
-			solve_continuous(peffect->get_handler_player(), peffect, e);
-			return TRUE;
 		}
+		raise_event((card*)0, EVENT_TOSS_DICE_NEGATE, reason_effect, 0, reason_player, playerid, count1 + (count2 << 16));
+		process_instant_event();
 		return FALSE;
 	}
 	case 1: {
