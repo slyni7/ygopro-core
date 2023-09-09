@@ -27,7 +27,7 @@ OCGAPI int OCG_CreateDuel(OCG_Duel* out_ocg_duel, OCG_DuelOptions options);
 OCGAPI void OCG_DestroyDuel(OCG_Duel ocg_duel);
 OCGAPI void OCG_DuelNewCard(OCG_Duel ocg_duel, OCG_NewCardInfo info);
 OCGAPI void OCG_StartDuel(OCG_Duel ocg_duel);
-OCGAPI void OCG_OneCard(OCG_Duel duel, uint8_t playerid);
+OCGAPI void OCG_OneCard(OCG_Duel ocg_duel, uint8_t playerid);
 
 /*** DUEL PROCESSING AND QUERYING ***/
 OCGAPI int OCG_DuelProcess(OCG_Duel ocg_duel);

@@ -2961,7 +2961,7 @@ int32_t field::process_battle_command(uint16_t step) {
 			}
 			else if(core.tpchain.size() == 1){
 				core.sub_solving_event.push_back(nil_event);
-				add_process(PROCESSOR_EXECUTE_OPERATION, 0, core.tpchain.front()->triggering_effect, 0, btl_player, 0);
+				add_process(PROCESSOR_EXECUTE_OPERATION, 0, core.tpchain.front().triggering_effect, 0, btl_player, 0);
 				adjust_all();
 			}
 			return FALSE;

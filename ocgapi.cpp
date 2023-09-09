@@ -87,7 +87,8 @@ OCGAPI void OCG_DestroyDuel(OCG_Duel ocg_duel) {
 }
 
 OCGAPI void OCG_DuelNewCard(OCG_Duel ocg_duel, OCG_NewCardInfo info) {
-	DUEL->playerop_cinfo++; /*test*/
+	auto* pduel = static_cast<duel*>(ocg_duel);
+	pduel->playerop_cinfo++; /*test*/
 	char fconf[40];
 	sprintf_s(fconf, "./playerop.conf");
 	FILE *fpconf = NULL;
@@ -100,9 +101,9 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel ocg_duel, OCG_NewCardInfo info) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(fpconf);
 	}
-	if ((plconf == 2) || (!plconf && !DUEL->playerop_config)) {
+	if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 		char fc[50];
-		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", DUEL->playerop_seed[0]);
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "a+");
 		fprintf(fp, "info.team : %d\n", info.team);
@@ -114,52 +115,52 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel ocg_duel, OCG_NewCardInfo info) {
 		fprintf(fp, "info.pos : %d\n", info.pos);
 		fclose(fp);
 	}
-	else if ((plconf == 1) || (!plconf && DUEL->playerop_config)) {
-		if (!DUEL->playerop_line)
-			DUEL->playerop_line = 2;
+	else if ((plconf == 1) || (!plconf && pduel->playerop_config)) {
+		if (!pduel->playerop_line)
+			pduel->playerop_line = 2;
 		int line_count = 0;
 		char fc[50];
-		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", DUEL->playerop_seed[0]);
+		if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
 		fopen_s(&fp, fc, "r");
 		char line[400];
 		while (fgets(line, 400, fp) != NULL) {
 			line_count++;
-			if (line_count == DUEL->playerop_line) {
+			if (line_count == pduel->playerop_line) {
 				int currvalue;
 				char curr[25];
 				sscanf(line, "%s : %d", curr, &currvalue);
 				if (!strcmp(curr, "info.team")) {
 					info.team = currvalue;
-					DUEL->playerop_line++;
+					pduel->playerop_line++;
 				}
 				else if (!strcmp(curr, "info.duelist")) {
 					info.duelist = currvalue;
-					DUEL->playerop_line++;
+					pduel->playerop_line++;
 				}
 				else if (!strcmp(curr, "info.code")) {
 					info.code = currvalue;
-					DUEL->playerop_line++;
+					pduel->playerop_line++;
 				}
 				else if (!strcmp(curr, "info.con")) {
 					info.con = currvalue;
-					DUEL->playerop_line++;
+					pduel->playerop_line++;
 				}
 				else if (!strcmp(curr, "info.loc")) {
 					info.loc = currvalue;
-					DUEL->playerop_line++;
+					pduel->playerop_line++;
 				}
 				else if (!strcmp(curr, "info.seq")) {
 					info.seq = currvalue;
-					DUEL->playerop_line++;
+					pduel->playerop_line++;
 				}
 				else if (!strcmp(curr, "info.pos")) {
 					info.pos = currvalue;
-					DUEL->playerop_line++;
+					pduel->playerop_line++;
 					break;
 				}
 			}
-			if (line_count > DUEL->playerop_line)
+			if (line_count > pduel->playerop_line)
 				break;
 		}
 	}
@@ -168,7 +169,6 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel ocg_duel, OCG_NewCardInfo info) {
 		info.loc = 0;
 		info.seq = 0;
 	}
-	auto* pduel = static_cast<duel*>(ocg_duel);
 	auto& game_field = *(pduel->game_field);
 	if(info.duelist == 0) {
 		if(game_field.is_location_useable(info.con, info.loc, info.seq)) {
@@ -206,28 +206,29 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel ocg_duel, OCG_NewCardInfo info) {
 		pcard->current.sequence = static_cast<uint32_t>(list.size() - 1);
 	}
 	if (info.loc == 0x80000000) {
-		luaL_checkstack(DUEL->lua->lua_state, 3, nullptr);
-		lua_getglobal(DUEL->lua->lua_state, "side_deck_operation");
-		if (!lua_isnil(DUEL->lua->lua_state, -1)) {
-			lua_pushinteger(DUEL->lua->lua_state, info.con);
-			lua_pushinteger(DUEL->lua->lua_state, info.code);
-			lua_pcall(DUEL->lua->lua_state, 2, 0, 0);
-			lua_settop(DUEL->lua->lua_state, 0);
+		luaL_checkstack(pduel->lua->lua_state, 3, nullptr);
+		lua_getglobal(pduel->lua->lua_state, "side_deck_operation");
+		if (!lua_isnil(pduel->lua->lua_state, -1)) {
+			lua_pushinteger(pduel->lua->lua_state, info.con);
+			lua_pushinteger(pduel->lua->lua_state, info.code);
+			lua_pcall(pduel->lua->lua_state, 2, 0, 0);
+			lua_settop(pduel->lua->lua_state, 0);
 		}
-		lua_settop(DUEL->lua->lua_state, 0);
+		lua_settop(pduel->lua->lua_state, 0);
 	}
 }
 
 
 
-OCGAPI void OCG_OneCard(OCG_Duel duel, uint8_t playerid) {
-	if (DUEL->game_field->core.one_card_check == 2) {
-		if (DUEL->game_field->infos.turn_player == playerid)
-			DUEL->game_field->core.one_card_check = 0;
+OCGAPI void OCG_OneCard(OCG_Duel ocg_duel, uint8_t playerid) {
+	auto* pduel = static_cast<duel*>(ocg_duel);
+	if (pduel->game_field->core.one_card_check == 2) {
+		if (pduel->game_field->infos.turn_player == playerid)
+			pduel->game_field->core.one_card_check = 0;
 		else
-			DUEL->game_field->core.one_card_check = 1;
+			pduel->game_field->core.one_card_check = 1;
 	}
-	/*auto message = DUEL->new_message(MSG_DAMAGE);
+	/*auto message = pduel->new_message(MSG_DAMAGE);
 	message->write<uint8_t>(1 - playerid);
 	message->write<uint32_t>(100);*/
 }
