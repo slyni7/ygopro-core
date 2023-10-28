@@ -209,6 +209,31 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 			|| (t == 1 && s >= core.attackable_cards.size())
 			|| (t == 2 && !core.to_m2)
 			|| (t == 3 && !core.to_ep)) {
+			/*char fc[50];
+			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
+			FILE *fp = NULL;
+			fopen_s(&fp, fc, "a+");
+			fprintf(fp, "select_battle_command : %d,%d", t, s);
+			fprintf(fp, "\n");
+			fclose(fp);
+
+				int btl_player = infos.turn_player;
+				bool btlcmdchk = false;
+				if (infos.btlcmd_player != PLAYER_NONE) {
+					btlcmdchk = true;
+					btl_player = infos.btlcmd_player;
+				}
+				for (auto& pcard : player[btl_player].list_grave) {
+					if (!pcard)
+						continue;
+					if (!pcard->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
+						continue;
+					if (!pcard->is_capable_attack_announce(btl_player))
+						continue;
+					returns.set<int32_t>(0, 1 | ((core.attackable_cards.size() - 1) << 16));
+					return TRUE;
+				}*/
+
 			pduel->new_message(MSG_RETRY);
 			return FALSE;
 		}

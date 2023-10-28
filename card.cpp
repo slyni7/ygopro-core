@@ -3826,7 +3826,8 @@ int32_t card::is_capable_cost_to_extra(uint8_t playerid) {
 	return TRUE;
 }
 int32_t card::is_capable_attack() {
-	if(!is_position(POS_FACEUP_ATTACK) && !(is_position(POS_FACEUP_DEFENSE) && is_affected_by_effect(EFFECT_DEFENSE_ATTACK)))
+	if(!is_position(POS_FACEUP_ATTACK) && !(is_position(POS_FACEUP_DEFENSE) && is_affected_by_effect(EFFECT_DEFENSE_ATTACK))
+		&& !is_affected_by_effect(EFFECT_KYRIE_ELEISON))
 		return FALSE;
 	if(is_affected_by_effect(EFFECT_FORBIDDEN))
 		return FALSE;

@@ -83,6 +83,8 @@ interpreter::interpreter(duel* pd, const OCG_DuelOptions& options): coroutines(2
 	lua_setglobal(lua_state, "EFFECT_RIKKA_CROSS");
 	lua_pushinteger(lua_state, EFFECT_RIKKA_CROSSED);
 	lua_setglobal(lua_state, "EFFECT_RIKKA_CROSSED");
+	lua_pushinteger(lua_state, EFFECT_KYRIE_ELEISON);
+	lua_setglobal(lua_state, "EFFECT_KYRIE_ELEISON");
 }
 interpreter::~interpreter() {
 	lua_close(lua_state);

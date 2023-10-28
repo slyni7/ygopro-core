@@ -570,7 +570,9 @@ int32_t field::process() {
 			if(!attacker
 			        || core.effect_damage_step != 0
 			        || (attacker->fieldid_r != core.pre_field[0])
-			        || ((attacker->current.location != LOCATION_MZONE) && !attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+			        || ((attacker->current.location != LOCATION_MZONE)
+						&& !attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
+						&& !attacker->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
 			        || !attacker->is_capable_attack()
 			        || !attacker->is_affect_by_effect(core.reason_effect)
 					|| attacker->is_affected_by_effect(EFFECT_UNSTOPPABLE_ATTACK)) {
@@ -2840,6 +2842,28 @@ int32_t field::process_battle_command(uint16_t step) {
 				core.select_chains.back().triggering_effect = peffect;
 			}
 		}
+		pr = effects.continuous_effect.equal_range(EFFECT_KYRIE_ELEISON);
+		for (auto eit = pr.first; eit != pr.second; eit++) {
+			peffect = eit->second;
+			if (peffect->get_handler_player() == btl_player && peffect->is_activateable(btl_player, nil_event)) {
+				card* pcard = peffect->get_handler();
+				if (!pcard)
+					continue;
+				if (!pcard->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
+					continue;
+				if (!pcard->is_capable_attack_announce(btl_player))
+					continue;
+				uint8_t chain_attack = FALSE;
+				if (core.chain_attack && core.chain_attacker_id == pcard->fieldid)
+					chain_attack = TRUE;
+				card_vector cv;
+				get_attack_target(pcard, &cv, chain_attack);
+				if (cv.size() == 0 && pcard->direct_attackable == 0)
+					continue;
+				core.select_chains.emplace_back();
+				core.select_chains.back().triggering_effect = peffect;
+			}
+		}
 		core.attackable_cards.clear();
 		card_vector first_attack;
 		card_vector must_attack;
@@ -2882,6 +2906,46 @@ int32_t field::process_battle_command(uint16_t step) {
 				if (pcard->is_affected_by_effect(EFFECT_MUST_ATTACK))
 					must_attack.push_back(pcard);
 			}
+			for (auto& pcard : player[btl_player].list_hand) {
+				if (!pcard)
+					continue;
+				if (!pcard->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
+					continue;
+				if (!pcard->is_capable_attack_announce(btl_player))
+					continue;
+				uint8_t chain_attack = FALSE;
+				if (core.chain_attack && core.chain_attacker_id == pcard->fieldid)
+					chain_attack = TRUE;
+				card_vector cv;
+				get_attack_target(pcard, &cv, chain_attack);
+				if (cv.size() == 0 && pcard->direct_attackable == 0)
+					continue;
+				core.attackable_cards.push_back(pcard);
+				if (pcard->is_affected_by_effect(EFFECT_FIRST_ATTACK))
+					first_attack.push_back(pcard);
+				if (pcard->is_affected_by_effect(EFFECT_MUST_ATTACK))
+					must_attack.push_back(pcard);
+			}
+			for (auto& pcard : player[btl_player].list_grave) {
+				if (!pcard)
+					continue;
+				if (!pcard->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
+					continue;
+				if (!pcard->is_capable_attack_announce(btl_player))
+					continue;
+				uint8_t chain_attack = FALSE;
+				if (core.chain_attack && core.chain_attacker_id == pcard->fieldid)
+					chain_attack = TRUE;
+				card_vector cv;
+				get_attack_target(pcard, &cv, chain_attack);
+				if (cv.size() == 0 && pcard->direct_attackable == 0)
+					continue;
+				core.attackable_cards.push_back(pcard);
+				if (pcard->is_affected_by_effect(EFFECT_FIRST_ATTACK))
+					first_attack.push_back(pcard);
+				if (pcard->is_affected_by_effect(EFFECT_MUST_ATTACK))
+					must_attack.push_back(pcard);
+			}
 			if(first_attack.size())
 				core.attackable_cards = first_attack;
 		}
@@ -2903,6 +2967,12 @@ int32_t field::process_battle_command(uint16_t step) {
 			chain& newchain = core.select_chains[sel];
 			effect* peffect = newchain.triggering_effect;
 			if(peffect->type & EFFECT_TYPE_CONTINUOUS) {
+				if (peffect->code == EFFECT_KYRIE_ELEISON) {
+					core.select_chains.clear();
+					returns.set<int32_t>(0, 1 | ((core.attackable_cards.size() - 1) << 16));
+					core.units.begin()->step = 0;
+					return FALSE;
+				}
 				core.select_chains.clear();
 				solve_continuous(peffect->get_handler_player(), peffect, nil_event);
 				core.units.begin()->step = 14;
@@ -3509,7 +3579,9 @@ int32_t field::process_battle_command(uint16_t step) {
 		card_set des;
 		effect* peffect;
 		if(core.attacker->is_status(STATUS_BATTLE_RESULT)
-		    && (core.attacker->current.location == LOCATION_MZONE || core.attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+		    && (core.attacker->current.location == LOCATION_MZONE
+				|| core.attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
+				|| core.attacker->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
 			&& core.attacker->fieldid_r == core.pre_field[0]) {
 			des.insert(core.attacker);
 			core.attacker->temp.reason = core.attacker->current.reason;
@@ -3531,7 +3603,9 @@ int32_t field::process_battle_command(uint16_t step) {
 			core.attacker->set_status(STATUS_DESTROY_CONFIRMED, TRUE);
 		}
 		if(core.attack_target && core.attack_target->is_status(STATUS_BATTLE_RESULT)
-		    && (core.attack_target->current.location == LOCATION_MZONE || core.attack_target->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+		    && (core.attack_target->current.location == LOCATION_MZONE
+				|| core.attack_target->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
+				|| core.attack_target->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
 			&& core.attack_target->fieldid_r == core.pre_field[1]) {
 			des.insert(core.attack_target);
 			core.attack_target->temp.reason = core.attack_target->current.reason;
@@ -3640,7 +3714,9 @@ int32_t field::process_battle_command(uint16_t step) {
 		if(des) {
 			for(auto cit = des->container.begin(); cit != des->container.end();) {
 				auto rm = cit++;
-				if(((*rm)->current.location != LOCATION_MZONE && !(*rm)->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+				if(((*rm)->current.location != LOCATION_MZONE
+					&& !(*rm)->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
+					&& !(*rm)->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
 					|| ((*rm)->fieldid_r != core.pre_field[0] && (*rm)->fieldid_r != core.pre_field[1]))
 					des->container.erase(rm);
 			}
@@ -3878,7 +3954,9 @@ int32_t field::process_damage_step(uint16_t step, uint32_t new_attack) {
 		core.attack_target = (card*)core.units.begin()->ptarget;
 		core.units.begin()->ptarget = (group*)tmp;
 		core.units.begin()->arg1 = infos.phase;
-		if((core.attacker->current.location != LOCATION_MZONE && !core.attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+		if((core.attacker->current.location != LOCATION_MZONE
+			&& !core.attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
+			&& !core.attacker->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
 			|| (core.attack_target && core.attack_target->current.location != LOCATION_MZONE
 				&& !core.attack_target->is_affected_by_effect(EFFECT_RIKKA_CROSSED))) {
 			core.units.begin()->step = 2;
@@ -4297,8 +4375,34 @@ int32_t field::process_turn(uint16_t step, uint8_t turn_player) {
 			for(auto& pcard : player[p].list_szone) {
 				if(!pcard)
 					continue;
+				pcard->set_status(STATUS_SUMMON_TURN, FALSE);
+				pcard->set_status(STATUS_FLIP_SUMMON_TURN, FALSE);
+				pcard->set_status(STATUS_SPSUMMON_TURN, FALSE);
 				pcard->set_status(STATUS_SET_TURN, FALSE);
+				pcard->set_status(STATUS_FORM_CHANGED, FALSE);
 				pcard->indestructable_effects.clear();
+				pcard->announce_count = 0;
+				pcard->attacked_count = 0;
+				pcard->announced_cards.clear();
+				pcard->attacked_cards.clear();
+				pcard->battled_cards.clear();
+				pcard->attack_all_target = TRUE;
+			}
+			for (auto& pcard : player[p].list_hand) {
+				pcard->announce_count = 0;
+				pcard->attacked_count = 0;
+				pcard->announced_cards.clear();
+				pcard->attacked_cards.clear();
+				pcard->battled_cards.clear();
+				pcard->attack_all_target = TRUE;
+			}
+			for (auto& pcard : player[p].list_grave) {
+				pcard->announce_count = 0;
+				pcard->attacked_count = 0;
+				pcard->announced_cards.clear();
+				pcard->attacked_cards.clear();
+				pcard->battled_cards.clear();
+				pcard->attack_all_target = TRUE;
 			}
 			core.summon_state_count[p] = 0;
 			core.normalsummon_state_count[p] = 0;
@@ -6081,7 +6185,8 @@ int32_t field::adjust_step(uint16_t step) {
 				core.attack_rollback = TRUE;
 		} else {
 			if((core.attacker->current.location != LOCATION_MZONE
-				&& !core.attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+				&& !core.attacker->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
+				&& !core.attacker->is_affected_by_effect(EFFECT_KYRIE_ELEISON))
 				|| core.attacker->fieldid_r != core.pre_field[0]
 				|| ((core.attacker->current.position & POS_DEFENSE) && !(core.attacker->is_affected_by_effect(EFFECT_DEFENSE_ATTACK)))
 				|| core.attacker->current.controler != core.attacker->attack_controler

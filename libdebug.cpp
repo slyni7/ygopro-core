@@ -18,6 +18,30 @@ namespace {
 
 using namespace scriptlib;
 
+/*LUA_FUNCTION(PrintAllCard) {
+	const auto pduel = lua_get<duel*>(L);
+	for (auto it = pduel->data_cache.begin(); it != pduel->data_cache.end(); ++it) {
+		int code = (*it).first;
+		char fc[50];
+		sprintf_s(fc, "./printallcard.log");
+		FILE *fp = NULL;
+		fopen_s(&fp, fc, "a+");
+		fprintf(fp, "%d", code);
+		fprintf(fp, "\n");
+		fclose(fp);
+	}
+	return 0;
+}*/
+LUA_FUNCTION(ChangePositionEx) {
+	check_param_count(L, 2);
+	const auto pduel = lua_get<duel*>(L);
+	auto& field = pduel->game_field;
+	auto t_card = lua_get<card*, true>(L, 1);
+	auto position = lua_get<uint8_t>(L, 2);
+	t_card->current.position = position;
+	
+	return 0;
+}
 LUA_FUNCTION(Message) {
 	int top = lua_gettop(L);
 	if(top == 0)
@@ -524,9 +548,11 @@ LUA_FUNCTION(FromVirtualToReal) {
 	auto pduel = lua_get<duel*>(L);
 	uint64_t duop = pduel->game_field->core.duel_options;
 	pduel->dummy();
+	//pduel->game_field->infos.field_id++;
 	pduel->loaded_scripts.clear();
 	pduel->read_script("constant.lua");
 	pduel->read_script("utility.lua");
+	pduel->read_script("init.lua");
 	pduel->skipmsg = 1;
 	auto& field = pduel->game_field;
 	field->core.duel_options = duop;
@@ -654,24 +680,42 @@ LUA_FUNCTION(FromVirtualToReal) {
 				pcard->current.sequence = list.size() - 1;
 			}
 		}
+		if (info.loc == 0x80000000) {
+			luaL_checkstack(pduel->lua->lua_state, 3, nullptr);
+			lua_getglobal(pduel->lua->lua_state, "side_deck_operation");
+			if (!lua_isnil(pduel->lua->lua_state, -1)) {
+				lua_pushinteger(pduel->lua->lua_state, info.con);
+				lua_pushinteger(pduel->lua->lua_state, info.code);
+				lua_pcall(pduel->lua->lua_state, 2, 0, 0);
+				lua_settop(pduel->lua->lua_state, 0);
+			}
+			lua_settop(pduel->lua->lua_state, 0);
+		}
 		fclose(fp);
 	}
 	field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
 	pduel->playerop_config = 1;
 	int stop = 0;
+	int sstop = 0;
 	do {
 		pduel->buff.clear();
 		int flag = 0;
+		sstop = 0;
 		do {
 			if (pduel->playerop_line > line_count) {
-				stop = true;
+				stop = 9999;
 				break;
 			}
+			sstop++;
 			flag = pduel->game_field->process();
 			pduel->generate_buffer();
 		} while (pduel->buff.size() == 0 && flag == PROCESSOR_FLAG_CONTINUE);
-		stop |= (pduel->buff.size() != 0 && flag == PROCESSOR_FLAG_WAITING);
-	} while (!stop);
+		/*stop |= (pduel->buff.size() != 0 && flag == PROCESSOR_FLAG_WAITING);*/
+		if (sstop > 1)
+			stop = 0;
+		else
+			stop++;
+	} while (stop < 64);
 	pduel->skipmsg = 0;
 	pduel->playerop_config = 0;
 	field->reload_field_info();
@@ -706,9 +750,17 @@ LUA_FUNCTION(FromVirtualToReal) {
 		message->write<uint16_t>(8);
 		message->write<uint32_t>(QUERY_CODE);
 		message->write<uint32_t>(pcard->data.code);
+		/*message = pduel->new_message(MSG_UPDATE_CARD);
+		message->write<uint8_t>(pcard->current.controler);
+		message->write<uint8_t>(pcard->current.location);
+		message->write<uint8_t>(pcard->current.sequence);*/
 		message->write<uint16_t>(5);
 		message->write<uint32_t>(QUERY_IS_PUBLIC);
 		message->write<uint8_t>((pcard->is_position(POS_FACEUP) || pcard->is_related_to_chains() || (pcard->current.location == LOCATION_HAND && pcard->is_affected_by_effect(EFFECT_PUBLIC))));
+		/*message = pduel->new_message(MSG_UPDATE_CARD);
+		message->write<uint8_t>(pcard->current.controler);
+		message->write<uint8_t>(pcard->current.location);
+		message->write<uint8_t>(pcard->current.sequence);*/
 		message->write<uint16_t>(8 + 4 * pcard->xyz_materials.size());
 		message->write<uint32_t>(QUERY_OVERLAY_CARD);
 		message->write<uint32_t>(pcard->xyz_materials.size());
