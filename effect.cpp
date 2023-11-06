@@ -441,18 +441,22 @@ int32_t effect::is_target(card* pcard) {
 			return FALSE;
 		if(is_flag(EFFECT_FLAG_ABSOLUTE_TARGET)) {
 			if(pcard->current.controler == 0) {
-				if(!pcard->current.is_location(s_range))
+				if(!pcard->current.is_location(s_range)
+					&& !((s_range & LOCATION_MZONE) && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)))
 					return FALSE;
 			} else {
-				if(!pcard->current.is_location(o_range))
+				if(!pcard->current.is_location(o_range)
+					&& !((o_range & LOCATION_MZONE) && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)))
 					return FALSE;
 			}
 		} else {
 			if(pcard->current.controler == get_handler_player()) {
-				if(!pcard->current.is_location(s_range))
+				if(!pcard->current.is_location(s_range)
+					&& !((s_range & LOCATION_MZONE) && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)))
 					return FALSE;
 			} else {
-				if(!pcard->current.is_location(o_range))
+				if(!pcard->current.is_location(o_range)
+					&& !((o_range & LOCATION_MZONE) && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)))
 					return FALSE;
 			}
 		}

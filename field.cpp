@@ -1448,8 +1448,15 @@ void field::filter_affected_cards(effect* peffect, card_set* cset) {
 	std::vector<card_vector*> cvec;
 	uint16_t range = peffect->s_range;
 	for(uint32_t p = 0; p < 2; ++p) {
-		if(range & LOCATION_MZONE)
+		if (range & LOCATION_MZONE) {
 			cvec.push_back(&player[self].list_mzone);
+			for (auto& pcard : player[self].list_szone) {
+				if (pcard && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
+					&& peffect->is_fit_target_function(pcard)) {
+					cset->insert(pcard);
+				}
+			}
+		}
 		if(range & LOCATION_SZONE)
 			cvec.push_back(&player[self].list_szone);
 		if(range & LOCATION_GRAVE)
@@ -1467,7 +1474,8 @@ void field::filter_affected_cards(effect* peffect, card_set* cset) {
 	}
 	for(auto& cvit : cvec) {
 		for(auto& pcard : *cvit) {
-			if(pcard && peffect->is_target(pcard))
+			if(pcard && peffect->is_target(pcard)
+				&& !pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
 				cset->insert(pcard);
 		}
 	}
@@ -1481,8 +1489,15 @@ void field::filter_inrange_cards(effect* peffect, card_set* cset) {
 	uint16_t range = peffect->s_range;
 	std::vector<card_vector*> cvec;
 	for(uint32_t p = 0; p < 2; ++p) {
-		if(range & LOCATION_MZONE)
+		if (range & LOCATION_MZONE) {
 			cvec.push_back(&player[self].list_mzone);
+			for (auto& pcard : player[self].list_szone) {
+				if (pcard && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
+					&& peffect->is_fit_target_function(pcard)) {
+					cset->insert(pcard);
+				}
+			}
+		}
 		if(range & LOCATION_SZONE)
 			cvec.push_back(&player[self].list_szone);
 		if(range & LOCATION_GRAVE)
@@ -1500,7 +1515,8 @@ void field::filter_inrange_cards(effect* peffect, card_set* cset) {
 	}
 	for(auto& cvit : cvec) {
 		for(auto& pcard : *cvit) {
-			if(pcard && peffect->is_fit_target_function(pcard))
+			if(pcard && peffect->is_fit_target_function(pcard)
+				&& !pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED))
 				cset->insert(pcard);
 		}
 	}
@@ -1539,6 +1555,10 @@ int32_t field::filter_matching_card(int32_t findex, uint8_t self, uint32_t locat
 	auto mzonechk = [&checkc](auto pcard)->bool {
 		return checkc(pcard, [](auto pcard)->bool {return !pcard->get_status(STATUS_SUMMONING | STATUS_SUMMON_DISABLED | STATUS_SPSUMMON_STEP); });
 	};
+	auto mzonechk2 = [&checkc](auto pcard)->bool {
+		return checkc(pcard, [](auto pcard)->bool {return !pcard->get_status(STATUS_SUMMONING | STATUS_SUMMON_DISABLED | STATUS_SPSUMMON_STEP)
+			&& pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED); });
+	};
 	auto szonechk = [&checkc](auto pcard)->bool {
 		return checkc(pcard, [](auto pcard)->bool {return !pcard->is_status(STATUS_ACTIVATE_DISABLED); });
 	};
@@ -1551,6 +1571,8 @@ int32_t field::filter_matching_card(int32_t findex, uint8_t self, uint32_t locat
 	for(uint32_t p = 0, location = location1; p < 2; ++p, location = location2, self = 1 - self) {
 		if(location & LOCATION_MZONE) {
 			if(check_list(player[self].list_mzone, mzonechk))
+				return TRUE;
+			if (check_list(player[self].list_szone, mzonechk2))
 				return TRUE;
 		} else {
 			if(location & LOCATION_MMZONE) {
@@ -1613,6 +1635,14 @@ int32_t field::filter_field_card(uint8_t self, uint32_t location1, uint32_t loca
 			for(auto& pcard : player[self].list_mzone) {
 				if(pcard && !pcard->get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP)) {
 					if(pgroup)
+						pgroup->container.insert(pcard);
+					++count;
+				}
+			}
+			for (auto& pcard : player[self].list_szone) {
+				if (pcard && !pcard->get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP)
+					&& pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)) {
+					if (pgroup)
 						pgroup->container.insert(pcard);
 					++count;
 				}
