@@ -4893,6 +4893,13 @@ int32_t field::move_to_field(uint16_t step, card* target, uint8_t enable, uint8_
 					++ct;
 				}
 			}
+			uint32_t flag2;
+			uint8_t zone2 = 0xff;
+			int32_t ct2 = get_useable_count(target, playerid, LOCATION_SZONE, move_player, lreason, zone2, &flag2);
+			if (is_player_affected_by_effect(playerid, EFFECT_RIKKA_CROSS)) {
+				ct += ct2;
+				flag2 = flag2 | ~zone2;
+			}
 			if(location == LOCATION_SZONE)
 				flag = flag | ~zone;
 			if((ret == 1) && (ct <= 0 || target->is_status(STATUS_FORBIDDEN) || (!(positions & POS_FACEDOWN) && check_unique_onfield(target, playerid, location)))) {
@@ -4917,13 +4924,19 @@ int32_t field::move_to_field(uint16_t step, card* target, uint8_t enable, uint8_
 			if(move_player == playerid) {
 				if(location == LOCATION_SZONE)
 					flag = ((flag & 0xff) << 8) | 0xffff00ff;
-				else
-					flag = (flag & 0xff) | 0xffffff00;
+				else {
+					if (is_player_affected_by_effect(playerid, EFFECT_RIKKA_CROSS)) {
+						flag = ((flag2 & 0xff) << 8) | (flag & 0xff) | 0xffff0000;
+					}
+					else
+						flag = (flag & 0xff) | 0xffffff00;
+				}
 			} else {
 				if(location == LOCATION_SZONE)
 					flag = ((flag & 0xff) << 24) | 0xffffff;
-				else
+				else {
 					flag = ((flag & 0xff) << 16) | 0xff00ffff;
+				}
 			}
 			flag |= 0xe080e080;
 			auto message = pduel->new_message(MSG_HINT);
@@ -4936,6 +4949,7 @@ int32_t field::move_to_field(uint16_t step, card* target, uint8_t enable, uint8_
 	}
 	case 1: {
 		uint32_t seq = returns.at<int8_t>(2);
+		uint32_t loc = returns.at<int8_t>(1);
 		if(location == LOCATION_SZONE && zone == 0x1 << 5 && (target->data.type & TYPE_FIELD) && (target->data.type & (TYPE_SPELL | TYPE_TRAP)))
 			seq = 5;
 		if(ret != 1) {
@@ -4966,6 +4980,8 @@ int32_t field::move_to_field(uint16_t step, card* target, uint8_t enable, uint8_
 			target->set_status(STATUS_FORM_CHANGED, FALSE);
 		}
 		target->temp.sequence = seq;
+		if ((loc == LOCATION_SZONE) && (location == LOCATION_MZONE))
+			target->temp.sequence += 8;
 		if(location != LOCATION_MZONE) {
 			returns.set<int32_t>(0, positions);
 			return FALSE;
@@ -4978,13 +4994,13 @@ int32_t field::move_to_field(uint16_t step, card* target, uint8_t enable, uint8_
 		return FALSE;
 	}
 	case 2: {
-		if(core.global_flag & GLOBALFLAG_DECK_REVERSE_CHECK) {
-			if(target->current.location == LOCATION_DECK) {
+		if (core.global_flag & GLOBALFLAG_DECK_REVERSE_CHECK) {
+			if (target->current.location == LOCATION_DECK) {
 				uint32_t curp = target->current.controler;
 				uint32_t curs = target->current.sequence;
-				if(curs > 0 && (curs == player[curp].list_main.size() - 1)) {
+				if (curs > 0 && (curs == player[curp].list_main.size() - 1)) {
 					card* ptop = player[curp].list_main[curs - 1];
-					if(core.deck_reversed || (ptop->current.position == POS_FACEUP_DEFENSE)) {
+					if (core.deck_reversed || (ptop->current.position == POS_FACEUP_DEFENSE)) {
 						auto message = pduel->new_message(MSG_DECK_TOP);
 						message->write<uint8_t>(curp);
 						message->write<uint32_t>(1);
@@ -4997,10 +5013,15 @@ int32_t field::move_to_field(uint16_t step, card* target, uint8_t enable, uint8_
 		auto message = pduel->new_message(MSG_MOVE);
 		message->write<uint32_t>(target->data.code);
 		message->write(target->get_info_location());
-		if(target->overlay_target)
+		if (target->overlay_target)
 			target->overlay_target->xyz_remove(target);
 		// call move_card()
-		move_card(playerid, target, location, target->temp.sequence, pzone);
+		if (target->temp.sequence >= 8) {
+			target->temp.sequence -= 8;
+			move_card(playerid, target, LOCATION_SZONE, target->temp.sequence, pzone);
+		}
+		else
+			move_card(playerid, target, location, target->temp.sequence, pzone);
 		target->current.position = returns.at<int32_t>(0);
 		target->set_status(STATUS_LEAVE_CONFIRMED, FALSE);
 		message->write(target->get_info_location());

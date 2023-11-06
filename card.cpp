@@ -833,7 +833,8 @@ int32_t card::get_defense() {
 		return search->second;
 	if(!(data.type & TYPE_MONSTER) && !(get_type() & TYPE_MONSTER) && !is_affected_by_effect(EFFECT_PRE_MONSTER))
 		return 0;
-	if (current.location != LOCATION_MZONE || get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP))
+	if ((current.location != LOCATION_MZONE && !is_affected_by_effect(EFFECT_RIKKA_CROSSED))
+		|| get_status(STATUS_SUMMONING | STATUS_SPSUMMON_STEP))
 		return data.defense;
 	if (has_valid_property_val(temp.defense))
 		return temp.defense;
@@ -1026,7 +1027,7 @@ uint32_t card::get_rank() {
 	auto search = assume.find(ASSUME_RANK);
 	if(search != assume.end())
 		return search->second;
-	if(!(current.location & LOCATION_MZONE))
+	if(!(current.location & LOCATION_MZONE) && !is_affected_by_effect(EFFECT_RIKKA_CROSSED))
 		return data.level;
 	if (has_valid_property_val(temp.rank))
 		return temp.rank;
@@ -1082,7 +1083,7 @@ uint32_t card::get_link() {
 	auto search = assume.find(ASSUME_LINK);
 	if(search != assume.end())
 		return search->second;
-	if(!(current.location & LOCATION_MZONE))
+	if (!(current.location & LOCATION_MZONE) && !is_affected_by_effect(EFFECT_RIKKA_CROSSED))
 		return data.level;
 	if (has_valid_property_val(temp.link))
 		return temp.link;

@@ -660,6 +660,9 @@ int32_t field::get_useable_count_other(card* pcard, uint8_t playerid, uint8_t lo
 		limit = get_mzone_limit(playerid, uplayer, reason);
 	else
 		limit = get_szone_limit(playerid, uplayer, reason);
+	if (is_player_affected_by_effect(playerid, EFFECT_RIKKA_CROSS) && (location == LOCATION_MZONE)) {
+		limit += get_szone_limit(playerid, uplayer, reason);
+	}
 	if(count > limit)
 		count = limit;
 	return count;
@@ -674,6 +677,11 @@ int32_t field::get_tofield_count(card* pcard, uint8_t playerid, uint8_t location
 	} else
 		flag = ((flag >> 8) | ~zone) & 0x1f;
 	int32_t count = 5 - field_used_count[flag];
+	if (is_player_affected_by_effect(playerid, EFFECT_RIKKA_CROSS) && (location == LOCATION_MZONE)) {
+		uint32_t flag2 = player[playerid].disabled_location | player[playerid].used_location;
+		flag2 = ((flag2 >> 8) | ~zone) & 0x1f;
+		count += 5 - field_used_count[flag2];
+	}
 	if(location == LOCATION_MZONE)
 		flag |= (1u << 5) | (1u << 6);
 	if(list)
