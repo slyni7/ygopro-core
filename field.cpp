@@ -1755,6 +1755,16 @@ int32_t field::get_release_list(uint8_t playerid, card_set* release_list, card_s
 			}
 		}
 	}
+	for (auto& pcard : player[playerid].list_szone) {
+		if (pcard && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED) &&
+			pcard != exc && !(exg && exg->has_card(pcard)) && pcard->is_releasable_by_nonsummon(playerid)
+			&& (!fun || pduel->lua->check_matching(pcard, fun, exarg))) {
+			if (release_list)
+				release_list->insert(pcard);
+			pcard->release_param = 1;
+			++rcount;
+		}
+	}
 	int32_t ex_oneof_max = 0;
 	if(use_oppo) {
 		for(auto& pcard : player[1 - playerid].list_mzone) {
@@ -1855,6 +1865,22 @@ int32_t field::get_summon_release_list(card* target, card_set* release_list, car
 			rcount += pcard->release_param;
 		}
 	}
+	for (auto& pcard : player[p].list_szone) {
+		if (pcard && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED) &&
+			((releasable >> pcard->current.sequence) & 1) && pcard->is_releasable_by_summon(p, target)) {
+			if (mg && !mg->has_card(pcard))
+				continue;
+			if (release_list)
+				release_list->insert(pcard);
+			if (pcard->is_affected_by_effect(EFFECT_TRIPLE_TRIBUTE, target))
+				pcard->release_param = 3;
+			else if (pcard->is_affected_by_effect(EFFECT_DOUBLE_TRIBUTE, target))
+				pcard->release_param = 2;
+			else
+				pcard->release_param = 1;
+			rcount += pcard->release_param;
+		}
+	}
 	uint32_t ex_oneof_max = 0;
 	for(auto& pcard : player[1 - p].list_mzone) {
 		if(!pcard || !((releasable >> (pcard->current.sequence + 16)) & 1) || !pcard->is_releasable_by_summon(p, target))
@@ -1936,6 +1962,11 @@ void field::get_ritual_material(uint8_t playerid, effect* peffect, card_set* mat
 		if(pcard && mzonecheck(pcard) && pcard->is_releasable_by_nonsummon(playerid))
 			material->insert(pcard);
 	}
+	for (auto& pcard : player[playerid].list_szone) {
+		if (pcard && mzonecheck(pcard) && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
+			&& pcard->is_releasable_by_nonsummon(playerid))
+			material->insert(pcard);
+	}
 	for(auto& pcard : player[1 - playerid].list_mzone) {
 		if(pcard && pcard->is_position(POS_FACEUP) && mzonecheck(pcard) && pcard->is_releasable_by_nonsummon(playerid) && pcard->is_affected_by_effect(EFFECT_EXTRA_RELEASE))
 			material->insert(pcard);
@@ -1968,7 +1999,8 @@ void field::get_fusion_material(uint8_t playerid, card_set* material) {
 			material->insert(pcard);
 	}
 	for(auto& pcard : player[playerid].list_szone) {
-		if(pcard && pcard->is_affected_by_effect(EFFECT_EXTRA_FUSION_MATERIAL))
+		if(pcard &&
+			(pcard->is_affected_by_effect(EFFECT_EXTRA_FUSION_MATERIAL) || pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)))
 			material->insert(pcard);
 	}
 	for(auto& pcard : player[playerid].list_hand)
