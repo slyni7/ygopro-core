@@ -5019,6 +5019,13 @@ int32_t field::move_to_field(uint16_t step, card* target, uint8_t enable, uint8_
 		if (target->temp.sequence >= 8) {
 			target->temp.sequence -= 8;
 			move_card(playerid, target, LOCATION_SZONE, target->temp.sequence, pzone);
+			effect* peffect = pduel->new_effect();
+			peffect->owner = target;
+			peffect->type = EFFECT_TYPE_SINGLE;
+			peffect->code = EFFECT_RIKKA_CROSSED;
+			peffect->flag[0] = EFFECT_FLAG_CANNOT_DISABLE;
+			peffect->reset_flag = RESET_EVENT + 0x1fc0000;
+			target->add_effect(peffect);
 		}
 		else
 			move_card(playerid, target, location, target->temp.sequence, pzone);
