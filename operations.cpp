@@ -4880,7 +4880,7 @@ int32_t field::move_to_field(uint16_t step, card* target, uint8_t enable, uint8_
 			message->write<uint64_t>(target->data.code);
 			add_process(PROCESSOR_SELECT_PLACE, 0, 0, (group*)target, move_player, flag, 1);
 		} else {
-			if (zone == 0xff) {
+			if (zone == 0xfe) {
 				returns.set<int8_t>(2, 13);
 				return FALSE;
 			}
