@@ -4880,6 +4880,10 @@ int32_t field::move_to_field(uint16_t step, card* target, uint8_t enable, uint8_
 			message->write<uint64_t>(target->data.code);
 			add_process(PROCESSOR_SELECT_PLACE, 0, 0, (group*)target, move_player, flag, 1);
 		} else {
+			if (zone == 0xff) {
+				returns.set<int8_t>(2, 13);
+				return FALSE;
+			}
 			uint32_t flag;
 			uint32_t lreason = reason ? reason : (target->current.location == LOCATION_MZONE) ? LOCATION_REASON_CONTROL : LOCATION_REASON_TOFIELD;
 			int32_t ct = get_useable_count(target, playerid, location, move_player, lreason, zone, &flag);
