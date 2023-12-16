@@ -1796,7 +1796,7 @@ int32_t field::get_release_list(uint8_t playerid, card_set* release_list, card_s
 	}
 	for (auto& pcard : player[playerid].list_szone) {
 		if (pcard && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED) &&
-			pcard != exc && !(exg && exg->has_card(pcard)) && pcard->is_releasable_by_nonsummon(playerid)
+			pcard != exc && !(exg && exg->has_card(pcard)) && pcard->is_releasable_by_nonsummon(playerid, reason)
 			&& (!fun || pduel->lua->check_matching(pcard, fun, exarg))) {
 			if (release_list)
 				release_list->insert(pcard);
@@ -2003,7 +2003,7 @@ void field::get_ritual_material(uint8_t playerid, effect* peffect, card_set* mat
 	}
 	for (auto& pcard : player[playerid].list_szone) {
 		if (pcard && mzonecheck(pcard) && pcard->is_affected_by_effect(EFFECT_RIKKA_CROSSED)
-			&& pcard->is_releasable_by_nonsummon(playerid))
+			&& pcard->is_releasable_by_nonsummon(playerid, REASON_EFFECT))
 			material->insert(pcard);
 	}
 	for(auto& pcard : player[1 - playerid].list_mzone) {

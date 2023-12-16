@@ -1239,7 +1239,7 @@ int32_t field::process_phase_event(int16_t step, int32_t phase) {
 			else
 				message->write<uint64_t>(26);
 			if(tf_count == 0 && to_count == 1 && fc_count == 0 && cn_count == 0) {
-				if (!core.select_chains[0].triggering_effect->get_handler()->current.location) {
+				if (!core.select_chains.front().triggering_effect->get_handler()->current.location) {
 					add_process(PROCESSOR_SELECT_CHAIN, 0, 0, 0, check_player, core.spe_effect[check_player] | (tf_count + cn_count ? 0x10000 : 0));
 					core.units.begin()->step = 1;
 					return FALSE;
@@ -1527,7 +1527,7 @@ int32_t field::process_point_event(int16_t step, int32_t skip_trigger, int32_t s
 				core.select_chains.erase(endit, core.select_chains.end());
 			}
 			if(core.select_chains.size() == 1 && !core.current_chain.size()) {
-				if (!core.select_chains[0].triggering_effect->get_handler()->current.location) {
+				if (!core.select_chains.front().triggering_effect->get_handler()->current.location) {
 					add_process(PROCESSOR_SELECT_CHAIN, 0, 0, 0, core.current_player, 0x7f);
 					core.units.begin()->step = 5;
 					return FALSE;

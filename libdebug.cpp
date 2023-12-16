@@ -18,8 +18,8 @@ namespace {
 
 using namespace scriptlib;
 
-/*LUA_FUNCTION(PrintAllCard) {
-	const auto pduel = lua_get<duel*>(L);
+/*LUA_STATIC_FUNCTION(PrintAllCard) {
+	const 
 	for (auto it = pduel->data_cache.begin(); it != pduel->data_cache.end(); ++it) {
 		int code = (*it).first;
 		char fc[50];
@@ -32,9 +32,8 @@ using namespace scriptlib;
 	}
 	return 0;
 }*/
-LUA_FUNCTION(ChangePositionEx) {
+LUA_STATIC_FUNCTION(ChangePositionEx) {
 	check_param_count(L, 2);
-	const auto pduel = lua_get<duel*>(L);
 	auto& field = pduel->game_field;
 	auto t_card = lua_get<card*, true>(L, 1);
 	auto position = lua_get<uint8_t>(L, 2);
@@ -218,29 +217,25 @@ LUA_STATIC_FUNCTION(ReloadFieldEnd) {
 		return yield();
 	return 0;
 }
-LUA_FUNCTION(GetDuelOptions) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetDuelOptions) {
 	lua_pushinteger(L, pduel->game_field->core.duel_options);
 	return 1;
 }
-LUA_FUNCTION(SetDuelOptions) {
+LUA_STATIC_FUNCTION(SetDuelOptions) {
 	check_param_count(L, 1);
-	const auto pduel = lua_get<duel*>(L);
 	auto flag = lua_get<uint64_t>(L, 1);
 	pduel->game_field->core.duel_options = flag;
 	return 0;
 }
-LUA_FUNCTION(RemoveCardEx) {
+LUA_STATIC_FUNCTION(RemoveCardEx) {
 	check_param_count(L, 1);
-	const auto pduel = lua_get<duel*>(L);
 	auto& field = pduel->game_field;
 	auto t_card = lua_get<card*, true>(L, 1);
 	field->remove_card(t_card);
 	return 0;
 }
-LUA_FUNCTION(AddCardEx) {
+LUA_STATIC_FUNCTION(AddCardEx) {
 	check_param_count(L, 5);
-	const auto pduel = lua_get<duel*>(L);
 	auto& field = pduel->game_field;
 	auto t_card = lua_get<card*, true>(L, 1);
 	auto playerid = lua_get<uint8_t>(L, 2);
@@ -252,40 +247,34 @@ LUA_FUNCTION(AddCardEx) {
 	return 0;
 }
 /*Shahrazad*/
-LUA_FUNCTION(GetPlayerOpSeed) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetPlayerOpSeed) {
 	lua_pushinteger(L, pduel->playerop_seed[0]);
 	return 1;
 }
-LUA_FUNCTION(GetPlayerOpConfig) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetPlayerOpConfig) {
 	lua_pushinteger(L, pduel->playerop_config);
 	return 1;
 }
-LUA_FUNCTION(GetPlayerOpLine) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetPlayerOpLine) {
 	lua_pushinteger(L, pduel->playerop_line);
 	return 1;
 }
-LUA_FUNCTION(GetQlayerOpLine) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetQlayerOpLine) {
 	lua_pushinteger(L, pduel->qlayerop_line);
 	return 1;
 }
-LUA_FUNCTION(GetQlayerOpFid) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetQlayerOpFid) {
 	lua_pushinteger(L, pduel->qlayerop_fid);
 	return 1;
 }
-LUA_FUNCTION(GetInfosFieldID) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetInfosFieldID) {
 	lua_pushinteger(L, pduel->game_field->infos.field_id);
 	return 1;
 }
-LUA_FUNCTION(GetIDEffect) {
+LUA_STATIC_FUNCTION(GetIDEffect) {
 	check_param_count(L, 1);
-	check_param(L, PARAM_TYPE_INT, 1);
-	const auto pduel = lua_get<duel*>(L);
+	check_param(L, LuaParam::INT, 1);
+	const 
 	auto effectid = lua_get<int>(L, 1);
 	for (auto effect : pduel->effects) {
 		if (effect->id == effectid) {
@@ -295,8 +284,7 @@ LUA_FUNCTION(GetIDEffect) {
 	}
 	return 0;
 }
-LUA_FUNCTION(Sandevistan) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(Sandevistan) {
 	if (pduel->sandevistan)
 		return 0;
 	check_param_count(L, 1);
@@ -488,8 +476,8 @@ LUA_FUNCTION(Sandevistan) {
 	delete qduel;
 	return 1;
 }
-LUA_FUNCTION(AddWitchFatal) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(AddWitchFatal) {
+	
 	check_param_count(L, 2);
 	auto code = lua_get<uint32_t>(L, 1);
 	auto index = lua_get<uint32_t>(L, 2);
@@ -501,8 +489,8 @@ LUA_FUNCTION(AddWitchFatal) {
 	}
 	return 0;
 }
-LUA_FUNCTION(RemoveWitchFatal) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(RemoveWitchFatal) {
+	
 	check_param_count(L, 2);
 	auto code = lua_get<uint32_t>(L, 1);
 	auto index = lua_get<uint32_t>(L, 2);
@@ -522,8 +510,8 @@ LUA_FUNCTION(RemoveWitchFatal) {
 	lua_pushinteger(L, result);
 	return 1;
 }
-LUA_FUNCTION(CheckWitchFatal) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(CheckWitchFatal) {
+	
 	check_param_count(L, 2);
 	auto code = lua_get<uint32_t>(L, 1);
 	auto index = lua_get<uint32_t>(L, 2);
@@ -539,8 +527,8 @@ LUA_FUNCTION(CheckWitchFatal) {
 	lua_pushboolean(L, result);
 	return 1;
 }
-LUA_FUNCTION(FromVirtualToReal) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(FromVirtualToReal) {
+	
 	uint64_t duop = pduel->game_field->core.duel_options;
 	pduel->dummy();
 	//pduel->game_field->infos.field_id++;
@@ -875,8 +863,8 @@ LUA_FUNCTION(FromVirtualToReal) {
 	field->process();
 	return 0;
 }
-LUA_FUNCTION(NewTsukasaClear) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(NewTsukasaClear) {
+	
 	pduel->game_field->core.units.clear();
 	pduel->buff.clear();
 	pduel->clear();
@@ -890,9 +878,9 @@ LUA_FUNCTION(NewTsukasaClear) {
 	field->reload_field_info();
 	return 0;
 }
-LUA_FUNCTION(Shahrazad) {
+LUA_STATIC_FUNCTION(Shahrazad) {
 	check_param_count(L, 5);
-	auto pduel = lua_get<duel*>(L);
+	
 	pduel->shahrazad();
 	auto& field = pduel->game_field;
 	field->core.duel_options = DUEL_MODE_MR5;
@@ -987,8 +975,8 @@ LUA_FUNCTION(Shahrazad) {
 	field->reload_field_info();
 	return 0;
 }
-LUA_FUNCTION(NewTsukasaDuel) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(NewTsukasaDuel) {
+	
 	OCG_DuelOptions options;
 	options.seed[0] = 0;
 	options.seed[1] = 0;
@@ -1008,8 +996,7 @@ LUA_FUNCTION(NewTsukasaDuel) {
 	delete qduel;
 	return 0;
 }
-LUA_FUNCTION(NewTsukasaDuelAlpha) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(NewTsukasaDuelAlpha) {
 	if (pduel->playerop_config) {
 		return 0;
 	}
@@ -1263,8 +1250,8 @@ LUA_FUNCTION(NewTsukasaDuelAlpha) {
 	lua_pushinteger(L, count7);
 	return 7;
 }
-LUA_FUNCTION(NewTsukasaDuelBeta) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(NewTsukasaDuelBeta) {
+	
 	if (pduel->playerop_config) {
 		return 0;
 	}
@@ -1484,8 +1471,8 @@ LUA_FUNCTION(NewTsukasaDuelBeta) {
 	pduel->dummy_duels.push_back(qduel);
 	return 0;
 }
-LUA_FUNCTION(NewTsukasaDuelGamma) {
-	auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(NewTsukasaDuelGamma) {
+	
 	if (pduel->playerop_config) {
 		return 0;
 	}

@@ -22,15 +22,12 @@ namespace {
 
 using namespace scriptlib;
 
-LUA_FUNCTION(PromisedEnd) {
+LUA_STATIC_FUNCTION(PromisedEnd) {
 	check_param_count(L, 1);
 	auto p = lua_get<int8_t>(L, 1);
 	if (p != 0 && p != 1)
 		return 0;
-	card* pcard = nullptr;
-	group* pgroup = nullptr;
-	get_card_or_group(L, 2, pcard, pgroup);
-	const auto pduel = lua_get<duel*>(L);
+	auto [pcard, pgroup] = lua_get_card_or_group(L, 2);
 	if (pcard) {
 		auto message = pduel->new_message(MSG_POS_CHANGE);
 		message->write<uint32_t>(pcard->data.code);
@@ -53,32 +50,28 @@ LUA_FUNCTION(PromisedEnd) {
 	}
 	return lua_yield(L, 0);
 }
-LUA_FUNCTION(ProcessIdleCommand) {
+LUA_STATIC_FUNCTION(ProcessIdleCommand) {
 	check_param_count(L, 1);
 	auto p = lua_get<int8_t>(L, 1);
 	if (p != 0 && p != 1)
 		return 0;
-	const auto pduel = lua_get<duel*>(L);
 	pduel->game_field->infos.idlecmd_player = p;
 	pduel->game_field->add_process(PROCESSOR_IDLE_COMMAND, 0, 0, 0, 0, 0);
 	return lua_yield(L, 0);
 }
-LUA_FUNCTION(GetIdleCmdPlayer) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetIdleCmdPlayer) {
 	lua_pushinteger(L, pduel->game_field->infos.idlecmd_player);
 	return 1;
 }
-LUA_FUNCTION(GetCoreTriggers) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetCoreTriggers) {
 	lua_pushinteger(L, pduel->game_field->core.new_fchain_s.size() + pduel->game_field->core.new_ochain_s.size());
 	return 1;
 }
-LUA_FUNCTION(PriorQuickEffect) {
+LUA_STATIC_FUNCTION(PriorQuickEffect) {
 	check_param_count(L, 1);
 	auto p = lua_get<int8_t>(L, 1);
 	if (p != 0 && p != 1)
 		return 0;
-	const auto pduel = lua_get<duel*>(L);
 	for (auto it = pduel->game_field->core.units.begin(); it != pduel->game_field->core.units.end(); it++) {
 		if (it->type == PROCESSOR_QUICK_EFFECT) {
 			it->step = 0;
@@ -89,32 +82,27 @@ LUA_FUNCTION(PriorQuickEffect) {
 	}
 	return 0;
 }
-LUA_FUNCTION(ProcessQuickEffect) {
+LUA_STATIC_FUNCTION(ProcessQuickEffect) {
 	check_param_count(L, 1);
 	auto p = lua_get<int8_t>(L, 1);
 	if (p != 0 && p != 1)
 		return 0;
-	const auto pduel = lua_get<duel*>(L);
 	pduel->game_field->add_process(PROCESSOR_QUICK_EFFECT, 0, 0, 0, FALSE, p);
 	return 0;
 }
-LUA_FUNCTION(ProcessPointEvent) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(ProcessPointEvent) {
 	pduel->game_field->add_process(PROCESSOR_POINT_EVENT, 0, 0, 0, FALSE, FALSE);
 	return 0;
 }
-LUA_FUNCTION(ProcessPointEventSkip) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(ProcessPointEventSkip) {
 	pduel->game_field->add_process(PROCESSOR_POINT_EVENT, 0, 0, 0, 0x101, TRUE);
 	return 0;
 }
-LUA_FUNCTION(ProcessPointEventTrigger) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(ProcessPointEventTrigger) {
 	pduel->game_field->add_process(PROCESSOR_POINT_EVENT, 0, 0, 0, 0x100, FALSE);
 	return 0;
 }
-LUA_FUNCTION(ErasePointEvent) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(ErasePointEvent) {
 	int erased = 0;
 	for (auto it = pduel->game_field->core.units.begin(); it != pduel->game_field->core.units.end(); ) {
 		if (it->type == PROCESSOR_POINT_EVENT) {
@@ -127,10 +115,9 @@ LUA_FUNCTION(ErasePointEvent) {
 	lua_pushinteger(L, erased);
 	return 1;
 }
-LUA_FUNCTION(SpecialSummonRuleRightNow) {
+LUA_STATIC_FUNCTION(SpecialSummonRuleRightNow) {
 	check_action_permission(L);
 	check_param_count(L, 2);
-	const auto pduel = lua_get<duel*>(L);
 	if (pduel->game_field->core.effect_damage_step)
 		return 0;
 	auto playerid = lua_get<uint8_t>(L, 1);
@@ -147,10 +134,9 @@ LUA_FUNCTION(SpecialSummonRuleRightNow) {
 	}*/
 	return lua_yield(L, 0);
 }
-LUA_FUNCTION(ActivateEffectRightNow) {
+LUA_STATIC_FUNCTION(ActivateEffectRightNow) {
 	check_action_permission(L);
 	check_param_count(L, 1);
-	const auto pduel = lua_get<duel*>(L);
 	/*auto playerid = lua_get<uint8_t>(L, 1);
 	if (playerid != 0 && playerid != 1)
 		return 0;*/
@@ -158,9 +144,8 @@ LUA_FUNCTION(ActivateEffectRightNow) {
 	pduel->game_field->activate_effect(0, peffect);
 	return lua_yield(L, 0);
 }
-LUA_FUNCTION(IsEffectActivateable) {
+LUA_STATIC_FUNCTION(IsEffectActivateable) {
 	check_param_count(L, 1);
-	const auto pduel = lua_get<duel*>(L);
 	/*auto playerid = lua_get<uint8_t>(L, 1);
 	if (playerid != 0 && playerid != 1)
 		return 0;*/
@@ -172,19 +157,17 @@ LUA_FUNCTION(IsEffectActivateable) {
 	lua_pushboolean(L, result);
 	return 1;
 }
-LUA_FUNCTION(ProcessBattleCommand) {
+LUA_STATIC_FUNCTION(ProcessBattleCommand) {
 	check_param_count(L, 1);
 	auto p = lua_get<int8_t>(L, 1);
 	if (p != 0 && p != 1)
 		return 0;
-	const auto pduel = lua_get<duel*>(L);
 	pduel->game_field->infos.btlcmd_player = p;
 	pduel->game_field->infos.saved_phase = pduel->game_field->infos.phase;
 	pduel->game_field->add_process(PROCESSOR_BATTLE_COMMAND, 0, 0, 0, 0, 0);
 	return lua_yield(L, 0);
 }
-LUA_FUNCTION(GetBattleCmdPlayer) {
-	const auto pduel = lua_get<duel*>(L);
+LUA_STATIC_FUNCTION(GetBattleCmdPlayer) {
 	lua_pushinteger(L, pduel->game_field->infos.btlcmd_player);
 	return 1;
 }
@@ -4326,20 +4309,18 @@ LUA_STATIC_FUNCTION(GetStartingHand) {
 	lua_pushinteger(L, pduel->game_field->player[playerid].start_count);
 	return 1;
 }
-LUA_FUNCTION(TsukasaCheck) {
+LUA_STATIC_FUNCTION(TsukasaCheck) {
 	check_param_count(L, 0);
 	return 0;
 }
-LUA_FUNCTION(OneCardCheck) {
+LUA_STATIC_FUNCTION(OneCardCheck) {
 	check_param_count(L, 0);
-	const auto pduel = lua_get<duel*>(L);
 	lua_pushinteger(L, pduel->game_field->core.one_card_check);
 	return 1;
 }
-LUA_FUNCTION(SetSkipAnnounce) {
+LUA_STATIC_FUNCTION(SetSkipAnnounce) {
 	check_param_count(L, 1);
 	auto skip = lua_get<bool>(L, 1);
-	const auto pduel = lua_get<duel*>(L);
 	pduel->game_field->core.skip_announce = skip;
 	return 0;
 }
@@ -4377,7 +4358,7 @@ LUA_STATIC_FUNCTION(GetCardSetcodeFromCode) {
 		lua_pushinteger(L, setcode);
 	return static_cast<int32_t>(data.setcodes.size());
 }
-/*LUA_FUNCTION(GetCardNameFromCode) {
+/*LUA_STATIC_FUNCTION(GetCardNameFromCode) {
 	check_param_count(L, 1);
 	auto code = lua_get<uint32_t>(L, 1);
 	const auto& data = lua_get<duel*>(L)->read_card(code);

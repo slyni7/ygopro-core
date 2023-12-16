@@ -88,7 +88,7 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 		if (li > 2) {
 			int currval1 = currvals[0];
 			int currval2 = currvals[1];
-			std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+			core.select_chains.sort(chain::chain_operation_sort);
 			returns.clear();
 			returns.set<int32_t>(0, currval1 | (currval2 << 16));
 			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
@@ -121,7 +121,7 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 					char curr[25];
 					sscanf(line, "%s : %d,%d", curr, &currval1, &currval2);
 					if (!strcmp(curr, "select_battle_command")) {
-						std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+						core.select_chains.sort(chain::chain_operation_sort);
 						returns.clear();
 						returns.set<int32_t>(0, currval1 | (currval2 << 16));
 						pduel->playerop_line++;
@@ -147,7 +147,7 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 				char curr[25];
 				sscanf(line, "%s : %d,%d", curr, &currval1, &currval2);
 				if (!strcmp(curr, "select_battle_command")) {
-					std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+					core.select_chains.sort(chain::chain_operation_sort);
 					returns.clear();
 					returns.set<int32_t>(0, currval1 | (currval2 << 16));
 					pduel->playerop_line++;
@@ -321,7 +321,7 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 		if (li > 2) {
 			int currval1 = currvals[0];
 			int currval2 = currvals[1];
-			std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+			core.select_chains.sort(chain::chain_operation_sort);
 			returns.clear();
 			returns.set<int32_t>(0, currval1 | (currval2 << 16));
 			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
@@ -354,7 +354,7 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 					char curr[25];
 					sscanf(line, "%s : %d,%d", curr, &currval1, &currval2);
 					if (!strcmp(curr, "select_idle_command")) {
-						std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+						core.select_chains.sort(chain::chain_operation_sort);
 						if (currval1 > 7
 							|| (currval1 == 0 && currval2 >= core.summonable_cards.size())
 							|| (currval1 == 1 && currval2 >= core.spsummonable_cards.size())
@@ -393,7 +393,7 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 				char curr[25];
 				sscanf(line, "%s : %d,%d", curr, &currval1, &currval2);
 				if (!strcmp(curr, "select_idle_command")) {
-					std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+					core.select_chains.sort(chain::chain_operation_sort);
 					if (currval1 > 7
 						|| (currval1 == 0 && currval2 >= core.summonable_cards.size())
 						|| (currval1 == 1 && currval2 >= core.spsummonable_cards.size())
@@ -2005,7 +2005,7 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 		lua_settop(pduel->lua->lua_state, 0);
 		if (li > 1) {
 			int currvalue = currvals[0];
-			std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+			core.select_chains.sort(chain::chain_operation_sort);
 			returns.clear();
 			returns.set<int32_t>(0, currvalue);
 			if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
@@ -2038,7 +2038,7 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 					char curr[25];
 					sscanf(line, "%s : %d", curr, &currvalue);
 					if (!strcmp(curr, "select_chain")) {
-						std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+						core.select_chains.sort(chain::chain_operation_sort);
 						if ((currvalue < -1) || (forced && currvalue < 0) || currvalue >= (int32_t)core.select_chains.size()) {
 							
 							fclose(fp);
@@ -2069,7 +2069,7 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 				char curr[25];
 				sscanf(line, "%s : %d", curr, &currvalue);
 				if (!strcmp(curr, "select_chain")) {
-					std::sort(core.select_chains.begin(), core.select_chains.end(), chain::chain_operation_sort);
+					core.select_chains.sort(chain::chain_operation_sort);
 					if ((currvalue < -1) || (forced && currvalue < 0) || currvalue >= (int32_t)core.select_chains.size()) {
 						
 						fclose(fp);
