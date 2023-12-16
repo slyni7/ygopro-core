@@ -18,9 +18,12 @@ namespace scriptlib {
 	void push_group_lib(lua_State* L);
 	void push_duel_lib(lua_State* L);
 	void push_debug_lib(lua_State* L);
-	bool check_param(lua_State* L, LuaParamType param_type, int32_t index, bool retfalse = false, void* retobj = nullptr);
+	bool check_param(lua_State* L, LuaParam param_type, int32_t index, bool retfalse = false, void* retobj = nullptr);
 	void check_action_permission(lua_State* L);
 	int32_t push_return_cards(lua_State* L, int32_t status, lua_KContext ctx);
+	inline int32_t push_return_cards(lua_State* L, bool cancelable) {
+		return lua_yieldk(L, 0, (lua_KContext)cancelable, push_return_cards);
+	}
 	int32_t is_deleted_object(lua_State* L);
 
 	template<typename... Args>
@@ -39,27 +42,44 @@ namespace scriptlib {
 			lua_error(L, "%d Parameters are needed.", count);
 	}
 
-//Visual Studio raises a warning on const conditional expressions.
-//In these templated functions those warnings will be wrongly raised
-//so they can be safely disabled
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4127)
-#endif
-
 	template<typename T, typename type>
-	using EnableIfTemplate = std::enable_if_t<std::is_same<T, type>::value, int>;
+	using EnableIfTemplate = std::enable_if_t<std::is_same_v<T, type>, int>;
 
 	template<typename T>
-	using IsBool = std::is_same<T, bool>;
+	inline constexpr bool IsBool = std::is_same_v<T, bool>;
 
 	template<typename T>
-	using EnableIfBool = std::enable_if_t<IsBool<T>::value, bool>;
+	inline constexpr bool IsInteger = std::is_integral_v<T> || std::is_enum_v<T>;
 
 	template<typename T>
-	using EnableIfIntegerNotBool = std::enable_if_t<std::integral_constant<bool, std::is_integral<T>::value && !IsBool<T>::value>::value, T>;
+	inline constexpr bool IsCard = std::is_same_v<T, card*>;
+
+	template<typename T>
+	inline constexpr bool IsGroup = std::is_same_v<T, group*>;
+
+	template<typename T>
+	inline constexpr bool IsEffect = std::is_same_v<T, effect*>;
+
+	template<typename T>
+	using EnableIfIntegral = std::enable_if_t<IsInteger<T> || IsBool<T>, T>;
 
 	struct function{};
+
+	template<typename T>
+	inline constexpr auto get_lua_param_type() {
+		if constexpr(std::is_same_v<T, card*>)
+			return LuaParam::CARD;
+		if constexpr(std::is_same_v<T, group*>)
+			return LuaParam::GROUP;
+		if constexpr(std::is_same_v<T, effect*>)
+			return LuaParam::EFFECT;
+		if constexpr(std::is_same_v<T, function>)
+			return LuaParam::FUNCTION;
+		if constexpr(IsBool<T>)
+			return LuaParam::BOOLEAN;
+		if constexpr(IsInteger<T>)
+			return LuaParam::INT;
+	}
 
 	template<typename T, EnableIfTemplate<T, duel*> = 0>
 	inline duel* lua_get(lua_State* L) {
@@ -70,112 +90,92 @@ namespace scriptlib {
 
 	template<typename T, bool forced = false, EnableIfTemplate<T, function> = 0>
 	inline int32_t lua_get(lua_State* L, int idx) {
-		if(lua_isnoneornil(L, idx) && !forced)
-			return 0;
-		check_param(L, PARAM_TYPE_FUNCTION, idx);
+		if constexpr(!forced) {
+			if(lua_isnoneornil(L, idx))
+				return 0;
+		}
+		check_param(L, LuaParam::FUNCTION, idx);
 		return idx;
 	}
 
 	template<typename T, EnableIfTemplate<T, lua_obj*> = 0>
 	inline lua_obj* lua_get(lua_State* L, int idx) {
-		if(lua_isnone(L, idx))
+		if(lua_isnoneornil(L, idx))
 			return nullptr;
 		if(auto obj = lua_touserdata(L, idx)) {
 			auto* ret = *static_cast<lua_obj**>(obj);
-			if(ret->lua_type == PARAM_TYPE_DELETED)
+			if(ret->lua_type == LuaParam::DELETED)
 				lua_error(L, "Attempting to access deleted object.");
 			return ret;
 		}
 		return nullptr;
 	}
 
-	template<typename T, bool check = false, EnableIfTemplate<T, card*> = 0>
-	inline card* lua_get(lua_State* L, int idx) {
-		if(!check && lua_isnone(L, idx))
-			return nullptr;
-		card* ret = nullptr;
-		check_param(L, PARAM_TYPE_CARD, idx, !check, &ret);
-		return ret;
-	}
-
-	template<typename T, bool check = false, EnableIfTemplate<T, group*> = 0>
-	inline group* lua_get(lua_State* L, int idx) {
-		if(!check && lua_isnone(L, idx))
-			return nullptr;
-		group* ret = nullptr;
-		check_param(L, PARAM_TYPE_GROUP, idx, !check, &ret);
-		return ret;
-	}
-
-	template<typename T, bool check = false, EnableIfTemplate<T, effect*> = 0>
-	inline effect* lua_get(lua_State* L, int idx) {
-		if(!check && lua_isnone(L, idx))
-			return nullptr;
-		effect* ret = nullptr;
-		check_param(L, PARAM_TYPE_EFFECT, idx, !check, &ret);
+	template<typename T, bool forced = false, std::enable_if_t<IsCard<T> || IsGroup<T> || IsEffect<T>, int> = 0>
+	inline T lua_get(lua_State* L, int idx) {
+		if constexpr(!forced) {
+			if(lua_isnoneornil(L, idx))
+				return nullptr;
+		}
+		T ret = nullptr;
+		check_param(L, get_lua_param_type<T>(), idx, !forced, &ret);
 		return ret;
 	}
 
 	template<typename T>
-	inline EnableIfBool<T> lua_get(lua_State* L, int idx) {
-		check_param(L, PARAM_TYPE_BOOLEAN, idx);
-		return lua_toboolean(L, idx);
+	inline EnableIfIntegral<T> lua_get(lua_State* L, int idx) {
+		constexpr auto lua_type = get_lua_param_type<T>();
+		check_param(L, lua_type, idx);
+		if constexpr(lua_type == LuaParam::BOOLEAN) {
+			return static_cast<bool>(lua_toboolean(L, idx));
+		}
+		if constexpr(lua_type == LuaParam::INT) {
+			if(lua_isinteger(L, idx))
+				return static_cast<T>(lua_tointeger(L, idx));
+			return static_cast<T>(static_cast<lua_Integer>(std::round(lua_tonumber(L, idx))));
+		}
 	}
 
-	template<typename T, bool def>
-	inline EnableIfBool<T> lua_get(lua_State* L, int idx) {
-		if(!check_param(L, PARAM_TYPE_BOOLEAN, idx, true))
+	template<typename T>
+	inline EnableIfIntegral<T> lua_get(lua_State* L, int idx, T def) {
+		constexpr auto lua_type = get_lua_param_type<T>();
+		if(!check_param(L, lua_type, idx, true))
 			return def;
-		return lua_toboolean(L, idx);
-	}
-
-	template<typename T>
-	inline EnableIfIntegerNotBool<T> lua_get(lua_State* L, int idx) {
-		check_param(L, PARAM_TYPE_INT, idx);
-		if(lua_isinteger(L, idx))
-			return static_cast<T>(lua_tointeger(L, idx));
-		return static_cast<T>(std::round(lua_tonumber(L, idx)));
-	}
-
-	template<typename T>
-	inline EnableIfIntegerNotBool<T> lua_get(lua_State* L, int idx, T chk) {
-		if(lua_isnone(L, idx) || !check_param(L, PARAM_TYPE_INT, idx, true))
-			return chk;
-		if(lua_isinteger(L, idx))
-			return static_cast<T>(lua_tointeger(L, idx));
-		return static_cast<T>(std::round(lua_tonumber(L, idx)));
+		if constexpr(lua_type == LuaParam::BOOLEAN) {
+			return static_cast<bool>(lua_toboolean(L, idx));
+		}
+		if constexpr(lua_type == LuaParam::INT) {
+			if(lua_isinteger(L, idx))
+				return static_cast<T>(lua_tointeger(L, idx));
+			return static_cast<T>(static_cast<lua_Integer>(std::round(lua_tonumber(L, idx))));
+		}
 	}
 
 	template<typename T, T def>
-	inline EnableIfIntegerNotBool<T> lua_get(lua_State* L, int idx) {
-		if(lua_isnone(L, idx) || !check_param(L, PARAM_TYPE_INT, idx, true))
-			return def;
-		if(lua_isinteger(L, idx))
-			return static_cast<T>(lua_tointeger(L, idx));
-		return static_cast<T>(std::round(lua_tonumber(L, idx)));
+	inline EnableIfIntegral<T> lua_get(lua_State* L, int idx) {
+		return lua_get<T>(L, idx, def);
 	}
 
-	#ifdef _MSC_VER
-	#pragma warning(pop)
-	#endif
-
-	inline void get_card_or_group(lua_State* L, int idx, card*& pcard, group*& pgroup) {
+	template<bool nil_allowed = false>
+	inline std::pair<card*, group*> lua_get_card_or_group(lua_State* L, int idx) {
+		if constexpr(nil_allowed) {
+			if(lua_isnoneornil(L, idx))
+				return { nullptr, nullptr };
+		}
 		auto obj = lua_get<lua_obj*>(L, idx);
 		if(obj) {
 			switch(obj->lua_type) {
-			case PARAM_TYPE_CARD:
-				pcard = (card*)(obj);
-				return;
-			case PARAM_TYPE_GROUP:
-				pgroup = (group*)(obj);
-				return;
+			case LuaParam::CARD:
+				return { reinterpret_cast<card*>(obj), nullptr };
+			case LuaParam::GROUP:
+				return{ nullptr, reinterpret_cast<group*>(obj) };
 			default: break;
 			}
 		}
 		lua_error(L, "Parameter %d should be \"Card\" or \"Group\".", idx);
 	}
 	//always return a string, whereas lua might return nullptr
-	inline const char* lua_tostring_or_empty(lua_State* L, int idx) {
+	inline const char* lua_get_string_or_empty(lua_State* L, int idx) {
 		size_t retlen = 0;
 		auto str = lua_tolstring(L, idx, &retlen);
 		return (!str || retlen == 0) ? "" : str;
@@ -190,8 +190,16 @@ namespace scriptlib {
 		}
 	}
 
+#if !defined(__ANDROID__) && ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
+	template<typename T, typename... Arg>
+	using FunctionResult = std::invoke_result_t<T, Arg...>;
+#else
+	template<typename T, typename... Arg>
+	using FunctionResult = std::result_of_t<T(Arg...)>;
+#endif
+
 	template<typename T, typename T2>
-	using EnableOnReturn = std::enable_if_t<std::is_same<std::result_of_t<T()>, T2>::value, int>;
+	using EnableOnReturn = std::enable_if_t<std::is_same<FunctionResult<T>, T2>::value, int>;
 
 	template<typename T, EnableOnReturn<T, void> = 0>
 	inline void lua_iterate_table_or_stack(lua_State* L, int idx, int max, T&& func) {
@@ -235,7 +243,7 @@ namespace scriptlib {
 
 	template<typename T>
 	inline bool lua_find_in_table_or_in_stack(lua_State* L, int idx, int max, T&& func) {
-		static_assert(std::is_same<std::result_of_t<T()>, bool>::value, "Callback function must return bool");
+		static_assert(std::is_same<FunctionResult<T>, bool>::value, "Callback function must return bool");
 		if(lua_istable(L, idx)) {
 			lua_pushnil(L);
 			while(lua_next(L, idx) != 0) {
@@ -279,5 +287,16 @@ namespace scriptlib {
 		return 1;
 	}
 }
+
+#define yieldk(...) lua_yieldk(L, 0, 0, [](lua_State* L, int32_t status, lua_KContext ctx) -> int {\
+	(void)status; \
+	(void)ctx; \
+	auto pduel = lua_get<duel*>(L); \
+	(void)pduel; \
+	do __VA_ARGS__ while(0); \
+	unreachable(); \
+})
+
+#define yield() lua_yield(L, 0)
 
 #endif /* SCRIPTLIB_H_ */

@@ -2,7 +2,7 @@ local ocgcore_config=function()
 	files { "*.h", "*.cpp" }
 	warnings "Extra"
 	optimize "Speed"
-	cppdialect "C++14"
+	cppdialect "C++17"
 
 	filter "action:not vs*"
 		buildoptions { "-Wno-unused-parameter", "-pedantic" }
@@ -34,18 +34,13 @@ if not subproject then
 		architecture "x64"
 
 	if _OPTIONS["oldwindows"] then
-		filter { "action:vs2015" }
-			toolset "v140_xp"
-		filter { "action:not vs2015" }
-			toolset "v141_xp"
 		filter {}
+			toolset "v141_xp"
 	end
 	
 	filter "action:vs*"
 		flags "MultiProcessorCompile"
 		vectorextensions "SSE2"
-		buildoptions "-wd4996"
-		defines "_CRT_SECURE_NO_WARNINGS"
 
 	filter "action:not vs*"
 		buildoptions "-fno-strict-aliasing"

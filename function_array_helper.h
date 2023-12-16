@@ -13,6 +13,16 @@
 #include <type_traits>
 #include <array>
 #include <lauxlib.h>
+
+#include "common.h"
+
+//use forceinline only in release builds
+#if defined(_DEBUG) || !defined(__OPTIMIZE__)
+#define LUA_INLINE
+#else
+#define LUA_INLINE __forceinline
+#endif
+
 namespace {
 namespace Detail {
 template<std::size_t N>
@@ -26,13 +36,27 @@ constexpr auto make_lua_functions_array(std::index_sequence<I...> seq) {
 } // namespace Detail
 } // namespace
 
-#define LUA_FUNCTION(name) \
-static int32_t MAKE_LUA_NAME(LUA_MODULE,name)(lua_State*); \
+#define LUA_STATIC_FUNCTION(name) \
+static LUA_INLINE int32_t MAKE_LUA_NAME(LUA_MODULE,name)(lua_State*, duel*); \
 template<> \
 struct Detail::LuaFunction<__COUNTER__> { \
-	static constexpr luaL_Reg elem{#name, MAKE_LUA_NAME(LUA_MODULE,name)}; \
+	static int32_t call(lua_State* L) { \
+		return MAKE_LUA_NAME(LUA_MODULE,name)(L, lua_get<duel*>(L)); \
+	} \
+	static constexpr luaL_Reg elem{#name, call}; \
 }; \
-static int32_t MAKE_LUA_NAME(LUA_MODULE,name)(lua_State* L)
+static LUA_INLINE int32_t MAKE_LUA_NAME(LUA_MODULE,name)([[maybe_unused]] lua_State* L, [[maybe_unused]] duel* pduel)
+
+#define LUA_FUNCTION(name) \
+static LUA_INLINE int32_t MAKE_LUA_NAME(LUA_MODULE,name)(lua_State*, LUA_CLASS*, duel*); \
+template<> \
+struct Detail::LuaFunction<__COUNTER__> { \
+	static int32_t call(lua_State* L) { \
+		return MAKE_LUA_NAME(LUA_MODULE,name)(L, lua_get<LUA_CLASS*, true>(L, 1), lua_get<duel*>(L)); \
+	} \
+	static constexpr luaL_Reg elem{#name, call}; \
+}; \
+static LUA_INLINE int32_t MAKE_LUA_NAME(LUA_MODULE,name)([[maybe_unused]] lua_State* L, [[maybe_unused]] LUA_CLASS* self, [[maybe_unused]] duel* pduel)
 
 #define GET_LUA_FUNCTIONS_ARRAY() \
 	Detail::make_lua_functions_array(std::make_index_sequence<__COUNTER__>())
@@ -45,15 +69,16 @@ struct Detail::LuaFunction<__COUNTER__> { \
 }
 
 #define LUA_FUNCTION_ALIAS(name) LUA_DECLARE_ALIAS_INT(name, __COUNTER__)
-#define LUA_DECLARE_ALIAS_INT(name, __COUNTER__) \
+#define LUA_DECLARE_ALIAS_INT(name, COUNTER) \
 template<> \
-struct Detail::LuaFunction<__COUNTER__> { \
-    static constexpr luaL_Reg elem{#name,Detail::LuaFunction<__COUNTER__-1>::elem.func}; \
+struct Detail::LuaFunction<COUNTER> { \
+    static constexpr luaL_Reg elem{#name,Detail::LuaFunction<COUNTER-1>::elem.func}; \
 }
 #else
-#define LUA_FUNCTION(name) static int32_t MAKE_LUA_NAME(LUA_MODULE,name)(lua_State* L)
+#define LUA_FUNCTION(name) static int32_t MAKE_LUA_NAME(LUA_MODULE,name)([[maybe_unused]] lua_State* L, [[maybe_unused]] LUA_CLASS* self, [[maybe_unused]] duel* pduel)
+#define LUA_STATIC_FUNCTION(name) static int32_t MAKE_LUA_NAME(LUA_MODULE,name)([[maybe_unused]] lua_State* L, [[maybe_unused]] duel* pduel)
 #define LUA_FUNCTION_EXISTING(name,...) struct MAKE_LUA_NAME(LUA_MODULE,name) {}
 #define LUA_FUNCTION_ALIAS(name) struct MAKE_LUA_NAME(LUA_MODULE,name) {}
-#define GET_LUA_FUNCTIONS_ARRAY() std::array<luaL_Reg,1>{{{nullptr,nullptr}}}
+#define GET_LUA_FUNCTIONS_ARRAY() std::array{luaL_Reg{nullptr,nullptr}}
 #endif // __INTELLISENSE__
 #endif // FUNCTION_ARRAY_HELPER_H

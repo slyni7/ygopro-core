@@ -55,6 +55,10 @@ struct chain {
 	uint16_t triggering_location;
 	uint32_t triggering_sequence;
 	uint8_t triggering_position;
+	uint32_t triggering_status{};
+	uint32_t triggering_summon_type{};
+	uint8_t triggering_summon_location{};
+	bool triggering_summon_proc_complete{}; //properly summoned or not
 	card_state triggering_state;
 	effect* triggering_effect;
 	group* target_cards;
@@ -250,12 +254,12 @@ struct processor {
 	event_list single_event;
 	event_list solving_event;
 	event_list sub_solving_event;
-	chain_array select_chains;
+	chain_list select_chains;
 	chain_array current_chain;
 	int32_t real_chain_count;
 	chain_list tpchain;
 	chain_list ntpchain;
-	chain_array ignition_priority_chains;
+	chain_list ignition_priority_chains;
 	chain_list continuous_chain;
 	chain_list solving_continuous;
 	chain_list sub_solving_continuous;
@@ -489,8 +493,8 @@ public:
 	effect* is_player_affected_by_effect(uint8_t playerid, uint32_t code);
 	void get_player_effect(uint8_t playerid, uint32_t code, effect_set* eset);
 
-	int32_t get_release_list(uint8_t playerid, card_set* release_list, card_set* ex_list, card_set* ex_list_oneof, int32_t use_hand, int32_t fun, int32_t exarg, card* exc, group* exg, uint8_t use_oppo);
-	int32_t check_release_list(uint8_t playerid, int32_t min, int32_t max, int32_t use_hand, int32_t fun, int32_t exarg, card* exc, group* exg, uint8_t check_field, uint8_t to_player, uint8_t zone, card* to_check, uint8_t use_oppo);
+	int32_t get_release_list(uint8_t playerid, card_set* release_list, card_set* ex_list, card_set* ex_list_oneof, int32_t use_hand, int32_t fun, int32_t exarg, card* exc, group* exg, uint8_t use_oppo, uint32_t reason);
+	int32_t check_release_list(uint8_t playerid, int32_t min, int32_t max, int32_t use_hand, int32_t fun, int32_t exarg, card* exc, group* exg, uint8_t check_field, uint8_t to_player, uint8_t zone, card* to_check, uint8_t use_oppo, uint32_t reason);
 	int32_t get_summon_release_list(card* target, card_set* release_list, card_set* ex_list, card_set* ex_list_oneof, group* mg = nullptr, uint32_t ex = 0, uint32_t releasable = 0xff00ff, uint32_t pos = 0x1);
 	int32_t get_summon_count_limit(uint8_t playerid);
 	int32_t get_draw_count(uint8_t playerid);
@@ -542,11 +546,11 @@ public:
 	int32_t is_player_can_mset(uint32_t sumtype, uint8_t playerid, card* pcard, uint8_t toplayer);
 	int32_t is_player_can_sset(uint8_t playerid, card* pcard);
 	int32_t is_player_can_spsummon(uint8_t playerid);
-	int32_t is_player_can_spsummon(effect* peffect, uint32_t sumtype, uint8_t sumpos, uint8_t playerid, uint8_t toplayer, card* pcard);
+	int32_t is_player_can_spsummon(effect* peffect, uint32_t sumtype, uint8_t sumpos, uint8_t playerid, uint8_t toplayer, card* pcard, effect* proc_effect = nullptr);
 	int32_t is_player_can_flipsummon(uint8_t playerid, card* pcard);
 	int32_t is_player_can_spsummon_monster(uint8_t playerid, uint8_t toplayer, uint8_t sumpos, uint32_t sumtype, card_data* pdata);
 	int32_t is_player_can_spsummon_count(uint8_t playerid, uint32_t count);
-	int32_t is_player_can_release(uint8_t playerid, card* pcard);
+	int32_t is_player_can_release(uint8_t playerid, card* pcard, uint32_t reason);
 	int32_t is_player_can_place_counter(uint8_t playerid, card* pcard, uint16_t countertype, uint16_t count);
 	int32_t is_player_can_remove_counter(uint8_t playerid, card* pcard, uint8_t self, uint8_t oppo, uint16_t countertype, uint16_t count, uint32_t reason);
 	int32_t is_player_can_remove_overlay_card(uint8_t playerid, group* pcard, uint8_t self, uint8_t oppo, uint16_t count, uint32_t reason);
@@ -715,32 +719,40 @@ public:
 #define CHAIN_ACTIVATING		0x10
 #define CHAIN_HAND_TRIGGER		0x20
 //#define CHAIN_DECK_EFFECT		0x40
-#define CHAININFO_CHAIN_COUNT			0x01
-#define CHAININFO_TRIGGERING_EFFECT		0x02
-#define CHAININFO_TRIGGERING_PLAYER		0x04
-#define CHAININFO_TRIGGERING_CONTROLER	0x08
-#define CHAININFO_TRIGGERING_LOCATION	0x10
-#define CHAININFO_TRIGGERING_LOCATION_SYMBOLIC	0x11
-#define CHAININFO_TRIGGERING_SEQUENCE	0x20
-#define CHAININFO_TRIGGERING_SEQUENCE_SYMBOLIC	0x21
-#define CHAININFO_TARGET_CARDS			0x40
-#define CHAININFO_TARGET_PLAYER			0x80
-#define CHAININFO_TARGET_PARAM			0x100
-#define CHAININFO_DISABLE_REASON		0x200
-#define CHAININFO_DISABLE_PLAYER		0x400
-#define CHAININFO_CHAIN_ID				0x800
-#define CHAININFO_TYPE					0x1000
-#define CHAININFO_EXTTYPE				0x2000
-#define CHAININFO_TRIGGERING_POSITION	0x4000
-#define CHAININFO_TRIGGERING_CODE		0x8000
-#define CHAININFO_TRIGGERING_CODE2		0x10000
-//#define CHAININFO_TRIGGERING_TYPE		0x20000
-#define CHAININFO_TRIGGERING_LEVEL		0x40000
-#define CHAININFO_TRIGGERING_RANK		0x80000
-#define CHAININFO_TRIGGERING_ATTRIBUTE	0x100000
-#define CHAININFO_TRIGGERING_RACE		0x200000
-#define CHAININFO_TRIGGERING_ATTACK		0x400000
-#define CHAININFO_TRIGGERING_DEFENSE	0x800000
+
+enum class CHAININFO {
+	TRIGGERING_EFFECT = 1,
+	TRIGGERING_PLAYER,
+	TRIGGERING_CONTROLER,
+	TRIGGERING_LOCATION,
+	TRIGGERING_LOCATION_SYMBOLIC,
+	TRIGGERING_SEQUENCE,
+	TRIGGERING_SEQUENCE_SYMBOLIC,
+	TARGET_CARDS,
+	TARGET_PLAYER,
+	TARGET_PARAM,
+	DISABLE_REASON,
+	DISABLE_PLAYER,
+	CHAIN_ID,
+	TYPE,
+	EXTTYPE,
+	TRIGGERING_POSITION,
+	TRIGGERING_CODE,
+	TRIGGERING_CODE2,
+	TRIGGERING_TYPE,
+	TRIGGERING_LEVEL,
+	TRIGGERING_RANK,
+	TRIGGERING_ATTRIBUTE,
+	TRIGGERING_RACE,
+	TRIGGERING_ATTACK,
+	TRIGGERING_DEFENSE,
+	TRIGGERING_STATUS,
+	TRIGGERING_SUMMON_LOCATION,
+	TRIGGERING_SUMMON_TYPE,
+	TRIGGERING_SUMMON_PROC_COMPLETE,
+	TRIGGERING_SETCODES,
+};
+
 //Timing
 #define TIMING_DRAW_PHASE			0x1
 #define TIMING_STANDBY_PHASE		0x2

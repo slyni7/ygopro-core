@@ -80,7 +80,7 @@ struct card_state {
 	void set0xff();
 };
 
-class card : public lua_obj_helper<PARAM_TYPE_CARD> {
+class card : public lua_obj_helper<LuaParam::CARD> {
 public:
 	struct effect_relation_hash {
 		inline std::size_t operator()(const std::pair<effect*, uint16_t>& v) const {
@@ -287,7 +287,7 @@ public:
 	int32_t remove_counter(uint16_t countertype, uint16_t count);
 	int32_t is_can_add_counter(uint8_t playerid, uint16_t countertype, uint16_t count, uint8_t singly, uint32_t loc);
 	int32_t get_counter(uint16_t countertype);
-	void set_material(card_set* materials);
+	void set_material(card_set materials);
 	void add_card_target(card* pcard);
 	void cancel_card_target(card* pcard);
 	void clear_card_target();
@@ -336,7 +336,7 @@ public:
 	int32_t is_removeable(uint8_t playerid, uint8_t pos = POS_FACEUP, uint32_t reason = REASON_EFFECT);
 	int32_t is_removeable_as_cost(uint8_t playerid, uint8_t pos = POS_FACEUP);
 	int32_t is_releasable_by_summon(uint8_t playerid, card* pcard);
-	int32_t is_releasable_by_nonsummon(uint8_t playerid);
+	int32_t is_releasable_by_nonsummon(uint8_t playerid, uint32_t reason);
 	int32_t is_releasable_by_effect(uint8_t playerid, effect* peffect);
 	int32_t is_capable_send_to_grave(uint8_t playerid);
 	int32_t is_capable_send_to_hand(uint8_t playerid);
