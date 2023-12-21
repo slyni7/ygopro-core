@@ -1999,6 +1999,12 @@ int32_t field::process_quick_effect(int16_t step, int32_t skip_freechain, uint8_
 		if(core.select_chains.size() && returns.at<int32_t>(0) != -1) {
 			auto newchain = std::next(core.select_chains.begin(), returns.at<int32_t>(0));
 			effect* peffect = newchain->triggering_effect;
+			if (peffect->type & EFFECT_TYPE_CONTINUOUS) {
+				core.select_chains.clear();
+				solve_continuous(peffect->get_handler_player(), peffect, nil_event);
+				core.units.begin()->step = 4;
+				return FALSE;
+			}
 			core.delayed_quick.erase(std::make_pair(peffect, newchain->evt));
 			core.new_chains.splice(core.new_chains.end(), core.select_chains, newchain);
 			peffect->get_handler()->set_status(STATUS_CHAINING, TRUE);
