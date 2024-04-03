@@ -1171,7 +1171,7 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 		if (li >= 1) {
 			return_cards.clear();
 			returns.clear();
-			if (currvals.back() == -1) {
+			if (currvals.size() && (currvals.back() == -1)) {
 				return_cards.canceled = true;
 				if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 					char fc[50];

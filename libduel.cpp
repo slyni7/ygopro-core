@@ -50,6 +50,30 @@ LUA_STATIC_FUNCTION(PromisedEnd) {
 	}
 	return lua_yield(L, 0);
 }
+LUA_STATIC_FUNCTION(MsgMove) {
+	check_param_count(L, 1);
+	auto p = lua_get<int8_t>(L, 1);
+	if (p != 0 && p != 1)
+		return 0;
+	auto [pcard, pgroup] = lua_get_card_or_group(L, 2);
+	if (pcard) {
+		auto message = pduel->new_message(MSG_MOVE);
+		message->write<uint32_t>(pcard->data.code);
+		message->write(pcard->get_info_location());
+		message->write(pcard->get_info_location());
+		message->write<uint32_t>(pcard->current.reason);
+	}
+	else {
+		for (auto& pcard : pgroup->container) {
+			auto message = pduel->new_message(MSG_MOVE);
+			message->write<uint32_t>(pcard->data.code);
+			message->write(pcard->get_info_location());
+			message->write(pcard->get_info_location());
+			message->write<uint32_t>(pcard->current.reason);
+		}
+	}
+	return lua_yield(L, 0);
+}
 LUA_STATIC_FUNCTION(ProcessIdleCommand) {
 	check_param_count(L, 1);
 	auto p = lua_get<int8_t>(L, 1);
@@ -332,6 +356,8 @@ LUA_STATIC_FUNCTION(Destroy) {
 	check_param_count(L, 2);
 	auto reason = lua_get<uint32_t>(L, 2);
 	auto dest = lua_get<uint16_t, LOCATION_GRAVE>(L, 3);
+	if (dest == -2)
+		dest = 0;
 	const auto reasonplayer = lua_get<uint8_t>(L, 4, pduel->game_field->core.reason_player);
 	if(auto [pcard, pgroup] = lua_get_card_or_group(L, 1); pcard)
 		pduel->game_field->destroy(pcard, pduel->game_field->core.reason_effect, reason, reasonplayer, PLAYER_NONE, dest, 0);

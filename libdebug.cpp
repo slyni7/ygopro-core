@@ -246,6 +246,20 @@ LUA_STATIC_FUNCTION(AddCardEx) {
 	field->add_card(playerid, t_card, location, sequence);
 	return 0;
 }
+LUA_STATIC_FUNCTION(UpdateCardEx) {
+	check_param_count(L, 1);
+	auto& field = pduel->game_field;
+	auto pcard = lua_get<card*, true>(L, 1);
+	auto message = pduel->new_message(MSG_UPDATE_CARD);
+	message->write<uint8_t>(pcard->current.controler);
+	message->write<uint8_t>(pcard->current.location);
+	message->write<uint8_t>(pcard->current.sequence);
+	message->write<uint16_t>(8);
+	message->write<uint32_t>(QUERY_ATTACK);
+	message->write<uint32_t>(pcard->current.attack);
+	message->write<uint16_t>(0);
+	return 0;
+}
 /*Shahrazad*/
 LUA_STATIC_FUNCTION(GetPlayerOpSeed) {
 	lua_pushinteger(L, pduel->playerop_seed[0]);
@@ -1000,6 +1014,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelAlpha) {
 	if (pduel->playerop_config) {
 		return 0;
 	}
+	//pduel->skipmsg = 1;
 	OCG_DuelOptions options;
 	options.seed[0] = 0;
 	options.seed[1] = 0;
@@ -1239,6 +1254,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelAlpha) {
 	}
 	lua_settop(qduel->lua->lua_state, 0);
 	delete qduel;
+	//pduel->skipmsg = 0;
 	if (!pa)
 		return 0;
 	lua_pushinteger(L, count1);

@@ -3297,6 +3297,11 @@ int32_t field::special_summon_rule(uint16_t step, uint8_t sumplayer, card* targe
 		pcard->summon.pzone = pcard->current.pzone;
 		effect_set eset;
 		uint8_t positions = POS_FACEUP;
+		if (peffect->is_flag(EFFECT_FLAG_SPSUM_PARAM)) {
+			positions = (uint8_t)peffect->s_range;
+		}
+		if (positions == 0)
+			positions = POS_FACEUP_ATTACK;
 		filter_player_effect(sumplayer, EFFECT_FORCE_SPSUMMON_POSITION, &eset);
 		for(auto& eff : eset) {
 			if(eff->target) {
