@@ -50,10 +50,10 @@ interpreter::interpreter(duel* pd, const OCG_DuelOptions& options): coroutines(2
 
 	// Remove "dangerous" functions
 	nil_out("collectgarbage");
-	if(options.enableUnsafeLibraries == 0) {
+	/*if(options.enableUnsafeLibraries == 0) {
 		nil_out("dofile");
 		nil_out("loadfile");
-	}
+	}*/
 	// Open all card scripting libs
 	scriptlib::push_card_lib(lua_state);
 	scriptlib::push_effect_lib(lua_state);
