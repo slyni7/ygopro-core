@@ -1,21 +1,24 @@
 /*
- * effect.cpp
+ * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
+ * Copyright (c) 2016-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
- *  Created on: 2010-5-7
- *      Author: Argon
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
-#include "effect.h"
+#include <vector>
 #include "card.h"
 #include "duel.h"
-#include "group.h"
+#include "effect.h"
+#include "field.h"
 #include "interpreter.h"
 
 bool effect_sort_id(const effect* e1, const effect* e2) {
 	return e1->id < e2->id;
 }
-bool field_effect::grant_effect_container::effect_sort_by_ref::operator()(effect* e1, effect* e2) const {
-	return e1->ref_handle < e2->ref_handle;
+bool effect_sort_by_id::operator()(effect* e1, effect* e2) const {
+	return effect_sort_id(e1, e2);
+}
+bool effect_sort_by_initial_id::operator()(effect* e1, effect* e2) const {
+	return e1->initial_id < e2->initial_id;
 }
 int32_t effect::is_disable_related() {
 	if (code == EFFECT_IMMUNE_EFFECT || code == EFFECT_DISABLE || code == EFFECT_CANNOT_DISABLE || code == EFFECT_FORBIDDEN)
@@ -554,11 +557,9 @@ int32_t effect::reset(uint32_t reset_level, uint32_t reset_type) {
 		if(reset_level & 0xffff0000 & reset_flag)
 			return TRUE;
 		return FALSE;
-		break;
 	}
 	case RESET_CARD: {
 		return owner && (owner->data.code == reset_level);
-		break;
 	}
 	case RESET_PHASE: {
 		if(!(reset_flag & RESET_PHASE))
@@ -571,15 +572,12 @@ int32_t effect::reset(uint32_t reset_level, uint32_t reset_type) {
 		if(reset_count == 0)
 			return TRUE;
 		return FALSE;
-		break;
 	}
 	case RESET_CODE: {
 		return (code == reset_level) && (type & EFFECT_TYPE_SINGLE) && !(type & EFFECT_TYPE_ACTIONS);
-		break;
 	}
 	case RESET_COPY: {
 		return copy_id == reset_level;
-		break;
 	}
 	}
 	return FALSE;
@@ -596,6 +594,20 @@ void effect::dec_count(uint32_t playerid) {
 			pduel->game_field->add_effect_code(get_handler()->fieldid, count_flag, count_hopt_index, PLAYER_NONE);
 		else
 			pduel->game_field->add_effect_code(count_code, count_flag, count_hopt_index, playerid);
+	}
+}
+void effect::inc_count(uint32_t playerid) {
+	if(!is_flag(EFFECT_FLAG_COUNT_LIMIT))
+		return;
+	if(count_limit == 0)
+		return;
+	if(((count_code == 0 && count_flag == 0) || is_flag(EFFECT_FLAG_NO_TURN_RESET)) && count_limit != count_limit_max)
+		count_limit += 1;
+	if(count_code || count_flag) {
+		if(count_flag & EFFECT_COUNT_CODE_SINGLE)
+			pduel->game_field->dec_effect_code(get_handler()->fieldid, count_flag, count_hopt_index, PLAYER_NONE);
+		else
+			pduel->game_field->dec_effect_code(count_code, count_flag, count_hopt_index, playerid);
 	}
 }
 void effect::recharge() {
@@ -712,7 +724,7 @@ effect* effect::clone(int32_t majestic) {
 	int32_t ref = ceffect->ref_handle;
 	*ceffect = *this;
 	ceffect->ref_handle = ref;
-	ceffect->handler = 0;
+	ceffect->handler = nullptr;
 	if(condition)
 		ceffect->condition = pduel->lua->clone_lua_ref(condition);
 	if(cost)
@@ -748,11 +760,16 @@ effect* effect::clone(int32_t majestic) {
 	}
 	return ceffect;
 }
-card* effect::get_owner() const {
+card* effect::get_real_handler() const {
 	if(active_handler)
 		return active_handler;
 	if(type & EFFECT_TYPE_XMATERIAL)
-		return handler->overlay_target;
+		return handler->overlay_target ? handler->overlay_target : handler->pre_overlay_target;
+	return nullptr;
+}
+card* effect::get_owner() const {
+	if(auto real_handler = get_real_handler(); real_handler)
+		return real_handler;
 	return owner;
 }
 uint8_t effect::get_owner_player() {
@@ -761,10 +778,8 @@ uint8_t effect::get_owner_player() {
 	return get_owner()->current.controler;
 }
 card* effect::get_handler() const {
-	if(active_handler)
-		return active_handler;
-	if(type & EFFECT_TYPE_XMATERIAL)
-		return handler->overlay_target;
+	if(auto real_handler = get_real_handler(); real_handler)
+		return real_handler;
 	return handler;
 }
 uint8_t effect::get_handler_player() {

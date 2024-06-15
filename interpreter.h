@@ -1,26 +1,22 @@
 /*
- * interpreter.h
+ * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
+ * Copyright (c) 2017-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
- *  Created on: 2010-4-28
- *      Author: Argon
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 #ifndef INTERPRETER_H_
 #define INTERPRETER_H_
 
 // Due to longjmp behaviour, we must build Lua as C++ to avoid UB
+#include <cstdio> //std::snprintf
+#include <lauxlib.h>
+#include <list>
 #include <lua.h>
 #include <lualib.h>
-#include <lauxlib.h>
-
-#include "common.h"
 #include <unordered_map>
-#include <list>
-#include <vector>
 #include <utility> //std::forward
-#include <cstdio>
-#include <cstring>
-#include <cmath>
+#include <vector>
+#include "common.h"
 #include "lua_obj.h"
 #include "ocgapi_types.h"
 
@@ -123,6 +119,8 @@ public:
 		return format_to(msgbuf, format, std::forward<TR>(args)...);
 	}
 };
+
+#define ensure_luaL_stack(func,L,...) [&](){ luaL_checkstack(L, 5, nullptr); return func(L, __VA_ARGS__); }()
 
 #define COROUTINE_FINISH	1
 #define COROUTINE_YIELD		2

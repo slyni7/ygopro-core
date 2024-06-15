@@ -1,24 +1,22 @@
 /*
- * effect.h
+ * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
+ * Copyright (c) 2016-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
- *  Created on: 2010-3-13
- *      Author: Argon
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 #ifndef EFFECT_H_
 #define EFFECT_H_
 
-#include <cstdlib>
+#include <lua.h> //lua_Integer
 #include <vector>
-#include <map>
 #include "common.h"
-#include "lua_obj.h"
-#include "field.h"
 #include "effect_constants.h"
+#include "lua_obj.h"
 
 class card;
 class duel;
 class group;
+struct chain;
 struct tevent;
 enum effect_flag : uint32_t;
 enum effect_flag2 : uint32_t;
@@ -42,6 +40,7 @@ public:
 	uint32_t code{};
 	uint32_t flag[2]{};
 	uint32_t id{};
+	uint32_t initial_id{};
 	uint32_t reset_flag{};
 	uint32_t count_code{};
 	uint32_t category{};
@@ -60,8 +59,7 @@ public:
 	uint64_t description{};
 	std::vector<lua_Integer> label;
 
-	explicit effect(duel* pd) : lua_obj_helper(pd) {};
-	~effect() = default;
+	explicit effect(duel* pd) : lua_obj_helper(pd) {}
 
 	int32_t is_disable_related();
 	int32_t is_self_destroy_related();
@@ -85,6 +83,7 @@ public:
 	int32_t is_chainable(uint8_t tp);
 	int32_t reset(uint32_t reset_level, uint32_t reset_type);
 	void dec_count(uint32_t playerid = 2);
+	void inc_count(uint32_t playerid = 2);
 	void recharge();
 	uint8_t get_client_mode() const;
 	bool has_function_value() const {
@@ -100,6 +99,7 @@ public:
 	void* get_label_object();
 	int32_t get_speed();
 	effect* clone(int32_t majestic = FALSE);
+	card* get_real_handler() const;
 	card* get_owner() const;
 	uint8_t get_owner_player();
 	card* get_handler() const;

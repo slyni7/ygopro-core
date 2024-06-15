@@ -1,13 +1,15 @@
 /*
- * scriptlib.h
+ * Copyright (c) 2016-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
- *  Created on: 2009-1-20
- *      Author: Argon.Sun
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
 #ifndef SCRIPTLIB_H_
 #define SCRIPTLIB_H_
 
+#include <cmath> //std::round
+#include <cstring> //std::memcpy
+#include <type_traits> //std::is_same_v, std::enable_if_t, std::invoke_result_t, std::result_of_t, std::conditional_t
+#include <utility> //std::pair
 #include "common.h"
 #include "interpreter.h"
 #include "lua_obj.h"
@@ -18,7 +20,6 @@ namespace scriptlib {
 	void push_group_lib(lua_State* L);
 	void push_duel_lib(lua_State* L);
 	void push_debug_lib(lua_State* L);
-	bool check_param(lua_State* L, LuaParam param_type, int32_t index, bool retfalse = false, void* retobj = nullptr);
 	void check_action_permission(lua_State* L);
 	int32_t push_return_cards(lua_State* L, int32_t status, lua_KContext ctx);
 	inline int32_t push_return_cards(lua_State* L, bool cancelable) {
@@ -26,16 +27,7 @@ namespace scriptlib {
 	}
 	int32_t is_deleted_object(lua_State* L);
 
-	template<typename... Args>
-	[[noreturn]] __forceinline void lua_error(Args... args) {
-		// std::forward is not used as visual studio 17+ isn't able to optimize
-		// it out even with the highest optimization level, the passed parameters are always
-		// integers/pointers so there's no loss in passing them by value.
-		// __forceinline is used as otherwise clang wouldn't be able to inline this function
-		// but we do want it to be inlined
-		luaL_error(args...);
-		unreachable();
-	}
+#define lua_error(...) do { luaL_error(__VA_ARGS__); unreachable(); } while(0)
 
 	inline void check_param_count(lua_State* L, int32_t count) {
 		if(lua_gettop(L) < count)
@@ -63,28 +55,53 @@ namespace scriptlib {
 	template<typename T>
 	using EnableIfIntegral = std::enable_if_t<IsInteger<T> || IsBool<T>, T>;
 
-	struct function{};
+	using function = struct {}*;
+
+	template<LuaParam param_type, bool retfalse = false, typename ReturnType = std::conditional_t<retfalse, bool, void>>
+	inline ReturnType check_param(lua_State* L, int32_t index, [[maybe_unused]] lua_obj** retobj = nullptr);
+
+	const char* get_lua_type_name(lua_State* L, int32_t index);
 
 	template<typename T>
 	inline constexpr auto get_lua_param_type() {
-		if constexpr(std::is_same_v<T, card*>)
+		if constexpr(IsCard<T>)
 			return LuaParam::CARD;
-		if constexpr(std::is_same_v<T, group*>)
+		else if constexpr(IsGroup<T>)
 			return LuaParam::GROUP;
-		if constexpr(std::is_same_v<T, effect*>)
+		else if constexpr(IsEffect<T>)
 			return LuaParam::EFFECT;
-		if constexpr(std::is_same_v<T, function>)
+		else if constexpr(std::is_same_v<T, function>)
 			return LuaParam::FUNCTION;
-		if constexpr(IsBool<T>)
+		else if constexpr(IsBool<T>)
 			return LuaParam::BOOLEAN;
-		if constexpr(IsInteger<T>)
+		else if constexpr(IsInteger<T>)
 			return LuaParam::INT;
+	}
+
+	template<LuaParam param>
+	static constexpr const char* get_lua_param_name() {
+		if constexpr(param == LuaParam::INT)
+			return "Int";
+		else if constexpr(param == LuaParam::STRING)
+			return "String";
+		else if constexpr(param == LuaParam::CARD)
+			return "Card";
+		else if constexpr(param == LuaParam::GROUP)
+			return "Group";
+		else if constexpr(param == LuaParam::EFFECT)
+			return "Effect";
+		else if constexpr(param == LuaParam::FUNCTION)
+			return "Function";
+		else if constexpr(param == LuaParam::BOOLEAN)
+			return "boolean";
+		else if constexpr(param == LuaParam::DELETED)
+			return "Deleted";
 	}
 
 	template<typename T, EnableIfTemplate<T, duel*> = 0>
 	inline duel* lua_get(lua_State* L) {
 		duel* pduel = nullptr;
-		memcpy(&pduel, lua_getextraspace(L), sizeof(duel*));
+		std::memcpy(&pduel, lua_getextraspace(L), sizeof(duel*));
 		return pduel;
 	}
 
@@ -94,7 +111,7 @@ namespace scriptlib {
 			if(lua_isnoneornil(L, idx))
 				return 0;
 		}
-		check_param(L, LuaParam::FUNCTION, idx);
+		check_param<LuaParam::FUNCTION>(L, idx);
 		return idx;
 	}
 
@@ -117,19 +134,18 @@ namespace scriptlib {
 			if(lua_isnoneornil(L, idx))
 				return nullptr;
 		}
-		T ret = nullptr;
-		check_param(L, get_lua_param_type<T>(), idx, !forced, &ret);
-		return ret;
+		lua_obj* ret = nullptr;
+		check_param<get_lua_param_type<T>(), !forced>(L, idx, &ret);
+		return reinterpret_cast<T>(ret);
 	}
 
 	template<typename T>
 	inline EnableIfIntegral<T> lua_get(lua_State* L, int idx) {
 		constexpr auto lua_type = get_lua_param_type<T>();
-		check_param(L, lua_type, idx);
+		check_param<lua_type>(L, idx);
 		if constexpr(lua_type == LuaParam::BOOLEAN) {
 			return static_cast<bool>(lua_toboolean(L, idx));
-		}
-		if constexpr(lua_type == LuaParam::INT) {
+		} else if constexpr(lua_type == LuaParam::INT) {
 			if(lua_isinteger(L, idx))
 				return static_cast<T>(lua_tointeger(L, idx));
 			return static_cast<T>(static_cast<lua_Integer>(std::round(lua_tonumber(L, idx))));
@@ -139,12 +155,11 @@ namespace scriptlib {
 	template<typename T>
 	inline EnableIfIntegral<T> lua_get(lua_State* L, int idx, T def) {
 		constexpr auto lua_type = get_lua_param_type<T>();
-		if(!check_param(L, lua_type, idx, true))
+		if(!check_param<lua_type, true>(L, idx))
 			return def;
 		if constexpr(lua_type == LuaParam::BOOLEAN) {
 			return static_cast<bool>(lua_toboolean(L, idx));
-		}
-		if constexpr(lua_type == LuaParam::INT) {
+		} else if constexpr(lua_type == LuaParam::INT) {
 			if(lua_isinteger(L, idx))
 				return static_cast<T>(lua_tointeger(L, idx));
 			return static_cast<T>(static_cast<lua_Integer>(std::round(lua_tonumber(L, idx))));
@@ -172,7 +187,7 @@ namespace scriptlib {
 			default: break;
 			}
 		}
-		lua_error(L, "Parameter %d should be \"Card\" or \"Group\".", idx);
+		lua_error(L, R"(Parameter %d should be "Card" or "Group" but is "%s".)", idx, get_lua_type_name(L, idx));
 	}
 	//always return a string, whereas lua might return nullptr
 	inline const char* lua_get_string_or_empty(lua_State* L, int idx) {
@@ -190,7 +205,8 @@ namespace scriptlib {
 		}
 	}
 
-#if !defined(__ANDROID__) && ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
+#if (!defined(_LIBCPP_VERSION) || _LIBCPP_VERSION >= 7000) && \
+	((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
 	template<typename T, typename... Arg>
 	using FunctionResult = std::invoke_result_t<T, Arg...>;
 #else
@@ -203,10 +219,8 @@ namespace scriptlib {
 
 	template<typename T, EnableOnReturn<T, void> = 0>
 	inline void lua_iterate_table_or_stack(lua_State* L, int idx, int max, T&& func) {
-		if(lua_istable(L, idx)) {
-			lua_table_iterate(L, idx, func);
-			return;
-		}
+		if(lua_istable(L, idx))
+			return lua_table_iterate(L, idx, func);
 		for(; idx <= max; ++idx) {
 			lua_pushvalue(L, idx);
 			func();
@@ -243,7 +257,7 @@ namespace scriptlib {
 
 	template<typename T>
 	inline bool lua_find_in_table_or_in_stack(lua_State* L, int idx, int max, T&& func) {
-		static_assert(std::is_same<FunctionResult<T>, bool>::value, "Callback function must return bool");
+		static_assert(std::is_same_v<FunctionResult<T>, bool>, "Callback function must return bool");
 		if(lua_istable(L, idx)) {
 			lua_pushnil(L);
 			while(lua_next(L, idx) != 0) {
@@ -273,18 +287,47 @@ namespace scriptlib {
 	}
 	template<typename T>
 	static int32_t from_lua_ref(lua_State* L) {
+		static_assert(IsCard<T*> || IsGroup<T*> || IsEffect<T*>);
 		auto ref = lua_get<int32_t>(L, 1);
 		lua_rawgeti(L, LUA_REGISTRYINDEX, ref);
 		auto obj = lua_get<T*>(L, -1);
 		if(!obj) {
-			if(std::is_same<T, card>::value)
+			if constexpr(IsCard<T*>)
 				lua_error(L, "Parameter 1 should be a lua reference to a Card.");
-			else if(std::is_same<T, group>::value)
+			else if constexpr(IsGroup<T*>)
 				lua_error(L, "Parameter 1 should be a lua reference to a Group.");
-			else if(std::is_same<T, effect>::value)
+			else if constexpr(IsEffect<T*>)
 				lua_error(L, "Parameter 1 should be a lua reference to an Effect.");
 		}
 		return 1;
+	}
+
+	template<LuaParam param_type, bool retfalse, typename ReturnType>
+	inline ReturnType check_param(lua_State* L, int32_t index, [[maybe_unused]] lua_obj** retobj) {
+		if constexpr(param_type == LuaParam::CARD || param_type == LuaParam::GROUP || param_type == LuaParam::EFFECT) {
+			if(auto* obj = lua_get<lua_obj*>(L, index); obj != nullptr && obj->lua_type == param_type) {
+				if(retobj)
+					*retobj = obj;
+				return static_cast<ReturnType>(true);
+			}
+		} else if constexpr(param_type == LuaParam::FUNCTION) {
+			if(lua_type(L, index) == LUA_TFUNCTION)
+				return static_cast<ReturnType>(true);
+		} else if constexpr(param_type == LuaParam::STRING) {
+			if(lua_type(L, index) == LUA_TSTRING)
+				return static_cast<ReturnType>(true);
+		} else if constexpr(param_type == LuaParam::INT) {
+			if(lua_type(L, index) == LUA_TNUMBER)
+				return static_cast<ReturnType>(true);
+		} else if constexpr(param_type == LuaParam::BOOLEAN) {
+			//we're really fine with anything as long as it's something
+			if(lua_type(L, index) != LUA_TNONE)
+				return static_cast<ReturnType>(true);
+		}
+		if constexpr(retfalse)
+			return false;
+		else
+			lua_error(L, R"(Parameter %d should be "%s" but is "%s".)", index, get_lua_param_name<param_type>(), get_lua_type_name(L, index));
 	}
 }
 

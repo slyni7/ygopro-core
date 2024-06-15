@@ -1,16 +1,13 @@
 /*
- * libeffect.cpp
+ * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
+ * Copyright (c) 2017-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
- *  Created on: 2010-7-20
- *      Author: Argon
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
-#include "scriptlib.h"
 #include "duel.h"
-#include "field.h"
-#include "card.h"
 #include "effect.h"
-#include "group.h"
+#include "field.h"
+#include "scriptlib.h"
 
 #define LUA_MODULE Effect
 using LUA_CLASS = effect;
@@ -21,7 +18,6 @@ namespace {
 using namespace scriptlib;
 
 LUA_STATIC_FUNCTION(CreateEffect) {
-	check_param_count(L, 1);
 	auto pcard = lua_get<card*, true>(L, 1);
 	effect* peffect = pduel->new_effect();
 	peffect->effect_owner = pduel->game_field->core.reason_player;
@@ -37,12 +33,10 @@ LUA_STATIC_FUNCTION(GlobalEffect) {
 	return 1;
 }
 LUA_FUNCTION(Clone) {
-	check_param_count(L, 1);
 	interpreter::pushobject(L, self->clone());
 	return 1;
 }
 LUA_FUNCTION(Reset) {
-	check_param_count(L, 1);
 	if(self->owner == nullptr)
 		return 0;
 	if(self->is_flag(EFFECT_FLAG_FIELD_ONLY))
@@ -56,7 +50,6 @@ LUA_FUNCTION(Reset) {
 	return 0;
 }
 LUA_FUNCTION(GetFieldID) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->id);
 	return 1;
 }
@@ -194,13 +187,13 @@ LUA_FUNCTION(SetLabel) {
 LUA_FUNCTION(SetLabelObject) {
 	check_param_count(L, 2);
 	if(self->label_object)
-		luaL_unref(L, LUA_REGISTRYINDEX, self->label_object);
+		ensure_luaL_stack(luaL_unref, L, LUA_REGISTRYINDEX, self->label_object);
 	self->label_object = 0;
 	if(lua_isnoneornil(L, 2))
 		return 0;
 	if(lua_get<lua_obj*>(L, 2) != nullptr || lua_istable(L, 2)) {
 		lua_pushvalue(L, 2);
-		self->label_object = luaL_ref(L, LUA_REGISTRYINDEX);
+		self->label_object = ensure_luaL_stack(luaL_ref, L, LUA_REGISTRYINDEX);
 	} else
 		lua_error(L, "Parameter 2 should be \"Card\" or \"Effect\" or \"Group\" or \"table\".");
 	return 0;
@@ -223,7 +216,7 @@ LUA_FUNCTION(SetCondition) {
 	check_param_count(L, 2);
 	const auto findex = lua_get<function, true>(L, 2);
 	if(self->condition)
-		luaL_unref(L, LUA_REGISTRYINDEX, self->condition);
+		ensure_luaL_stack(luaL_unref, L, LUA_REGISTRYINDEX, self->condition);
 	self->condition = interpreter::get_function_handle(L, findex);
 	return 0;
 }
@@ -231,7 +224,7 @@ LUA_FUNCTION(SetTarget) {
 	check_param_count(L, 2);
 	const auto findex = lua_get<function, true>(L, 2);
 	if(self->target)
-		luaL_unref(L, LUA_REGISTRYINDEX, self->target);
+		ensure_luaL_stack(luaL_unref, L, LUA_REGISTRYINDEX, self->target);
 	self->target = interpreter::get_function_handle(L, findex);
 	return 0;
 }
@@ -239,14 +232,14 @@ LUA_FUNCTION(SetCost) {
 	check_param_count(L, 2);
 	const auto findex = lua_get<function, true>(L, 2);
 	if(self->cost)
-		luaL_unref(L, LUA_REGISTRYINDEX, self->cost);
+		ensure_luaL_stack(luaL_unref, L, LUA_REGISTRYINDEX, self->cost);
 	self->cost = interpreter::get_function_handle(L, findex);
 	return 0;
 }
 LUA_FUNCTION(SetValue) {
 	check_param_count(L, 2);
 	if(self->value && self->is_flag(EFFECT_FLAG_FUNC_VALUE))
-		luaL_unref(L, LUA_REGISTRYINDEX, self->value);
+		ensure_luaL_stack(luaL_unref, L, LUA_REGISTRYINDEX, self->value);
 	if (lua_isfunction(L, 2)) {
 		self->value = interpreter::get_function_handle(L, 2);
 		self->flag[0] |= EFFECT_FLAG_FUNC_VALUE;
@@ -273,7 +266,7 @@ LUA_FUNCTION(SetValue) {
 LUA_FUNCTION(SetOperation) {
 	check_param_count(L, 2);
 	if(self->operation)
-		luaL_unref(L, LUA_REGISTRYINDEX, self->operation);
+		ensure_luaL_stack(luaL_unref, L, LUA_REGISTRYINDEX, self->operation);
 	self->operation = 0;
 	const auto findex = lua_get<function>(L, 2);
 	if(findex)
@@ -281,7 +274,6 @@ LUA_FUNCTION(SetOperation) {
 	return 0;
 }
 LUA_FUNCTION(SetOwnerPlayer) {
-	check_param_count(L, 1);
 	auto p = lua_get<uint8_t>(L, 2);
 	if(p != 0 && p != 1)
 		return 0;
@@ -289,28 +281,23 @@ LUA_FUNCTION(SetOwnerPlayer) {
 	return 0;
 }
 LUA_FUNCTION(GetDescription) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->description);
 	return 1;
 }
 LUA_FUNCTION(GetCode) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->code);
 	return 1;
 }
 LUA_FUNCTION(GetRange) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->range);
 	return 1;
 }
 LUA_FUNCTION(GetTargetRange) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->s_range);
 	lua_pushinteger(L, self->o_range);
 	return 2;
 }
 LUA_FUNCTION(GetCountLimit) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->count_limit);
 	lua_pushinteger(L, self->count_limit_max);
 	lua_pushinteger(L, self->count_code);
@@ -319,24 +306,20 @@ LUA_FUNCTION(GetCountLimit) {
 	return 5;
 }
 LUA_FUNCTION(GetReset) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->reset_flag);
 	lua_pushinteger(L, self->reset_count);
 	return 2;
 }
 LUA_FUNCTION(GetType) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->type);
 	return 1;
 }
 LUA_FUNCTION(GetProperty) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->flag[0]);
 	lua_pushinteger(L, self->flag[1]);
 	return 2;
 }
 LUA_FUNCTION(GetLabel) {
-	check_param_count(L, 1);
 	const auto& label = self->label;
 	if(label.empty()) {
 		lua_pushinteger(L, 0);
@@ -348,7 +331,6 @@ LUA_FUNCTION(GetLabel) {
 	return static_cast<int32_t>(label.size());
 }
 LUA_FUNCTION(GetLabelObject) {
-	check_param_count(L, 1);
 	if(!self->label_object) {
 		lua_pushnil(L);
 		return 1;
@@ -361,53 +343,43 @@ LUA_FUNCTION(GetLabelObject) {
 	return 1;
 }
 LUA_FUNCTION(GetCategory) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->category);
 	return 1;
 }
 LUA_FUNCTION(GetOwner) {
-	check_param_count(L, 1);
 	interpreter::pushobject(L, self->get_owner());
 	return 1;
 }
 LUA_FUNCTION(GetHandler) {
-	check_param_count(L, 1);
 	interpreter::pushobject(L, self->get_handler());
 	return 1;
 }
 LUA_FUNCTION(GetOwnerPlayer) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->get_owner_player());
 	return 1;
 }
 LUA_FUNCTION(GetHandlerPlayer) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->get_handler_player());
 	return 1;
 }
 LUA_FUNCTION(GetHintTiming) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->hint_timing[0]);
 	lua_pushinteger(L, self->hint_timing[1]);
 	return 2;
 }
 LUA_FUNCTION(GetCondition) {
-	check_param_count(L, 1);
 	interpreter::pushobject(L, self->condition);
 	return 1;
 }
 LUA_FUNCTION(GetTarget) {
-	check_param_count(L, 1);
 	interpreter::pushobject(L, self->target);
 	return 1;
 }
 LUA_FUNCTION(GetCost) {
-	check_param_count(L, 1);
 	interpreter::pushobject(L, self->cost);
 	return 1;
 }
 LUA_FUNCTION(GetValue) {
-	check_param_count(L, 1);
 	if(self->is_flag(EFFECT_FLAG_FUNC_VALUE))
 		interpreter::pushobject(L, self->value);
 	else
@@ -415,12 +387,10 @@ LUA_FUNCTION(GetValue) {
 	return 1;
 }
 LUA_FUNCTION(GetOperation) {
-	check_param_count(L, 1);
 	interpreter::pushobject(L, self->operation);
 	return 1;
 }
 LUA_FUNCTION(GetActiveType) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->get_active_type());
 	return 1;
 }
@@ -455,17 +425,14 @@ LUA_FUNCTION(IsActivatable) {
 	return 1;
 }
 LUA_FUNCTION(IsActivated) {
-	check_param_count(L, 1);
 	lua_pushboolean(L, (self->type & 0x7f0) != 0);
 	return 1;
 }
 LUA_FUNCTION(GetActivateLocation) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->active_location);
 	return 1;
 }
 LUA_FUNCTION(GetActivateSequence) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->active_sequence);
 	return 1;
 }
@@ -487,6 +454,18 @@ LUA_FUNCTION(UseCountLimit) {
 		}
 	return 0;
 }
+LUA_FUNCTION(RestoreCountLimit) {
+	check_param_count(L, 2);
+	auto p = lua_get<uint8_t>(L, 2);
+	auto count = lua_get<uint32_t, 1>(L, 3);
+	bool oath_only = lua_get<bool, false>(L, 4);
+	if(!oath_only || self->count_flag & EFFECT_COUNT_CODE_OATH)
+		while(count) {
+			self->inc_count(p);
+			--count;
+		}
+	return 0;
+}
 LUA_FUNCTION_EXISTING(GetLuaRef, get_lua_ref<effect>);
 LUA_FUNCTION_EXISTING(FromLuaRef, from_lua_ref<effect>);
 LUA_FUNCTION_EXISTING(IsDeleted, is_deleted_object);
@@ -496,7 +475,7 @@ void scriptlib::push_effect_lib(lua_State* L) {
 	static constexpr auto effectlib = GET_LUA_FUNCTIONS_ARRAY();
 	static_assert(effectlib.back().name == nullptr);
 	lua_createtable(L, 0, static_cast<int>(effectlib.size() - 1));
-	luaL_setfuncs(L, effectlib.data(), 0);
+	ensure_luaL_stack(luaL_setfuncs, L, effectlib.data(), 0);
 	lua_pushstring(L, "__index");
 	lua_pushvalue(L, -2);
 	lua_rawset(L, -3);

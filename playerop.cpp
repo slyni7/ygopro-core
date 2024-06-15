@@ -1,8 +1,8 @@
 /*
- * playerop.cpp
+ * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
+ * Copyright (c) 2017-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
- *  Created on: 2010-12-22
- *      Author: Argon
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
 #pragma warning(disable: 4996)
@@ -10,17 +10,19 @@
 
 #include <stdio.h>
 #include <io.h>
-
+#include <algorithm> //std::sort, std::unique
+#include <iterator> //std::distance
+#include <type_traits> //std::is_same
+#include <stack>
+#include <vector>
 #include "bit.h"
-#include "field.h"
+#include "card.h"
 #include "duel.h"
 #include "effect.h"
-#include "card.h"
+#include "field.h"
 
-#include <algorithm>
-#include <stack>
-
-int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
+bool field::process(Processors::SelectBattleCmd& arg) {
+	auto playerid = arg.playerid;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -33,7 +35,7 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -160,7 +162,7 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if(arg.step == 0) {
 		auto message = pduel->new_message(MSG_SELECT_BATTLECMD);
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
@@ -249,7 +251,8 @@ int32_t field::select_battle_command(uint16_t step, uint8_t playerid) {
 		return TRUE;
 	}
 }
-int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
+bool field::process(Processors::SelectIdleCmd& arg) {
+	auto playerid = arg.playerid;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -262,7 +265,7 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -419,7 +422,7 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if(arg.step == 0) {
 		auto message = pduel->new_message(MSG_SELECT_IDLECMD);
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
@@ -523,8 +526,11 @@ int32_t field::select_idle_command(uint16_t step, uint8_t playerid) {
 		return TRUE;
 	}
 }
-int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t description, card* pcard) {
-	char pfc[50];
+bool field::process(Processors::SelectEffectYesNo& arg) {
+	auto playerid = arg.playerid;
+	auto pcard = arg.pcard;
+	auto description = arg.description;
+		char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
 	fopen_s(&pfp, pfc, "r");
@@ -536,7 +542,7 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
+	if ((arg.step == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -665,8 +671,8 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
-		if ((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
+	if(arg.step == 0) {
+		if((arg.playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
 			returns.set<int32_t>(0, 1);
 			return TRUE;
 		}
@@ -700,8 +706,9 @@ int32_t field::select_effect_yes_no(uint16_t step, uint8_t playerid, uint64_t de
 		return TRUE;
 	}
 }
-int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t description) {
-	char pfc[50];
+bool field::process(Processors::SelectYesNo& arg) {
+	auto playerid = arg.playerid;
+	auto description = arg.description;	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
 	fopen_s(&pfp, pfc, "r");
@@ -713,7 +720,7 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
+	if ((arg.step == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -833,8 +840,8 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
-		if ((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
+	if(arg.step == 0) {
+		if((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
 			returns.set<int32_t>(0, 1);
 			return TRUE;
 		}
@@ -866,7 +873,8 @@ int32_t field::select_yes_no(uint16_t step, uint8_t playerid, uint64_t descripti
 		return TRUE;
 	}
 }
-int32_t field::select_option(uint16_t step, uint8_t playerid) {
+bool field::process(Processors::SelectOption& arg) {
+	auto playerid = arg.playerid;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -879,7 +887,7 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !(core.select_options.size() == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
+	if ((arg.step == 0) && !(core.select_options.size() == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -1008,7 +1016,7 @@ int32_t field::select_option(uint16_t step, uint8_t playerid) {
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if(arg.step == 0) {
 		returns.set<int32_t>(0, -1);
 		if (core.select_options.size() == 0) {
 			auto message = pduel->new_message(MSG_HINT);
@@ -1098,7 +1106,11 @@ namespace {
 bool inline field::parse_response_cards(bool cancelable) {
 	return ::parse_response_cards(returns, return_cards, core.select_cards, cancelable);
 }
-int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, uint8_t min, uint8_t max) {
+bool field::process(Processors::SelectCard& arg) {
+	auto playerid = arg.playerid;
+	auto cancelable = arg.cancelable;
+	auto min = arg.min;
+	auto max = arg.max;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -1111,7 +1123,7 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !(max == 0 || core.select_cards.empty()) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
+	if ((arg.step == 0) && !(max == 0 || core.select_cards.empty()) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -1322,7 +1334,7 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if(arg.step == 0) {
 		return_cards.clear();
 		returns.clear();
 		if (max == 0 || core.select_cards.empty()) {
@@ -1342,7 +1354,8 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 			}
 			return TRUE;
 		}
-		core.units.begin()->arg2 = ((uint32_t)min) + (((uint32_t)max) << 16);
+		arg.min = min;
+		arg.max = max;
 		auto message = pduel->new_message(MSG_SELECT_CARD);
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
@@ -1406,7 +1419,11 @@ int32_t field::select_card(uint16_t step, uint8_t playerid, uint8_t cancelable, 
 		return TRUE;
 	}
 }
-int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancelable, uint8_t min, uint8_t max) {
+bool field::process(Processors::SelectCardCodes& arg) {
+	auto playerid = arg.playerid;
+	auto cancelable = arg.cancelable;
+	auto min = arg.min;
+	auto max = arg.max;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -1419,7 +1436,7 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !(max == 0 || core.select_cards_codes.empty()) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
+	if ((arg.step == 0) && !(max == 0 || core.select_cards_codes.empty()) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -1607,7 +1624,7 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if(arg.step == 0) {
 		return_card_codes.clear();
 		returns.clear();
 		if (max == 0 || core.select_cards_codes.empty()) {
@@ -1627,7 +1644,8 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 			}
 			return TRUE;
 		}
-		core.units.begin()->arg2 = ((uint32_t)min) + (((uint32_t)max) << 16);
+		arg.min = min;
+		arg.max = max;
 		auto message = pduel->new_message(MSG_SELECT_CARD);
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
@@ -1690,7 +1708,12 @@ int32_t field::select_card_codes(uint16_t step, uint8_t playerid, uint8_t cancel
 		return TRUE;
 	}
 }
-int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t cancelable, uint8_t min, uint8_t max, uint8_t finishable) {
+bool field::process(Processors::SelectUnselectCard& arg) {
+	auto playerid = arg.playerid;
+	auto cancelable = arg.cancelable;
+	auto min = arg.min;
+	auto max = arg.max;
+	auto finishable = arg.finishable;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -1703,7 +1726,7 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !(core.select_cards.empty() && core.unselect_cards.empty()) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
+	if ((arg.step == 0) && !(core.select_cards.empty() && core.unselect_cards.empty()) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -1854,7 +1877,7 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		return_cards.clear();
 		returns.clear();
 		if (core.select_cards.empty() && core.unselect_cards.empty()) {
@@ -1938,8 +1961,10 @@ int32_t field::select_unselect_card(uint16_t step, uint8_t playerid, uint8_t can
 		return TRUE;
 	}
 }
-int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, uint8_t forced) {
-	char pfc[50];
+bool field::process(Processors::SelectChain& arg) {
+	auto playerid = arg.playerid;
+	auto spe_count = arg.spe_count;
+	auto forced = arg.forced;	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
 	fopen_s(&pfp, pfc, "r");
@@ -1951,7 +1976,7 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
+	if ((arg.step == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -2087,7 +2112,7 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if(arg.step == 0) {
 		returns.set<int32_t>(0, -1);
 		if ((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
 			if (core.select_chains.size() == 0)
@@ -2159,7 +2184,11 @@ int32_t field::select_chain(uint16_t step, uint8_t playerid, uint8_t spe_count, 
 		return TRUE;
 	}
 }
-int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint8_t count) {
+bool field::process(Processors::SelectPlace& arg) {
+	auto playerid = arg.playerid;
+	auto flag = arg.flag;
+	auto count = arg.count;
+	auto disable_field = arg.disable_field;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -2172,7 +2201,7 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !(count == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
+	if ((arg.step == 0) && !(count == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -2325,8 +2354,8 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
-		if (count == 0) {
+	if(arg.step == 0) {
+		if(count == 0) {
 			auto message = pduel->new_message(MSG_HINT);
 			message->write<uint8_t>(HINT_SELECTMSG);
 			message->write<uint8_t>(playerid);
@@ -2384,7 +2413,7 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 			}
 			return TRUE;
 		}
-		auto message = pduel->new_message((core.units.begin()->type == PROCESSOR_SELECT_PLACE) ? MSG_SELECT_PLACE : MSG_SELECT_DISFIELD);
+		auto message = pduel->new_message(disable_field ? MSG_SELECT_DISFIELD : MSG_SELECT_PLACE);
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
 		if (eset.size())
@@ -2448,7 +2477,10 @@ int32_t field::select_place(uint16_t step, uint8_t playerid, uint32_t flag, uint
 		return TRUE;
 	}
 }
-int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, uint8_t positions) {
+bool field::process(Processors::SelectPosition& arg) {
+	auto playerid = arg.playerid;
+	auto code = arg.code;
+	uint8_t positions = arg.positions;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -2461,7 +2493,7 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !(positions == 0)
+	if ((arg.step == 0) && !(positions == 0)
 		&& !(positions == 0x1 || positions == 0x2 || positions == 0x4 || positions == 0x8)
 		&& !((playerid == 1) && is_flag(DUEL_SIMPLE_AI))) {
 		char fc[50];
@@ -2592,8 +2624,8 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
-		if (positions == 0) {
+	if(arg.step == 0) {
+		if(positions == 0) {
 			returns.set<int32_t>(0, POS_FACEUP_ATTACK);
 			return TRUE;
 		}
@@ -2644,7 +2676,11 @@ int32_t field::select_position(uint16_t step, uint8_t playerid, uint32_t code, u
 		return TRUE;
 	}
 }
-int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelable, uint8_t min, uint8_t max) {
+bool field::process(Processors::SelectTributeP& arg) {
+	auto playerid = arg.playerid;
+	auto cancelable = arg.cancelable;
+	auto min = arg.min;
+	auto max = arg.max;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -2657,7 +2693,7 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !(max == 0 || core.select_cards.empty())) {
+	if ((arg.step == 0) && !(max == 0 || core.select_cards.empty())) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -2845,7 +2881,7 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if(arg.step == 0) {
 		returns.clear();
 		return_cards.clear();
 		if (max == 0 || core.select_cards.empty()) {
@@ -2864,7 +2900,8 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 			max = tm;
 		if (min > max)
 			min = max;
-		core.units.begin()->arg2 = ((uint32_t)min) + (((uint32_t)max) << 16);
+		arg.min = min;
+		arg.max = max;
 		auto message = pduel->new_message(MSG_SELECT_TRIBUTE);
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
@@ -2939,9 +2976,12 @@ int32_t field::select_tribute(uint16_t step, uint8_t playerid, uint8_t cancelabl
 		return TRUE;
 	}
 }
-/*not fully implemented*/
-int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countertype, uint16_t count, uint8_t s, uint8_t o) {
-	char pfc[50];
+bool field::process(Processors::SelectCounter& arg) {
+	auto playerid = arg.playerid;
+	auto countertype = arg.countertype;
+	auto count = arg.count;
+	auto self = arg.self;
+	auto oppo = arg.oppo;	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
 	fopen_s(&pfp, pfc, "r");
@@ -2953,7 +2993,7 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !(count == 0)) {
+	if ((arg.step == 0) && !(count == 0)) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -3146,10 +3186,11 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
-		if (count == 0)
+
+	if(arg.step == 0) {
+		if(count == 0)
 			return TRUE;
-		uint8_t avail = s;
+		uint8_t avail = self;
 		uint8_t fp = playerid;
 		uint32_t total = 0;
 		core.select_cards.clear();
@@ -3169,7 +3210,7 @@ int32_t field::select_counter(uint16_t step, uint8_t playerid, uint16_t countert
 				}
 			}
 			fp = 1 - fp;
-			avail = o;
+			avail = oppo;
 		}
 		if (count > total)
 			count = total;
@@ -3237,7 +3278,11 @@ static int32_t select_sum_check1(const std::vector<int32_t>& oparam, int32_t siz
 	return (acc > o1 && select_sum_check1(oparam, size, index + 1, acc - o1))
 		|| (o2 > 0 && acc > o2 && select_sum_check1(oparam, size, index + 1, acc - o2));
 }
-int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc, int32_t min, int32_t max) {
+bool field::process(Processors::SelectSum& arg) {
+	auto playerid = arg.playerid;
+	auto acc = arg.acc;
+	auto min = arg.min;
+	auto max = arg.max;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -3250,7 +3295,7 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !(core.select_cards.empty())) {
+	if ((arg.step == 0) && !(core.select_cards.empty())) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -3425,7 +3470,7 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if(arg.step == 0) {
 		return_cards.clear();
 		returns.clear();
 		if (core.select_cards.empty()) {
@@ -3555,7 +3600,9 @@ int32_t field::select_with_sum_limit(int16_t step, uint8_t playerid, int32_t acc
 	}
 	return TRUE;
 }
-int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
+bool field::process(Processors::SortCard& arg) {
+	auto playerid = arg.playerid;
+	auto is_chain = arg.is_chain;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -3568,7 +3615,7 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) && !(core.select_cards.empty())) {
+	if ((arg.step == 0) && !((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) && !(core.select_cards.empty())) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -3738,7 +3785,7 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if(arg.step == 0) {
 		returns.clear();
 		if ((playerid == 1) && is_flag(DUEL_SIMPLE_AI)) {
 			returns.set<int8_t>(0, -1);
@@ -3781,11 +3828,11 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 			fclose(fp);
 			return TRUE;
 		}
-		bool c[64] = {};
-		uint8_t m = static_cast<uint8_t>(core.select_cards.size());
-		for (uint8_t i = 0; i < m; ++i) {
-			int8_t v = returns.at<int8_t>(i);
-			if (v < 0 || v >= m || c[v]) {
+		auto m = static_cast<uint8_t>(core.select_cards.size());
+		std::vector<bool> c(m);
+		for(uint8_t i = 0; i < m; ++i) {
+			auto v = returns.at<int8_t>(i);
+			if(v < 0 || v >= m || c[v]) {
 				pduel->new_message(MSG_RETRY);
 				return FALSE;
 			}
@@ -3814,8 +3861,10 @@ int32_t field::sort_card(int16_t step, uint8_t playerid, uint8_t is_chain) {
 	}
 	return TRUE;
 }
-int32_t field::announce_race(int16_t step, uint8_t playerid, uint8_t count, uint64_t available) {
-	char pfc[50];
+bool field::process(Processors::AnnounceRace& arg) {
+	auto playerid = arg.playerid;
+	auto count = arg.count;
+	auto available = arg.available;	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
 	fopen_s(&pfp, pfc, "r");
@@ -3827,7 +3876,7 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, uint8_t count, uint
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -3968,7 +4017,7 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, uint8_t count, uint
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		if(count == 0) {
 			auto message = pduel->new_message(MSG_HINT);
 			message->write<uint8_t>(HINT_SELECTMSG);
@@ -4028,8 +4077,10 @@ int32_t field::announce_race(int16_t step, uint8_t playerid, uint8_t count, uint
 	}
 	return TRUE;
 }
-int32_t field::announce_attribute(int16_t step, uint8_t playerid, uint8_t count, uint32_t available) {
-	char pfc[50];
+bool field::process(Processors::AnnounceAttribute& arg) {
+	auto playerid = arg.playerid;
+	auto count = arg.count;
+	auto available = arg.available;	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
 	fopen_s(&pfp, pfc, "r");
@@ -4041,7 +4092,7 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, uint8_t count,
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -4182,7 +4233,7 @@ int32_t field::announce_attribute(int16_t step, uint8_t playerid, uint8_t count,
 		}
 		fclose(fp);
 	}
-	if(step == 0) {
+	if(arg.step == 0) {
 		if(count == 0) {
 			auto message = pduel->new_message(MSG_HINT);
 			message->write<uint8_t>(HINT_SELECTMSG);
@@ -4319,8 +4370,8 @@ static int32_t is_declarable(const card_data& cd, const std::vector<uint64_t>& o
 #undef UNARY_OP
 #undef UNARY_OP_OP
 #undef GET_OP
-int32_t field::announce_card(int16_t step, uint8_t playerid) {
-	char pfc[50];
+bool field::process(Processors::AnnounceCard& arg) {
+	auto playerid = arg.playerid;	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
 	fopen_s(&pfp, pfc, "r");
@@ -4332,7 +4383,7 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -4492,7 +4543,7 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		auto message = pduel->new_message(MSG_ANNOUNCE_CARD);
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
@@ -4532,7 +4583,8 @@ int32_t field::announce_card(int16_t step, uint8_t playerid) {
 	}
 	return TRUE;
 }
-int32_t field::announce_number(int16_t step, uint8_t playerid) {
+bool field::process(Processors::AnnounceNumber& arg) {
+	auto playerid = arg.playerid;
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -4545,7 +4597,7 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		char fc[50];
 		if (plconf) sprintf_s(fc, "./playeroplast.log"); else sprintf_s(fc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -4699,7 +4751,7 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 		}
 		fclose(fp);
 	}
-	if (step == 0) {
+	if (arg.step == 0) {
 		auto message = pduel->new_message(MSG_ANNOUNCE_NUMBER);
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);
@@ -4734,7 +4786,7 @@ int32_t field::announce_number(int16_t step, uint8_t playerid) {
 		return TRUE;
 	}
 }
-int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
+bool field::process(Processors::RockPaperScissors& arg) {
 	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
@@ -4747,7 +4799,7 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 		sscanf(conf, "%s = %d", plop, &plconf);
 		fclose(pfp);
 	}
-	if ((step == 0) || (step == 1)) {
+	if ((arg.step == 0) || (arg.step == 1)) {
 		char ffc[50];
 		if (plconf) sprintf_s(ffc, "./playeroplast.log"); else sprintf_s(ffc, "./playeroplast %lld.log", pduel->playerop_seed[0]);
 		FILE *fp = NULL;
@@ -4919,24 +4971,25 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 		}
 		fclose(fp);
 	}
-	auto checkvalid = [this] {
+	auto checkvalid = [&] {
 		const auto ret = returns.at<int32_t>(0);
-		if (ret < 1 || ret>3) {
+		if(ret < 1 || ret > 3) {
 			pduel->new_message(MSG_RETRY);
-			--core.units.begin()->step;
+			--arg.step;
 			return false;
 		}
 		return true;
 	};
-	switch (step) {
+	auto repeat = arg.repeat;
+	switch(arg.step) {
 	case 0: {
 		auto message = pduel->new_message(MSG_ROCK_PAPER_SCISSORS);
 		message->write<uint8_t>(0);
 		return FALSE;
 	}
 	case 1: {
-		if (checkvalid()) {
-			core.units.begin()->arg2 = returns.at<int32_t>(0);
+		if(checkvalid()) {
+			arg.hand0 = returns.at<int32_t>(0);
 			auto message = pduel->new_message(MSG_ROCK_PAPER_SCISSORS);
 			message->write<uint8_t>(1);
 		}
@@ -4945,8 +4998,8 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 	case 2: {
 		if (!checkvalid())
 			return FALSE;
-		int32_t hand0 = core.units.begin()->arg2;
-		int32_t hand1 = returns.at<int32_t>(0);
+		auto hand0 = arg.hand0;
+		auto hand1 = static_cast<uint8_t>(returns.at<int32_t>(0));
 		if ((plconf == 2) || (!plconf && !pduel->playerop_config)) {
 			char fc[50];
 			if (plconf) sprintf_s(fc, "./playerop.log"); else sprintf_s(fc, "./playerop %lld.log", pduel->playerop_seed[0]);
@@ -4962,7 +5015,7 @@ int32_t field::rock_paper_scissors(uint16_t step, uint8_t repeat) {
 			if (repeat) {
 				message = pduel->new_message(MSG_ROCK_PAPER_SCISSORS);
 				message->write<uint8_t>(0);
-				core.units.begin()->step = 0;
+				arg.step = 0;
 				return FALSE;
 			}
 			else

@@ -1,18 +1,20 @@
 /*
- * libgroup.cpp
+ * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
+ * Copyright (c) 2017-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
- *  Created on: 2010-5-6
- *      Author: Argon
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
-#include <iterator>
-#include <algorithm>
-#include "scriptlib.h"
-#include "group.h"
-#include "card.h"
-#include "effect.h"
-#include "duel.h"
+#include <algorithm> //std::find, std::remove, std::includes, std::set_intersection
+#include <iterator> //std::advance, std::inserter
+#include <set>
+#include <tuple>
+#include <utility> //std::move, std::swap
 #include "bit.h"
+#include "card.h"
+#include "duel.h"
+#include "field.h"
+#include "group.h"
+#include "scriptlib.h"
 
 #define LUA_MODULE Group
 using LUA_CLASS = group;
@@ -41,13 +43,11 @@ LUA_STATIC_FUNCTION(CreateGroup) {
 }
 LUA_FUNCTION_ALIAS(FromCards);
 LUA_FUNCTION(Clone) {
-	check_param_count(L, 1);
 	group* newgroup = pduel->new_group(self);
 	interpreter::pushobject(L, newgroup);
 	return 1;
 }
 LUA_FUNCTION(DeleteGroup) {
-	check_param_count(L, 1);
 	if(self->is_readonly != 2)
 		return 0;
 	self->is_readonly = 0;
@@ -55,7 +55,6 @@ LUA_FUNCTION(DeleteGroup) {
 	return 0;
 }
 LUA_FUNCTION(KeepAlive) {
-	check_param_count(L, 1);
 	if(self->is_readonly != 1) {
 		self->is_readonly = 2;
 		pduel->sgroups.erase(self);
@@ -64,7 +63,6 @@ LUA_FUNCTION(KeepAlive) {
 	return 1;
 }
 LUA_FUNCTION(Clear) {
-	check_param_count(L, 1);
 	assert_readonly_group(L, self);
 	self->is_iterator_dirty = true;
 	self->container.clear();
@@ -100,7 +98,6 @@ LUA_FUNCTION(RemoveCard) {
 }
 LUA_FUNCTION_ALIAS(Sub);
 LUA_FUNCTION(GetNext) {
-	check_param_count(L, 1);
 	if(self->is_iterator_dirty)
 		lua_error(L, "Called Group.GetNext without first calling Group.GetFirst");
 	if(self->it == self->container.end() || (++self->it) == self->container.end())
@@ -110,7 +107,6 @@ LUA_FUNCTION(GetNext) {
 	return 1;
 }
 LUA_FUNCTION(GetFirst) {
-	check_param_count(L, 1);
 	self->is_iterator_dirty = false;
 	if(self->it = self->container.begin(); self->it != self->container.end())
 		interpreter::pushobject(L, *self->it);
@@ -131,7 +127,6 @@ LUA_FUNCTION(TakeatPos) {
 	return 1;
 }
 LUA_FUNCTION(GetCount) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->container.size());
 	return 1;
 }
@@ -243,7 +238,7 @@ LUA_FUNCTION(FilterSelect) {
 		if(pduel->lua->check_matching(pcard, findex, extraargs))
 			pduel->game_field->core.select_cards.push_back(pcard);
 	}
-	pduel->game_field->add_process(PROCESSOR_SELECT_CARD, 0, 0, 0, playerid + (cancelable << 16), min + (max << 16));
+	pduel->game_field->emplace_process<Processors::SelectCard>(playerid, cancelable, min, max);
 	return push_return_cards(L, cancelable);
 }
 LUA_FUNCTION(Select) {
@@ -268,7 +263,7 @@ LUA_FUNCTION(Select) {
 	auto min = lua_get<uint16_t>(L, 3);
 	auto max = lua_get<uint16_t>(L, 4);
 	pduel->game_field->core.select_cards.assign(cset.begin(), cset.end());
-	pduel->game_field->add_process(PROCESSOR_SELECT_CARD, 0, 0, 0, playerid + (cancelable << 16), min + (max << 16));
+	pduel->game_field->emplace_process<Processors::SelectCard>(playerid, cancelable, min, max);
 	return push_return_cards(L, cancelable);
 }
 LUA_FUNCTION(SelectUnselect) {
@@ -305,7 +300,7 @@ LUA_FUNCTION(SelectUnselect) {
 		pduel->game_field->core.unselect_cards.assign(pgroup2->container.begin(), pgroup2->container.end());
 	else
 		pduel->game_field->core.unselect_cards.clear();
-	pduel->game_field->add_process(PROCESSOR_SELECT_UNSELECT_CARD, 0, 0, 0, playerid + (cancelable << 16), min + (max << 16), finishable);
+	pduel->game_field->emplace_process<Processors::SelectUnselectCard>(playerid, cancelable, min, max, finishable);
 	return yieldk({
 		if(pduel->game_field->return_cards.canceled)
 			lua_pushnil(L);
@@ -425,7 +420,7 @@ LUA_FUNCTION(SelectWithSumEqual) {
 		interpreter::pushobject(L, empty_group);
 		return 1;
 	}
-	pduel->game_field->add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, acc, playerid + (min << 16) + (max << 24));
+	pduel->game_field->emplace_process<Processors::SelectSum>(playerid, acc, min, max);
 	return yieldk({
 		group* pgroup = pduel->new_group(pduel->game_field->return_cards.list);
 		pduel->game_field->core.must_select_cards.clear();
@@ -479,7 +474,7 @@ LUA_FUNCTION(SelectWithSumGreater) {
 		interpreter::pushobject(L, empty_group);
 		return 1;
 	}
-	pduel->game_field->add_process(PROCESSOR_SELECT_SUM, 0, 0, 0, acc, playerid);
+	pduel->game_field->emplace_process<Processors::SelectSum>(playerid, acc, 0, 0);
 	return yieldk({
 		group* pgroup = pduel->new_group(pduel->game_field->return_cards.list);
 		pduel->game_field->core.must_select_cards.clear();
@@ -580,7 +575,7 @@ LUA_FUNCTION(GetClass) {
 	for(auto& pcard : self->container) {
 		er.insert(pduel->lua->get_operation_value(pcard, findex, extraargs));
 	}
-	lua_createtable(L, er.size(), 0);
+	lua_createtable(L, static_cast<int>(er.size()), 0);
 	int i = 1;
 	for(auto& val : er) {
 		lua_pushinteger(L, i++);
@@ -699,7 +694,6 @@ LUA_FUNCTION(__sub) {
 	return 1;
 }
 LUA_FUNCTION(__len) {
-	check_param_count(L, 1);
 	lua_pushinteger(L, self->container.size());
 	return 1;
 }
@@ -802,7 +796,7 @@ void scriptlib::push_group_lib(lua_State* L) {
 	static constexpr auto grouplib = GET_LUA_FUNCTIONS_ARRAY();
 	static_assert(grouplib.back().name == nullptr);
 	lua_createtable(L, 0, static_cast<int>(grouplib.size() - 1));
-	luaL_setfuncs(L, grouplib.data(), 0);
+	ensure_luaL_stack(luaL_setfuncs, L, grouplib.data(), 0);
 	lua_pushstring(L, "__index");
 	lua_pushvalue(L, -2);
 	lua_rawset(L, -3);

@@ -1,15 +1,14 @@
 /*
- * libdebug.cpp
+ * Copyright (c) 2012-2015, Argon Sun (Fluorohydride)
+ * Copyright (c) 2017-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
- *  Created on: 2012-2-8
- *      Author: Argon
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-
-#include "scriptlib.h"
+#include "card.h"
 #include "duel.h"
 #include "effect.h"
 #include "field.h"
-#include "card.h"
+#include "scriptlib.h"
 
 #define LUA_MODULE Debug
 #include "function_array_helper.h"
@@ -47,7 +46,7 @@ LUA_STATIC_FUNCTION(Message) {
 		return 0;
 	luaL_checkstack(L, 1, nullptr);
 	for(int i = 1; i <= top; ++i) {
-		const auto* str = luaL_tolstring(L, i, nullptr);
+		const auto* str = ensure_luaL_stack(luaL_tolstring, L, i, nullptr);
 		if(str)
 			pduel->handle_message(str, OCG_LOG_TYPE_FROM_SCRIPT);
 		lua_pop(L, 1);
@@ -208,10 +207,10 @@ LUA_STATIC_FUNCTION(ReloadFieldBegin) {
 LUA_STATIC_FUNCTION(ReloadFieldEnd) {
 	auto& field = pduel->game_field;
 	auto& core = field->core;
-	core.shuffle_hand_check[0] = FALSE;
-	core.shuffle_hand_check[1] = FALSE;
-	core.shuffle_deck_check[0] = FALSE;
-	core.shuffle_deck_check[1] = FALSE;
+	core.shuffle_hand_check[0] = false;
+	core.shuffle_hand_check[1] = false;
+	core.shuffle_deck_check[0] = false;
+	core.shuffle_deck_check[1] = false;
 	field->reload_field_info();
 	if(lua_isyieldable(L))
 		return yield();
@@ -1747,7 +1746,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelGamma) {
 template<int message_code, size_t max_len>
 int32_t write_string_message(lua_State* L) {
 	check_param_count(L, 1);
-	check_param(L, LuaParam::STRING, 1);
+	check_param<LuaParam::STRING>(L, 1);
 	size_t len = 0;
 	const char* pstr = lua_tolstring(L, 1, &len);
 	if(len > max_len)
@@ -1781,7 +1780,7 @@ LUA_STATIC_FUNCTION(CardToStringWrapper) {
 		}
 		lua_settop(L, 1);
 	}
-	const char* kind = luaL_typename(L, 1);
+	const char* kind = ensure_luaL_stack(luaL_typename, L, 1);
 	lua_pushfstring(L, "%s: %p", kind, lua_topointer(L, 1));
 	return 1;
 }
@@ -1792,6 +1791,6 @@ void scriptlib::push_debug_lib(lua_State* L) {
 	static constexpr auto debuglib = GET_LUA_FUNCTIONS_ARRAY();
 	static_assert(debuglib.back().name == nullptr);
 	lua_createtable(L, 0, static_cast<int>(debuglib.size() - 1));
-	luaL_setfuncs(L, debuglib.data(), 0);
+	ensure_luaL_stack(luaL_setfuncs, L, debuglib.data(), 0);
 	lua_setglobal(L, "Debug");
 }
