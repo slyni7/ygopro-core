@@ -4,7 +4,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-#include <algorithm> //std::any_of
+#include <algorithm> //std::any_of, std::max
 #include <iterator> //std::distance
 #include <set>
 #include "card.h"
@@ -350,17 +350,11 @@ LUA_FUNCTION(GetOriginalRace) {
 	return 1;
 }
 LUA_FUNCTION(GetAttack) {
-	int32_t atk = self->get_attack();
-	if(atk < 0)
-		atk = 0;
-	lua_pushinteger(L, atk);
+	lua_pushinteger(L, std::max(0, self->get_attack()));
 	return 1;
 }
 LUA_FUNCTION(GetBaseAttack) {
-	int32_t atk = self->get_base_attack();
-	if(atk < 0)
-		atk = 0;
-	lua_pushinteger(L, atk);
+	lua_pushinteger(L, std::max(0, self->get_base_attack()));
 	return 1;
 }
 LUA_FUNCTION(GetTextAttack) {
@@ -371,17 +365,11 @@ LUA_FUNCTION(GetTextAttack) {
 	return 1;
 }
 LUA_FUNCTION(GetDefense) {
-	int32_t def = self->get_defense();
-	if(def < 0)
-		def = 0;
-	lua_pushinteger(L, def);
+	lua_pushinteger(L, std::max(0, self->get_defense()));
 	return 1;
 }
 LUA_FUNCTION(GetBaseDefense) {
-	int32_t def = self->get_base_defense();
-	if(def < 0)
-		def = 0;
-	lua_pushinteger(L, def);
+	lua_pushinteger(L, std::max(0, self->get_base_defense()));
 	return 1;
 }
 LUA_FUNCTION(GetTextDefense) {
@@ -965,25 +953,25 @@ LUA_FUNCTION(GetOverlayTarget) {
 }
 LUA_FUNCTION(CheckRemoveOverlayCard) {
 	check_param_count(L, 4);
-	group* pgroup = pduel->new_group(self);
 	auto playerid = lua_get<uint8_t>(L, 2);
 	if(playerid != 0 && playerid != 1)
 		return 0;
 	auto count = lua_get<uint16_t>(L, 3);
 	auto reason = lua_get<uint32_t>(L, 4);
+	group* pgroup = pduel->new_group(self);
 	lua_pushboolean(L, pduel->game_field->is_player_can_remove_overlay_card(playerid, pgroup, 0, 0, count, reason));
 	return 1;
 }
 LUA_FUNCTION(RemoveOverlayCard) {
 	check_action_permission(L);
 	check_param_count(L, 5);
-	group* pgroup = pduel->new_group(self);
 	auto playerid = lua_get<uint8_t>(L, 2);
 	if(playerid != 0 && playerid != 1)
 		return 0;
 	auto min = lua_get<uint16_t>(L, 3);
 	auto max = lua_get<uint16_t>(L, 4);
 	auto reason = lua_get<uint32_t>(L, 5);
+	group* pgroup = pduel->new_group(self);
 	pduel->game_field->remove_overlay_card(reason, pgroup, playerid, 0, 0, min, max);
 	return yieldk({
 		lua_pushinteger(L, pduel->game_field->returns.at<int32_t>(0));
@@ -1156,6 +1144,16 @@ LUA_FUNCTION(GetCardEffect) {
 		lua_pushnil(L);
 		return 1;
 	}
+	luaL_checkstack(L, static_cast<int>(eset.size()), nullptr);
+	for(const auto& peff : eset)
+		interpreter::pushobject(L, peff);
+	return static_cast<int32_t>(eset.size());
+}
+LUA_FUNCTION(GetOwnEffects) {
+	effect_set eset;
+	self->get_own_effects(&eset);
+	if(eset.empty())
+		return 0;
 	luaL_checkstack(L, static_cast<int>(eset.size()), nullptr);
 	for(const auto& peff : eset)
 		interpreter::pushobject(L, peff);
@@ -1904,7 +1902,7 @@ LUA_FUNCTION(IsCanBeLinkMaterial) {
 	card* scard = nullptr;
 	if(lua_gettop(L) >= 2)
 		scard = lua_get<card*, true>(L, 2);
-	auto playerid = lua_get<uint8_t, PLAYER_NONE>(L, 3);
+	auto playerid = lua_get<uint8_t>(L, 3, pduel->game_field->core.reason_player);
 	lua_pushboolean(L, self->is_can_be_link_material(scard, playerid));
 	return 1;
 }
@@ -2063,6 +2061,7 @@ LUA_FUNCTION(SetHint) {
 LUA_FUNCTION(ReverseInDeck) {
 	if(self->current.location != LOCATION_DECK)
 		return 0;
+	pduel->game_field->core.global_flag |= GLOBALFLAG_DECK_REVERSE_CHECK;
 	self->current.position = POS_FACEUP_DEFENSE;
 	if(self->current.sequence == pduel->game_field->player[self->current.controler].list_main.size() - 1) {
 		auto message = pduel->new_message(MSG_DECK_TOP);
@@ -2113,7 +2112,7 @@ LUA_FUNCTION(AssumeProperty) {
 	check_param_count(L, 3);
 	auto assume = lua_get<uint32_t>(L, 2);
 	if ((assume < ASSUME_CODE) || (assume > ASSUME_LINKMARKER))
-		return 0;
+		lua_error(L, "Invalid ASSUME value");
 	self->assume[assume] = lua_get<uint64_t>(L, 3);
 	pduel->assumes.insert(self);
 	return 0;

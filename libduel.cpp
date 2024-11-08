@@ -191,7 +191,7 @@ LUA_STATIC_FUNCTION(GetBattleCmdPlayer) {
 
 LUA_STATIC_FUNCTION(EnableGlobalFlag) {
 	check_param_count(L, 1);
-	pduel->game_field->core.global_flag |= lua_get<uint32_t>(L, 1);
+	// noop
 	return 0;
 }
 
@@ -988,7 +988,7 @@ LUA_STATIC_FUNCTION(ConfirmDecktop) {
 	if(count >= list_main.size())
 		count = static_cast<uint32_t>(list_main.size());
 	else if(list_main.size() > count) {
-		if(pduel->game_field->core.global_flag & GLOBALFLAG_DECK_REVERSE_CHECK && pduel->game_field->core.deck_reversed) {
+		if(pduel->game_field->core.deck_reversed) {
 			card* pcard = *(list_main.rbegin() + count);
 			auto message = pduel->new_message(MSG_DECK_TOP);
 			message->write<uint8_t>(playerid);
@@ -2295,7 +2295,7 @@ LUA_STATIC_FUNCTION(NegateAttack) {
 }
 LUA_STATIC_FUNCTION(ChainAttack) {
 	auto* attacker = pduel->game_field->core.attacker;
-	if(!attacker || attacker->is_affect_by_effect(pduel->game_field->core.reason_effect))
+	if(!attacker || !attacker->is_affect_by_effect(pduel->game_field->core.reason_effect))
 		return 0;
 	pduel->game_field->core.chain_attack = true;
 	pduel->game_field->core.chain_attacker_id = attacker->fieldid;
@@ -4206,6 +4206,7 @@ LUA_STATIC_FUNCTION(GetCardFromCardID) {
 LUA_STATIC_FUNCTION(LoadScript) {
 	using SLS = duel::SCRIPT_LOAD_STATUS;
 	check_param_count(L, 1);
+	check_param<LuaParam::STRING>(L, 1);
 	const auto* string = lua_tolstring(L, 1, nullptr);
 	if(!string || *string == '\0')
 		lua_error(L, "Parameter 1 should be a non empty \"String\".");

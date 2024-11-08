@@ -8,6 +8,7 @@
 #define CARD_H_
 
 #include <map>
+#include <optional>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
@@ -187,6 +188,13 @@ public:
 	bool is_extra_deck_monster() const { return !!(data.type & (TYPE_FUSION | TYPE_SYNCHRO | TYPE_XYZ | TYPE_LINK)) && !!(data.type & TYPE_MONSTER); }
 
 	void get_infos(uint32_t query_flag);
+	std::optional<uint64_t> get_assumed_property(uint32_t assume_type) const {
+		auto assumed = assume.find(assume_type);
+		if(assumed != assume.end()) {
+			return assumed->second;
+		}
+		return std::nullopt;
+	}
 	int32_t is_related_to_chains();
 	loc_info get_info_location();
 	uint32_t second_code(uint32_t code);
@@ -304,6 +312,7 @@ public:
 	effect* is_affected_by_effect(int32_t code);
 	effect* is_affected_by_effect(int32_t code, card* target);
 	void get_card_effect(uint32_t code, effect_set* eset);
+	void get_own_effects(effect_set* eset);
 	int32_t fusion_check(group* fusion_m, group* cg, uint32_t chkf);
 	void fusion_filter_valid(group* fusion_m, group* cg, uint32_t chkf, effect_set* eset);
 	int32_t check_fusion_substitute(card* fcard);

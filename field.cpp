@@ -1246,8 +1246,14 @@ void field::add_effect(effect* peffect, uint8_t owner_player) {
 	effect_container::iterator it;
 	if (!(peffect->type & EFFECT_TYPE_ACTIONS)) {
 		it = effects.aura_effect.emplace(peffect->code, peffect);
-		if(peffect->code == EFFECT_SPSUMMON_COUNT_LIMIT)
+		if(peffect->code == EFFECT_SELF_TOGRAVE)
+			core.global_flag |= GLOBALFLAG_SELF_TOGRAVE;
+		else if(peffect->code == EFFECT_SPSUMMON_COUNT_LIMIT)
 			effects.spsummon_count_eff.insert(peffect);
+		else if(peffect->code == EFFECT_REMOVE_BRAINWASHING)
+			core.global_flag |= GLOBALFLAG_BRAINWASHING_CHECK;
+		else if(peffect->code == EFFECT_REVERSE_DECK)
+			core.global_flag |= GLOBALFLAG_DECK_REVERSE_CHECK;
 		if(peffect->type & EFFECT_TYPE_GRANT)
 			effects.grant_effect.emplace(peffect, field_effect::gain_effects());
 	} else {
@@ -1266,6 +1272,8 @@ void field::add_effect(effect* peffect, uint8_t owner_player) {
 		else if (peffect->type & EFFECT_TYPE_CONTINUOUS)
 			it = effects.continuous_effect.emplace(peffect->code, peffect);
 	}
+	if(peffect->code == EVENT_DETACH_MATERIAL)
+		core.global_flag |= GLOBALFLAG_DETACH_EVENT;
 	effects.indexer.emplace(peffect, it);
 	if(peffect->is_flag(EFFECT_FLAG_FIELD_ONLY)) {
 		if(peffect->is_disable_related())
@@ -1431,7 +1439,8 @@ void field::dec_effect_code(uint32_t code, uint8_t flag, uint8_t hopt_index, uin
 	auto iter = count_map.find(key);
 	if(iter == count_map.end())
 		return;
-	--iter->second;
+	if(iter->second != 0)
+		--iter->second;
 }
 void field::filter_field_effect(uint32_t code, effect_set* eset, bool sort) {
 	auto rg = effects.aura_effect.equal_range(code);
@@ -2343,41 +2352,37 @@ void field::set_spsummon_counter(uint8_t playerid, bool add, bool chain) {
 		}
 	} else
 		++core.spsummon_state_count[playerid];
-	if(core.global_flag & GLOBALFLAG_SPSUMMON_COUNT) {
-		for(auto& peffect : effects.spsummon_count_eff) {
-			card* pcard = peffect->get_handler();
-			if(is_flag(DUEL_CANNOT_SUMMON_OATH_OLD)) {
-				if(add) {
-					if(peffect->is_available()) {
-						if(((playerid == pcard->current.controler) && peffect->s_range) || ((playerid != pcard->current.controler) && peffect->o_range)) {
-							++pcard->spsummon_counter[playerid];
-							if(chain)
-								++pcard->spsummon_counter_rst[playerid];
-						}
-					}
-				} else {
-					pcard->spsummon_counter[playerid] -= pcard->spsummon_counter_rst[playerid];
-					pcard->spsummon_counter_rst[playerid] = 0;
-				}
-			} else {
+	for(auto& peffect : effects.spsummon_count_eff) {
+		card* pcard = peffect->get_handler();
+		if(is_flag(DUEL_CANNOT_SUMMON_OATH_OLD)) {
+			if(add) {
 				if(peffect->is_available()) {
 					if(((playerid == pcard->current.controler) && peffect->s_range) || ((playerid != pcard->current.controler) && peffect->o_range)) {
 						++pcard->spsummon_counter[playerid];
+						if(chain)
+							++pcard->spsummon_counter_rst[playerid];
 					}
+				}
+			} else {
+				pcard->spsummon_counter[playerid] -= pcard->spsummon_counter_rst[playerid];
+				pcard->spsummon_counter_rst[playerid] = 0;
+			}
+		} else {
+			if(peffect->is_available()) {
+				if(((playerid == pcard->current.controler) && peffect->s_range) || ((playerid != pcard->current.controler) && peffect->o_range)) {
+					++pcard->spsummon_counter[playerid];
 				}
 			}
 		}
 	}
 }
 int32_t field::check_spsummon_counter(uint8_t playerid, uint8_t ct) {
-	if(core.global_flag & GLOBALFLAG_SPSUMMON_COUNT) {
-		for(auto& peffect : effects.spsummon_count_eff) {
-			card* pcard = peffect->get_handler();
-			uint16_t val = (uint16_t)peffect->value;
-			if(peffect->is_available()) {
-				if(pcard->spsummon_counter[playerid] + ct > val)
-					return FALSE;
-			}
+	for(auto& peffect : effects.spsummon_count_eff) {
+		card* pcard = peffect->get_handler();
+		uint16_t val = (uint16_t)peffect->value;
+		if(peffect->is_available()) {
+			if(pcard->spsummon_counter[playerid] + ct > val)
+				return FALSE;
 		}
 	}
 	return TRUE;
@@ -2617,7 +2622,12 @@ int32_t field::check_tribute(card* pcard, int32_t min, int32_t max, group* mg, u
 	int32_t ct = get_tofield_count(pcard, toplayer, LOCATION_MZONE, sumplayer, LOCATION_REASON_TOFIELD, zone);
 	if(ct <= 0 && max <= 0)
 		return FALSE;
-	for(auto& _pcard : (static_cast<int>(ex_list.size()) >= min) ? ex_list : release_list) {
+	const auto& to_check_release_list = [&] {
+		if(ex_list.size() > 0 && static_cast<int32_t>(ex_list.size()) >= min)
+			return ex_list;
+		return release_list;
+	}();
+	for(auto& _pcard : to_check_release_list) {
 		if(_pcard->current.location == LOCATION_MZONE && _pcard->current.controler == toplayer) {
 			++s;
 			if((zone >> _pcard->current.sequence) & 1)
