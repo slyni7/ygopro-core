@@ -80,7 +80,7 @@ LUA_STATIC_FUNCTION(ProcessIdleCommand) {
 	if (p != 0 && p != 1)
 		return 0;
 	pduel->game_field->infos.idlecmd_player = p;
-	pduel->game_field->add_process(PROCESSOR_IDLE_COMMAND, 0, 0, 0, 0, 0);
+	pduel->game_field->emplace_process<Processors::IdleCommand>();
 	return lua_yield(L, 0);
 }
 LUA_STATIC_FUNCTION(GetIdleCmdPlayer) {
@@ -97,12 +97,10 @@ LUA_STATIC_FUNCTION(PriorQuickEffect) {
 	if (p != 0 && p != 1)
 		return 0;
 	for (auto it = pduel->game_field->core.units.begin(); it != pduel->game_field->core.units.end(); it++) {
-		if (it->type == PROCESSOR_QUICK_EFFECT) {
-			it->step = 0;
-			it->arg2 = p;
-			pduel->game_field->process_quick_effect(it->step, it->arg1, it->arg2);
+		//if (it == Processors::QuickEffect) {
+			pduel->game_field->emplace_process<Processors::QuickEffect>(false, p);
 			break;
-		}
+		//}
 	}
 	return 0;
 }
@@ -111,22 +109,22 @@ LUA_STATIC_FUNCTION(ProcessQuickEffect) {
 	auto p = lua_get<int8_t>(L, 1);
 	if (p != 0 && p != 1)
 		return 0;
-	pduel->game_field->add_process(PROCESSOR_QUICK_EFFECT, 0, 0, 0, FALSE, p);
+	pduel->game_field->emplace_process<Processors::QuickEffect>(false, p);
 	return 0;
 }
 LUA_STATIC_FUNCTION(ProcessPointEvent) {
-	pduel->game_field->add_process(PROCESSOR_POINT_EVENT, 0, 0, 0, FALSE, FALSE);
+	pduel->game_field->emplace_process<Processors::PointEvent>(false, false, false);
 	return 0;
 }
 LUA_STATIC_FUNCTION(ProcessPointEventSkip) {
-	pduel->game_field->add_process(PROCESSOR_POINT_EVENT, 0, 0, 0, 0x101, TRUE);
+	pduel->game_field->emplace_process<Processors::PointEvent>(true, true, true);
 	return 0;
 }
 LUA_STATIC_FUNCTION(ProcessPointEventTrigger) {
-	pduel->game_field->add_process(PROCESSOR_POINT_EVENT, 0, 0, 0, 0x100, FALSE);
+	pduel->game_field->emplace_process<Processors::PointEvent>(true, false, false);
 	return 0;
 }
-LUA_STATIC_FUNCTION(ErasePointEvent) {
+/*LUA_STATIC_FUNCTION(ErasePointEvent) {
 	int erased = 0;
 	for (auto it = pduel->game_field->core.units.begin(); it != pduel->game_field->core.units.end(); ) {
 		if (it->type == PROCESSOR_POINT_EVENT) {
@@ -138,7 +136,7 @@ LUA_STATIC_FUNCTION(ErasePointEvent) {
 	}
 	lua_pushinteger(L, erased);
 	return 1;
-}
+}*/
 LUA_STATIC_FUNCTION(SpecialSummonRuleRightNow) {
 	check_action_permission(L);
 	check_param_count(L, 2);
@@ -158,16 +156,11 @@ LUA_STATIC_FUNCTION(SpecialSummonRuleRightNow) {
 	}*/
 	return lua_yield(L, 0);
 }
-LUA_STATIC_FUNCTION(ActivateEffectRightNow) {
-	check_action_permission(L);
-	check_param_count(L, 1);
-	/*auto playerid = lua_get<uint8_t>(L, 1);
-	if (playerid != 0 && playerid != 1)
-		return 0;*/
+/*LUA_STATIC_FUNCTION(ActivateEffectRightNow) {
 	auto peffect = lua_get<effect*, true>(L, 1);
 	pduel->game_field->activate_effect(0, peffect);
 	return lua_yield(L, 0);
-}
+}*/
 LUA_STATIC_FUNCTION(IsEffectActivateable) {
 	check_param_count(L, 1);
 	/*auto playerid = lua_get<uint8_t>(L, 1);
@@ -188,7 +181,7 @@ LUA_STATIC_FUNCTION(ProcessBattleCommand) {
 		return 0;
 	pduel->game_field->infos.btlcmd_player = p;
 	pduel->game_field->infos.saved_phase = pduel->game_field->infos.phase;
-	pduel->game_field->add_process(PROCESSOR_BATTLE_COMMAND, 0, 0, 0, 0, 0);
+	pduel->game_field->emplace_process<Processors::BattleCommand>();
 	return lua_yield(L, 0);
 }
 LUA_STATIC_FUNCTION(GetBattleCmdPlayer) {

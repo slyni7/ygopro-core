@@ -1215,8 +1215,8 @@ bool field::process(Processors::PhaseEvent& arg) {
 			effect* peffect = eit->second;
 			if (peffect->is_activateable(peffect->get_handler_player(), nil_event) && peffect->operation) {
 				core.sub_solving_event.push_back(nil_event);
-				execute_operation(0, peffect, peffect->get_handler_player());
-				core.units.begin()->step = -1;
+				emplace_process<Processors::ExecuteOperation>(peffect, peffect->get_handler_player());
+				arg.step = -1;
 				return FALSE;
 			}
 			++eit;
@@ -2011,8 +2011,8 @@ bool field::process(Processors::QuickEffect& arg) {
 					&& (peffect->get_handler_player() == priority)
 					&& peffect->operation) {
 					core.sub_solving_event.push_back(nil_event);
-					execute_operation(0, peffect, peffect->get_handler_player());
-					core.units.begin()->step = -1;
+					emplace_process<Processors::ExecuteOperation>(peffect, peffect->get_handler_player());
+					arg.step = -1;
 					return FALSE;
 				}
 				++eit;
@@ -2028,7 +2028,7 @@ bool field::process(Processors::QuickEffect& arg) {
 			if (peffect->type & EFFECT_TYPE_CONTINUOUS) {
 				core.select_chains.clear();
 				solve_continuous(peffect->get_handler_player(), peffect, nil_event);
-				core.units.begin()->step = 4;
+				arg.step = 4;
 				return FALSE;
 			}
 			core.delayed_quick.erase(std::make_pair(peffect, newchain->evt));
@@ -2352,7 +2352,7 @@ bool field::process(Processors::IdleCommand& arg) {
 			effect* peffect = eit->second;
 			if (peffect->operation) {
 				core.sub_solving_event.push_back(nil_event);
-				execute_operation(0, peffect, peffect->get_handler_player());
+				emplace_process<Processors::ExecuteOperation>(peffect, peffect->get_handler_player());
 			}
 			++eit;
 		}
@@ -2577,7 +2577,7 @@ bool field::process(Processors::IdleCommand& arg) {
 				if ((ctype == 6) && is_player_affected_by_effect(idle_player, EFFECT_GENKAI_BATTLE)) {
 					infos.btlcmd_player = idle_player;
 					infos.saved_phase = infos.phase;
-					add_process(PROCESSOR_BATTLE_COMMAND, 0, 0, 0, 0, 0);
+					emplace_process<Processors::BattleCommand>();
 				}
 				return TRUE;
 			}
@@ -2823,18 +2823,18 @@ bool field::process(Processors::BattleCommand& arg) {
 		pr = effects.continuous_effect.equal_range(EVENT_FREE_CHAIN);
 		for(auto eit = pr.first; eit != pr.second; eit++) {
 			auto peffect = eit->second;
-			if(peffect->get_handler_player() == btl_player && peffect->is_activateable(btl_player, nil_event)) {
+			if(peffect->get_handler_player() == btl_player && peffect->is_activateable(btl_player, nil_event))
 				core.select_chains.emplace_back().triggering_effect = peffect;
 		}
 		pr = effects.continuous_effect.equal_range(EVENT_ANYTIME);
 		for (auto eit = pr.first; eit != pr.second; eit++) {
-			peffect = eit->second;
-			if(peffect->get_handler_player() == btl_player && peffect->is_activateable(btl_player, nil_event)) {
+			auto peffect = eit->second;
+			if(peffect->get_handler_player() == btl_player && peffect->is_activateable(btl_player, nil_event))
 				core.select_chains.emplace_back().triggering_effect = peffect;
 		}
 		pr = effects.continuous_effect.equal_range(EFFECT_KYRIE_ELEISON);
 		for (auto eit = pr.first; eit != pr.second; eit++) {
-			peffect = eit->second;
+			auto peffect = eit->second;
 			if (peffect->get_handler_player() == btl_player && peffect->is_activateable(btl_player, nil_event)) {
 				card* pcard = peffect->get_handler();
 				if (!pcard)
@@ -2973,7 +2973,7 @@ bool field::process(Processors::BattleCommand& arg) {
 				if (peffect->code == EFFECT_KYRIE_ELEISON) {
 					core.select_chains.clear();
 					returns.set<int32_t>(0, 1 | ((core.attackable_cards.size() - 1) << 16));
-					core.units.begin()->step = 0;
+					arg.step = 0;
 					return FALSE;
 				}
 				core.select_chains.clear();
@@ -3018,7 +3018,7 @@ bool field::process(Processors::BattleCommand& arg) {
 				core.chain_attacker_id = 0;
 			}
 			effect_set eset;
-			core.tpchain.clear()
+			core.tpchain.clear();
 			filter_player_effect(btl_player, EFFECT_ATTACK_COST, &eset, false);
 			core.attacker->filter_effect(EFFECT_ATTACK_COST, &eset);
 			for(const auto& peff : eset) {
@@ -3042,15 +3042,15 @@ bool field::process(Processors::BattleCommand& arg) {
 				infos.btlcmd_player = PLAYER_NONE;
 				return TRUE;
 			}
-			core.units.begin()->step = 39;
-			core.units.begin()->arg1 = ctype;
+			arg.step = 39;
+			//temp core.units.begin()->arg1 = ctype;
 			auto message = pduel->new_message(MSG_HINT);
 			message->write<uint8_t>(HINT_EVENT);
 			message->write<uint8_t>(1 - btl_player);
 			message->write<uint64_t>(29);
 			core.select_chains.clear();
 			core.hint_timing[btl_player] = TIMING_BATTLE_STEP_END;
-			add_process(PROCESSOR_QUICK_EFFECT, 0, 0, 0, FALSE, 1 - btl_player);
+			emplace_process<Processors::QuickEffect>(false, 1 - btl_player);
 			infos.priorities[btl_player] = 1;
 			infos.priorities[1 - btl_player] = 0;
 			return FALSE;
@@ -4762,7 +4762,7 @@ bool field::process(Processors::Turn& arg) {
 		core.delayed_quick_tmp.clear();
 		arg.step = Processors::restart;
 		effect_set eset;
-		filter_player_effect(core.units.begin()->arg1, EFFECT_EXTRA_TURN, &eset);
+		filter_player_effect(arg.turn_player, EFFECT_EXTRA_TURN, &eset);
 		int ext = 0;
 		for (int32_t i = 0; i < eset.size(); ++i) {
 			uint32_t value = eset[i]->get_value();

@@ -2981,7 +2981,8 @@ bool field::process(Processors::SelectCounter& arg) {
 	auto countertype = arg.countertype;
 	auto count = arg.count;
 	auto self = arg.self;
-	auto oppo = arg.oppo;	char pfc[50];
+	auto oppo = arg.oppo;
+	char pfc[50];
 	sprintf_s(pfc, "./playerop.conf");
 	FILE *pfp = NULL;
 	fopen_s(&pfp, pfc, "r");
@@ -3000,7 +3001,7 @@ bool field::process(Processors::SelectCounter& arg) {
 		fopen_s(&fp, fc, "a+");
 		fprintf(fp, "select_counter : ");
 		fprintf(fp, "%d,", playerid);
-		uint8_t avail = s;
+		uint8_t avail = self;
 		uint8_t pid = playerid;
 		uint32_t total = 0;
 		core.select_cards.clear();
@@ -3020,7 +3021,7 @@ bool field::process(Processors::SelectCounter& arg) {
 				}
 			}
 			pid = 1 - pid;
-			avail = o;
+			avail = oppo;
 		}
 		if (count > total)
 			count = total;
@@ -4805,7 +4806,7 @@ bool field::process(Processors::RockPaperScissors& arg) {
 		FILE *fp = NULL;
 		fopen_s(&fp, ffc, "a+");
 		fprintf(fp, "rock_paper_scissors : ");
-		fprintf(fp, "%d,", step);
+		fprintf(fp, "%d,", arg.step);
 		fprintf(fp, "%d", 3);
 		fprintf(fp, "\n");
 		fclose(fp);
@@ -4814,7 +4815,7 @@ bool field::process(Processors::RockPaperScissors& arg) {
 		luaL_checkstack(pduel->lua->lua_state, 5, nullptr);
 		lua_getglobal(pduel->lua->lua_state, "playerop_analyze");
 		if (!lua_isnil(pduel->lua->lua_state, -1) && !pduel->playerop_config) {
-			lua_pushinteger(pduel->lua->lua_state, step);
+			lua_pushinteger(pduel->lua->lua_state, arg.step);
 			lua_pushinteger(pduel->lua->lua_state, pduel->playerop_seed[0]);
 			lua_pcall(pduel->lua->lua_state, 2, 0, 0);
 			bool ln = true;
@@ -4865,7 +4866,7 @@ bool field::process(Processors::RockPaperScissors& arg) {
 			auto message = pduel->new_message(MSG_HAND_RES);
 			message->write<uint8_t>(hand0 + (hand1 << 2));
 			if (hand0 == hand1) {
-				if (repeat) {
+				if (arg.repeat) {
 					pduel->playerop_line++;
 					fclose(fp);
 					return FALSE;
@@ -4905,7 +4906,7 @@ bool field::process(Processors::RockPaperScissors& arg) {
 						auto message = pduel->new_message(MSG_HAND_RES);
 						message->write<uint8_t>(hand0 + (hand1 << 2));
 						if (hand0 == hand1) {
-							if (repeat) {
+							if (arg.repeat) {
 								pduel->playerop_line++;
 								fclose(fp);
 								return FALSE;
@@ -4947,7 +4948,7 @@ bool field::process(Processors::RockPaperScissors& arg) {
 					auto message = pduel->new_message(MSG_HAND_RES);
 					message->write<uint8_t>(hand0 + (hand1 << 2));
 					if (hand0 == hand1) {
-						if (repeat) {
+						if (arg.repeat) {
 							pduel->playerop_line++;
 							fclose(fp);
 							return FALSE;

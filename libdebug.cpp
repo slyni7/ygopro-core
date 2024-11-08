@@ -286,7 +286,6 @@ LUA_STATIC_FUNCTION(GetInfosFieldID) {
 }
 LUA_STATIC_FUNCTION(GetIDEffect) {
 	check_param_count(L, 1);
-	check_param(L, LuaParam::INT, 1);
 	const 
 	auto effectid = lua_get<int>(L, 1);
 	for (auto effect : pduel->effects) {
@@ -472,7 +471,7 @@ LUA_STATIC_FUNCTION(Sandevistan) {
 		qduel->game_field->player[1].lp = qduel->game_field->player[1].start_lp;
 		qduel->game_field->player[1].start_count = pduel->game_field->player[1].start_count;
 		qduel->game_field->player[1].draw_count = pduel->game_field->player[1].draw_count;
-		qduel->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+		qduel->game_field->emplace_process<Processors::Startup>();
 		int stop = 0;
 		do {
 			qduel->buff.clear();
@@ -480,8 +479,8 @@ LUA_STATIC_FUNCTION(Sandevistan) {
 			do {
 				flag = qduel->game_field->process();
 				qduel->generate_buffer();
-			} while (qduel->buff.size() == 0 && flag == PROCESSOR_FLAG_CONTINUE);
-			stop = (qduel->buff.size() != 0 && flag == PROCESSOR_FLAG_WAITING) || (qduel->playerop_config >= 0xfffffff);
+			} while (qduel->buff.size() == 0 && flag == OCG_DUEL_STATUS_CONTINUE);
+			stop = (qduel->buff.size() != 0 && flag == OCG_DUEL_STATUS_AWAITING) || (qduel->playerop_config >= 0xfffffff);
 		} while (!stop);
 	}
 	//lua_pushinteger(L, qduel->playerop_line);
@@ -689,7 +688,7 @@ LUA_STATIC_FUNCTION(FromVirtualToReal) {
 		}
 		fclose(fp);
 	}
-	field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+	field->emplace_process<Processors::Startup>();
 	pduel->playerop_config = 1;
 	int stop = 0;
 	int sstop = 0;
@@ -705,7 +704,7 @@ LUA_STATIC_FUNCTION(FromVirtualToReal) {
 			sstop++;
 			flag = pduel->game_field->process();
 			pduel->generate_buffer();
-		} while (pduel->buff.size() == 0 && flag == PROCESSOR_FLAG_CONTINUE);
+		} while (pduel->buff.size() == 0 && flag == OCG_DUEL_STATUS_CONTINUE);
 		/*stop |= (pduel->buff.size() != 0 && flag == PROCESSOR_FLAG_WAITING);*/
 		if (sstop > 1)
 			stop = 0;
@@ -887,7 +886,7 @@ LUA_STATIC_FUNCTION(NewTsukasaClear) {
 	core.shuffle_hand_check[1] = FALSE;
 	core.shuffle_deck_check[0] = FALSE;
 	core.shuffle_deck_check[1] = FALSE;
-	pduel->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+	pduel->game_field->emplace_process<Processors::Startup>();
 	field->reload_field_info();
 	return 0;
 }
@@ -984,7 +983,7 @@ LUA_STATIC_FUNCTION(Shahrazad) {
 	core.shuffle_deck_check[1] = FALSE;
 	int fp = lua_tointeger(L, 5);
 	field->infos.turn_player = fp;
-	field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+	field->emplace_process<Processors::Startup>();
 	field->reload_field_info();
 	return 0;
 }
@@ -1189,7 +1188,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelAlpha) {
 		qduel->game_field->player[1].lp = qduel->game_field->player[1].start_lp;
 		qduel->game_field->player[1].start_count = pduel->game_field->player[1].start_count;
 		qduel->game_field->player[1].draw_count = pduel->game_field->player[1].draw_count;
-		qduel->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+		qduel->game_field->emplace_process<Processors::Startup>();
 		int stop = 0;
 		/*int dodododo = 0;
 		int dododododo = 50;
@@ -1214,7 +1213,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelAlpha) {
 				//dododo++;
 				flag = qduel->game_field->process();
 				qduel->generate_buffer();
-			} while (qduel->buff.size() == 0 && flag == PROCESSOR_FLAG_CONTINUE);
+			} while (qduel->buff.size() == 0 && flag == OCG_DUEL_STATUS_CONTINUE);
 			/*if (dododo == 1)
 				dodododo++;
 			else
@@ -1224,7 +1223,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelAlpha) {
 			}*/
 			/*if (qduel->playerop_line >= 0xfffffff)
 				stop = 0xfffffff;*/
-			stop = (qduel->buff.size() != 0 && flag == PROCESSOR_FLAG_WAITING) || (qduel->playerop_config >= 0xfffffff);
+			stop = (qduel->buff.size() != 0 && flag == OCG_DUEL_STATUS_AWAITING) || (qduel->playerop_config >= 0xfffffff);
 		} while (!stop);
 	}
 	luaL_checkstack(qduel->lua->lua_state, 2, nullptr);
@@ -1445,7 +1444,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelBeta) {
 		qduel->game_field->player[1].lp = qduel->game_field->player[1].start_lp;
 		qduel->game_field->player[1].start_count = pduel->game_field->player[1].start_count;
 		qduel->game_field->player[1].draw_count = pduel->game_field->player[1].draw_count;
-		qduel->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+		qduel->game_field->emplace_process<Processors::Startup>();
 		int stop = 0;
 		do {
 			qduel->buff.clear();
@@ -1453,8 +1452,8 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelBeta) {
 			do {
 				flag = qduel->game_field->process();
 				qduel->generate_buffer();
-			} while (qduel->buff.size() == 0 && flag == PROCESSOR_FLAG_CONTINUE);
-			stop = (qduel->buff.size() != 0 && flag == PROCESSOR_FLAG_WAITING) || (qduel->playerop_config >= 0xfffffff);
+			} while (qduel->buff.size() == 0 && flag == OCG_DUEL_STATUS_CONTINUE);
+			stop = (qduel->buff.size() != 0 && flag == OCG_DUEL_STATUS_AWAITING) || (qduel->playerop_config >= 0xfffffff);
 		} while (!stop);
 	}
 	//pduel->buff = qduel->buff;
@@ -1668,7 +1667,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelGamma) {
 		qduel->game_field->player[1].lp = qduel->game_field->player[1].start_lp;
 		qduel->game_field->player[1].start_count = pduel->game_field->player[1].start_count;
 		qduel->game_field->player[1].draw_count = pduel->game_field->player[1].draw_count;
-		qduel->game_field->add_process(PROCESSOR_STARTUP, 0, 0, 0, 0, 0);
+		qduel->game_field->emplace_process<Processors::Startup>();
 		int stop = 0;
 		/*int dodododo = 0;
 		int dododododo = 50;
@@ -1693,7 +1692,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelGamma) {
 				//dododo++;
 				flag = qduel->game_field->process();
 				qduel->generate_buffer();
-			} while (qduel->buff.size() == 0 && flag == PROCESSOR_FLAG_CONTINUE);
+			} while (qduel->buff.size() == 0 && flag == OCG_DUEL_STATUS_CONTINUE);
 			/*if (dododo == 1)
 				dodododo++;
 			else
@@ -1703,7 +1702,7 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelGamma) {
 			}*/
 			/*if (qduel->playerop_line >= 0xfffffff)
 				stop = 0xfffffff;*/
-			stop = (qduel->buff.size() != 0 && flag == PROCESSOR_FLAG_WAITING) || (qduel->playerop_config >= 0xfffffff);
+			stop = (qduel->buff.size() != 0 && flag == OCG_DUEL_STATUS_AWAITING) || (qduel->playerop_config >= 0xfffffff);
 		} while (!stop);
 	}
 	luaL_checkstack(qduel->lua->lua_state, 2, nullptr);

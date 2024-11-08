@@ -668,7 +668,7 @@ bool field::process(Processors::Recover& arg) {
 			if (val == 0)
 				return TRUE;
 		}
-		core.units.begin()->arg3 = val;
+		arg.amount = val;
 		if(is_step) {
 			arg.step = 1;
 			core.recover_damage_reserve.push_back(std::move(arg));
@@ -3334,8 +3334,8 @@ bool field::process(Processors::SpSummonRule& arg) {
 		pcard->summon.pzone = pcard->current.pzone;
 		effect_set eset;
 		uint8_t positions = POS_FACEUP;
-		if (peffect->is_flag(EFFECT_FLAG_SPSUM_PARAM)) {
-			positions = (uint8_t)peffect->s_range;
+		if (proc->is_flag(EFFECT_FLAG_SPSUM_PARAM)) {
+			positions = (uint8_t)proc->s_range;
 		}
 		if (positions == 0)
 			positions = POS_FACEUP_ATTACK;
