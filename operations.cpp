@@ -1809,7 +1809,7 @@ bool field::process(Processors::SummonRule& arg) {
 		if(target->current.location == LOCATION_MZONE) {
 			if(target->is_position(POS_FACEDOWN))
 				return TRUE;
-			if(!ignore_count && (core.extra_summon[sumplayer] || !target->is_affected_by_effect(EFFECT_EXTRA_SUMMON_COUNT))
+			if(!ignore_count && !target->is_affected_by_effect(EFFECT_EXTRA_SUMMON_COUNT)
 				&& (core.summon_count[sumplayer] >= get_summon_count_limit(sumplayer)))
 				return TRUE;
 			if(!target->is_affected_by_effect(EFFECT_GEMINI_SUMMONABLE))
@@ -1875,7 +1875,7 @@ bool field::process(Processors::SummonRule& arg) {
 			core.select_effects.push_back(nullptr);
 			core.select_options.push_back(1);
 		}
-		if(!ignore_count && !core.extra_summon[sumplayer]) {
+		if(!ignore_count) {
 			for(const auto& peff : eset) {
 				std::vector<lua_Integer> retval;
 				peff->get_value(target, 0, retval);
@@ -1888,9 +1888,12 @@ bool field::process(Processors::SummonRule& arg) {
 					else
 						releasable = static_cast<uint32_t>(retval[2]);
 				}
+				uint32_t extra_summon = retval.size() > 3 ? static_cast<uint32_t>(retval[3]) : 1;
 				if (summon_procedure_effect && summon_procedure_effect->is_flag(EFFECT_FLAG_SPSUM_PARAM) && summon_procedure_effect->o_range)
 					new_zone = (new_zone >> 16) | (new_zone & 0xffffu << 16);
 				new_zone &= zone;
+				if (extra_summon <= core.extra_summon[sumplayer])
+					continue;
 				if(summon_procedure_effect) {
 					if(new_min_tribute < min_tribute)
 						new_min_tribute = min_tribute;
@@ -2162,7 +2165,7 @@ bool field::process(Processors::SummonRule& arg) {
 		if(!pextra)
 			++core.summon_count[sumplayer];
 		else {
-			core.extra_summon[sumplayer] = TRUE;
+			++core.extra_summon[sumplayer];
 			auto message = pduel->new_message(MSG_HINT);
 			message->write<uint8_t>(HINT_CARD);
 			message->write<uint8_t>(0);
@@ -2234,7 +2237,7 @@ bool field::process(Processors::SummonRule& arg) {
 		if(!pextra)
 			++core.summon_count[sumplayer];
 		else {
-			core.extra_summon[sumplayer] = TRUE;
+			++core.extra_summon[sumplayer];
 			auto message = pduel->new_message(MSG_HINT);
 			message->write<uint8_t>(HINT_CARD);
 			message->write<uint8_t>(0);
@@ -2501,7 +2504,7 @@ bool field::process(Processors::MonsterSet& arg) {
 			core.select_effects.push_back(nullptr);
 			core.select_options.push_back(1);
 		}
-		if(!ignore_count && !core.extra_summon[setplayer]) {
+		if(!ignore_count) {
 			for(const auto& peff : eset) {
 				std::vector<lua_Integer> retval;
 				peff->get_value(target, 0, retval);
@@ -2514,9 +2517,12 @@ bool field::process(Processors::MonsterSet& arg) {
 					else
 						releasable = static_cast<uint32_t>(retval[2]);
 				}
+				uint32_t extra_summon = retval.size() > 3 ? static_cast<uint32_t>(retval[3]) : 1;
 				if(summon_procedure_effect && summon_procedure_effect->is_flag(EFFECT_FLAG_SPSUM_PARAM) && summon_procedure_effect->o_range)
 					new_zone = (new_zone >> 16) | (new_zone & 0xffffu << 16);
 				new_zone &= zone;
+				if (extra_summon <= core.extra_summon[setplayer])
+					continue;
 				if(summon_procedure_effect) {
 					if(new_min_tribute < (int32_t)min_tribute)
 						new_min_tribute = min_tribute;
@@ -2724,7 +2730,7 @@ bool field::process(Processors::MonsterSet& arg) {
 		if(!pextra)
 			++core.summon_count[setplayer];
 		else {
-			core.extra_summon[setplayer] = TRUE;
+			++core.extra_summon[setplayer];
 			auto message = pduel->new_message(MSG_HINT);
 			message->write<uint8_t>(HINT_CARD);
 			message->write<uint8_t>(0);
