@@ -539,6 +539,46 @@ LUA_STATIC_FUNCTION(CheckWitchFatal) {
 	lua_pushboolean(L, result);
 	return 1;
 }
+LUA_STATIC_FUNCTION(RainbowFishPause) {
+	pduel->skipmsg = 1;
+	return 0;
+}
+LUA_STATIC_FUNCTION(RainbowFishReplay) {
+	pduel->skipmsg = 0;
+	pduel->skipmsg = 0;
+	pduel->playerop_config = 0;
+	pduel->game_field->reload_field_info();
+	group* pgroup = pduel->new_group();
+	pduel->game_field->filter_field_card(0, 0x3e, 0x3e, pgroup);
+	/*if not for server*/
+	for (auto& pcard : pgroup->container) {
+		auto message = pduel->new_message(MSG_UPDATE_CARD);
+		message->write<uint8_t>(pcard->current.controler);
+		message->write<uint8_t>(pcard->current.location);
+		message->write<uint8_t>(pcard->current.sequence);
+		message->write<uint16_t>(8);
+		message->write<uint32_t>(QUERY_CODE);
+		message->write<uint32_t>(pcard->data.code);
+		/*message = pduel->new_message(MSG_UPDATE_CARD);
+		message->write<uint8_t>(pcard->current.controler);
+		message->write<uint8_t>(pcard->current.location);
+		message->write<uint8_t>(pcard->current.sequence);*/
+		message->write<uint16_t>(5);
+		message->write<uint32_t>(QUERY_IS_PUBLIC);
+		message->write<uint8_t>((pcard->is_position(POS_FACEUP) || pcard->is_related_to_chains() || (pcard->current.location == LOCATION_HAND && pcard->is_affected_by_effect(EFFECT_PUBLIC))));
+		/*message = pduel->new_message(MSG_UPDATE_CARD);
+		message->write<uint8_t>(pcard->current.controler);
+		message->write<uint8_t>(pcard->current.location);
+		message->write<uint8_t>(pcard->current.sequence);*/
+		message->write<uint16_t>(8 + 4 * pcard->xyz_materials.size());
+		message->write<uint32_t>(QUERY_OVERLAY_CARD);
+		message->write<uint32_t>(pcard->xyz_materials.size());
+		for (auto& xcard : pcard->xyz_materials)
+			message->write<uint32_t>(xcard->data.code);
+		message->write<uint16_t>(0);
+	}
+	return 0;
+}
 LUA_STATIC_FUNCTION(FromVirtualToReal) {
 	
 	uint64_t duop = pduel->game_field->core.duel_options;

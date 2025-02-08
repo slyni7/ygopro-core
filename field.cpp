@@ -3172,7 +3172,8 @@ chain* field::get_chain(uint8_t chaincount) {
 }
 int32_t field::get_cteffect(effect* peffect, int32_t playerid, int32_t store) {
 	card* phandler = peffect->get_handler();
-	if(phandler->data.type != (TYPE_TRAP | TYPE_CONTINUOUS))
+	if ((phandler->data.type != (TYPE_TRAP | TYPE_CONTINUOUS))
+		&& (phandler->data.type != (TYPE_TRAP | TYPE_FIELD)))
 		return FALSE;
 	if(!(peffect->type & EFFECT_TYPE_ACTIVATE))
 		return FALSE;
@@ -3225,7 +3226,8 @@ int32_t field::get_cteffect_evt(effect* feffect, int32_t playerid, const tevent&
 }
 int32_t field::check_cteffect_hint(effect* peffect, uint8_t playerid) {
 	card* phandler = peffect->get_handler();
-	if(phandler->data.type != (TYPE_TRAP | TYPE_CONTINUOUS))
+	if((phandler->data.type != (TYPE_TRAP | TYPE_CONTINUOUS))
+		&& (phandler->data.type != (TYPE_TRAP | TYPE_FIELD)))
 		return FALSE;
 	if(!(peffect->type & EFFECT_TYPE_ACTIVATE))
 		return FALSE;
