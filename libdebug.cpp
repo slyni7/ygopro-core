@@ -40,6 +40,19 @@ LUA_STATIC_FUNCTION(ChangePositionEx) {
 	
 	return 0;
 }
+LUA_STATIC_FUNCTION(ChangePositionExMsg) {
+	check_param_count(L, 1);
+	auto& field = pduel->game_field;
+	auto pcard = lua_get<card*, true>(L, 1);
+	auto message = pduel->new_message(MSG_POS_CHANGE);
+	message->write<uint32_t>(pcard->data.code);
+	message->write<uint8_t>(pcard->current.controler);
+	message->write<uint8_t>(pcard->current.location);
+	message->write<uint8_t>(pcard->current.sequence);
+	message->write<uint8_t>(pcard->previous.position);
+	message->write<uint8_t>(pcard->current.position);
+	return 0;
+}
 LUA_STATIC_FUNCTION(Message) {
 	int top = lua_gettop(L);
 	if(top == 0)
@@ -549,7 +562,8 @@ LUA_STATIC_FUNCTION(RainbowFishReplay) {
 	pduel->playerop_config = 0;
 	pduel->game_field->reload_field_info();
 	group* pgroup = pduel->new_group();
-	pduel->game_field->filter_field_card(0, 0x3e, 0x3e, pgroup);
+	//pduel->game_field->filter_field_card(0, 0x3e, 0x3e, pgroup);
+	pduel->game_field->filter_field_card(0, 0x7f, 0x7f, pgroup);
 	/*if not for server*/
 	for (auto& pcard : pgroup->container) {
 		auto message = pduel->new_message(MSG_UPDATE_CARD);
@@ -755,7 +769,8 @@ LUA_STATIC_FUNCTION(FromVirtualToReal) {
 	pduel->playerop_config = 0;
 	field->reload_field_info();
 	group* pgroup = pduel->new_group();
-	field->filter_field_card(0, 0x3e, 0x3e, pgroup);
+	//field->filter_field_card(0, 0x3e, 0x3e, pgroup);
+	field->filter_field_card(0, 0x7f, 0x7f, pgroup);
 	group* qgroup = pduel->new_group();
 	//pduel->game_field->get_overlay_group(0, 1, 1, &qgroup->container, 0);
 	//pgroup->container.insert(qgroup->container.begin(), qgroup->container.end());

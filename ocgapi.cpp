@@ -225,6 +225,11 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel ocg_duel, OCG_NewCardInfo info) {
 		}
 		lua_settop(pduel->lua->lua_state, 0);
 	}
+	/*if (info.code == 99970000) {
+		info.loc = 0;
+		info.seq = 0;
+		pduel->read_script("RDD.lua");
+	}*/
 }
 
 
