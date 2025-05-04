@@ -1060,34 +1060,18 @@ bool field::process(Processors::SelectOption& arg) {
 }
 
 namespace {
-template<typename ReturnType>
-bool parse_response_cards(ProgressiveBuffer& returns, return_card_generic<ReturnType>& return_cards, const std::vector<ReturnType>& select_cards, bool cancelable) {
-	auto type = returns.at<int32_t>(0);
-	//allowed values are from -1 to 3
-	if(static_cast<uint32_t>(type + 1) > 4)
-		return false;
-	if(type == -1) {
-		if(cancelable) {
-			return_cards.canceled = true;
-			return true;
-		}
-		return false;
-	}
-	auto& list = return_cards.list;
-	if(type == 3) {
-		for(size_t i = 0; i < select_cards.size(); ++i) {
-			if(returns.bitGet(i + (sizeof(uint32_t) * 8)))
-				list.push_back(select_cards[i]);
-		}
-	} else {
-		auto size = returns.at<uint32_t>(1);
-		for(uint32_t i = 0; i < size; ++i) {
-			auto idx = (type == 0) ? returns.at<uint32_t>(i + 2) :
-				(type == 1) ? returns.at<uint16_t>(i + 4) :
-				returns.at<uint8_t>(i + 8);
-			if(idx >= select_cards.size())
-				return false;
-			list.push_back(select_cards[idx]);
+	template<typename ReturnType>
+	bool parse_response_cards(ProgressiveBuffer& returns, return_card_generic<ReturnType>& return_cards, const std::vector<ReturnType>& select_cards, bool cancelable) {
+		auto type = returns.at<int32_t>(0);
+		//allowed values are from -1 to 3
+		if (static_cast<uint32_t>(type + 1) > 4)
+			return false;
+		if (type == -1) {
+			if (cancelable) {
+				return_cards.canceled = true;
+				return true;
+			}
+			return false;
 		}
 		auto& list = return_cards.list;
 		if (type == 3) {
@@ -1097,29 +1081,47 @@ bool parse_response_cards(ProgressiveBuffer& returns, return_card_generic<Return
 			}
 		}
 		else {
-			try {
-				auto size = returns.at<uint32_t>(1);
-				for (uint32_t i = 0; i < size; ++i) {
-					list.push_back(select_cards.at(
-						(type == 0) ? returns.at<uint32_t>(i + 2) :
-						(type == 1) ? returns.at<uint16_t>(i + 4) :
-						returns.at<uint8_t>(i + 8)
-					)
-					);
+			auto size = returns.at<uint32_t>(1);
+			for (uint32_t i = 0; i < size; ++i) {
+				auto idx = (type == 0) ? returns.at<uint32_t>(i + 2) :
+					(type == 1) ? returns.at<uint16_t>(i + 4) :
+					returns.at<uint8_t>(i + 8);
+				if (idx >= select_cards.size())
+					return false;
+				list.push_back(select_cards[idx]);
+			}
+			auto& list = return_cards.list;
+			if (type == 3) {
+				for (size_t i = 0; i < select_cards.size(); ++i) {
+					if (returns.bitGet(i + (sizeof(uint32_t) * 8)))
+						list.push_back(select_cards[i]);
 				}
 			}
-			catch (...) {
-				return false;
+			else {
+				try {
+					auto size = returns.at<uint32_t>(1);
+					for (uint32_t i = 0; i < size; ++i) {
+						list.push_back(select_cards.at(
+							(type == 0) ? returns.at<uint32_t>(i + 2) :
+							(type == 1) ? returns.at<uint16_t>(i + 4) :
+							returns.at<uint8_t>(i + 8)
+						)
+						);
+					}
+				}
+				catch (...) {
+					return false;
+				}
 			}
+			if (std::is_same<ReturnType, card*>::value) {
+				std::sort(list.begin(), list.end());
+				auto ip = std::unique(list.begin(), list.end());
+				bool res = (ip == list.end());
+				list.resize(std::distance(list.begin(), ip));
+				return res;
+			}
+			return true;
 		}
-		if (std::is_same<ReturnType, card*>::value) {
-			std::sort(list.begin(), list.end());
-			auto ip = std::unique(list.begin(), list.end());
-			bool res = (ip == list.end());
-			list.resize(std::distance(list.begin(), ip));
-			return res;
-		}
-		return true;
 	}
 }
 bool inline field::parse_response_cards(bool cancelable) {

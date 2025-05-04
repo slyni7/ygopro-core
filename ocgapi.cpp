@@ -98,6 +98,7 @@ OCGAPI void OCG_DestroyDuel(OCG_Duel ocg_duel) {
 
 OCGAPI void OCG_DuelNewCard(OCG_Duel ocg_duel, const OCG_NewCardInfo* info_ptr) {
 	auto* pduel = static_cast<duel*>(ocg_duel);
+	auto info = *info_ptr;
 	pduel->playerop_cinfo++; /*test*/
 	char fconf[40];
 	sprintf_s(fconf, "./playerop.conf");
@@ -180,7 +181,6 @@ OCGAPI void OCG_DuelNewCard(OCG_Duel ocg_duel, const OCG_NewCardInfo* info_ptr) 
 		info.seq = 0;
 	}
 	auto& game_field = *(pduel->game_field);
-	const auto& info = *info_ptr;
 	if(bit::popcnt(info.loc) > 1)
 		return;
 	auto duelist = info.duelist;
