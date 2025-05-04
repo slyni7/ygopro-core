@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
- * Copyright (c) 2017-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
+ * Copyright (c) 2017-2025, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -464,6 +464,7 @@ public:
 	bool has_separate_pzone(uint8_t p) const;
 	uint32_t get_pzone_zones_flag() const;
 	uint8_t get_pzone_index(uint8_t seq, uint8_t p) const;
+	uint32_t get_extra_deck_types() const;
 
 	void add_effect(effect* peffect, uint8_t owner_player = 2);
 	void remove_effect(effect* peffect);
@@ -713,22 +714,6 @@ public:
 	bool process(Processors::AnnounceCard& arg);
 	bool process(Processors::AnnounceNumber& arg);
 	bool process(Processors::RockPaperScissors& arg);
-
-	template<typename... Args>
-	OCG_DuelStatus operator()(std::variant<Args...>& arg) {
-		return std::visit(*this, arg);
-	}
-
-	template<typename T>
-	OCG_DuelStatus operator()(T& arg) {
-		if(process(arg)) {
-			core.units.pop_front();
-			return OCG_DUEL_STATUS_CONTINUE;
-		} else {
-			++arg.step;
-			return Processors::NeedsAnswer<T> ? OCG_DUEL_STATUS_AWAITING : OCG_DUEL_STATUS_CONTINUE;
-		}
-	}
 };
 
 //Location Use Reason

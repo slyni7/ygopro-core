@@ -1060,15 +1060,34 @@ bool field::process(Processors::SelectOption& arg) {
 }
 
 namespace {
-	template<typename ReturnType>
-	bool parse_response_cards(ProgressiveBuffer& returns, return_card_generic<ReturnType>& return_cards, const std::vector<ReturnType>& select_cards, bool cancelable) {
-		auto type = returns.at<int32_t>(0);
-		if (type == -1) {
-			if (cancelable) {
-				return_cards.canceled = true;
-				return true;
-			}
-			return false;
+template<typename ReturnType>
+bool parse_response_cards(ProgressiveBuffer& returns, return_card_generic<ReturnType>& return_cards, const std::vector<ReturnType>& select_cards, bool cancelable) {
+	auto type = returns.at<int32_t>(0);
+	//allowed values are from -1 to 3
+	if(static_cast<uint32_t>(type + 1) > 4)
+		return false;
+	if(type == -1) {
+		if(cancelable) {
+			return_cards.canceled = true;
+			return true;
+		}
+		return false;
+	}
+	auto& list = return_cards.list;
+	if(type == 3) {
+		for(size_t i = 0; i < select_cards.size(); ++i) {
+			if(returns.bitGet(i + (sizeof(uint32_t) * 8)))
+				list.push_back(select_cards[i]);
+		}
+	} else {
+		auto size = returns.at<uint32_t>(1);
+		for(uint32_t i = 0; i < size; ++i) {
+			auto idx = (type == 0) ? returns.at<uint32_t>(i + 2) :
+				(type == 1) ? returns.at<uint16_t>(i + 4) :
+				returns.at<uint8_t>(i + 8);
+			if(idx >= select_cards.size())
+				return false;
+			list.push_back(select_cards[idx]);
 		}
 		auto& list = return_cards.list;
 		if (type == 3) {
@@ -3215,6 +3234,10 @@ bool field::process(Processors::SelectCounter& arg) {
 		}
 		if (count > total)
 			count = total;
+		if(core.select_cards.size() == 1) {
+			returns.set<int16_t>(0, count);
+			return TRUE;
+		}
 		auto message = pduel->new_message(MSG_SELECT_COUNTER);
 		effect_set eset;
 		filter_player_effect(playerid, EFFECT_PROMISED_END, &eset);

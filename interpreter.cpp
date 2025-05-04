@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
- * Copyright (c) 2016-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
+ * Copyright (c) 2016-2025, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -99,7 +99,13 @@ interpreter::~interpreter() {
 }
 //creates a pointer to a lua_obj in the lua stack
 static inline lua_obj** create_object(lua_State* L) {
+#if LUA_VERSION_NUM <= 503
 	return static_cast<lua_obj**>(lua_newuserdata(L, sizeof(lua_obj*)));
+#else
+	// in lua 5.4 and later, userdata can have an arbitrary number of
+	// user values, including 0, which make the userdata use less memory
+	return static_cast<lua_obj**>(lua_newuserdatauv(L, sizeof(lua_obj*), 0));
+#endif
 }
 void interpreter::register_card(card* pcard) {
 	//create a card in by userdata
@@ -182,7 +188,7 @@ bool interpreter::load_script(const char* buffer, int len, const char* script_na
 	if(!buffer)
 		return false;
 	++no_action;
-	if(ensure_luaL_stack(luaL_loadbufferx, current_state, buffer, len, script_name, nullptr) != LUA_OK
+	if(ensure_luaL_stack(luaL_loadbuffer, current_state, buffer, len, script_name) != LUA_OK
 	   || lua_pcall(current_state, 0, 0, 0) != LUA_OK) {
 		pduel->handle_message(lua_get_string_or_empty(current_state, -1), OCG_LOG_TYPE_ERROR);
 		lua_pop(current_state, 1);
@@ -304,7 +310,28 @@ void interpreter::push_param(lua_State* L, bool is_coroutine) {
 inline int interpreter::call_lua(lua_State* L, int nargs, int nresults) {
 	++no_action;
 	++call_depth;
-	auto ret = lua_pcall(L, nargs, nresults, 0);
+	/*
+		Push the error handler function, when called, it will have a single
+		argument passed to it, consisting of the error object, since we do
+		nothing with it, return it directly.
+		It's actually faster and simpler to push the light C function each
+		time than to store it in the global registry and retrieve it every call.
+	*/
+	luaL_checkstack(L, 1, nullptr);
+	lua_pushcfunction(L, [](lua_State* L) -> int32_t {
+		interpreter::print_stacktrace(L);
+		return 1;
+	});
+	/*
+		The stack contains nargs on top, and the function below them.
+		We put the error handler below the function object, save its new
+		absolute index, and pass it to lua.
+	*/
+	lua_insert(L, -(nargs + 2));
+	auto error_handler_index = lua_absindex(L, -(nargs + 2));
+	auto ret = lua_pcall(L, nargs, nresults, error_handler_index);
+	// We need to remove the error handler from the stack to clean things up.
+	lua_remove(L, error_handler_index);
 	--no_action;
 	--call_depth;
 	if(call_depth == 0) {
@@ -331,7 +358,6 @@ bool interpreter::call_function(int param_count, int ret_count) {
 	push_param(current_state);
 	auto ret = true;
 	if(call_lua(current_state, param_count, ret_count) != LUA_OK) {
-		print_stacktrace(current_state);
 		pduel->handle_message(lua_get_string_or_empty(current_state, -1), OCG_LOG_TYPE_ERROR);
 		lua_pop(current_state, 1);
 		ret = false;
@@ -397,7 +423,6 @@ bool interpreter::check_matching(card* pcard, int32_t findex, int32_t extraargs)
 	push_range_of_values(current_state, -(extraargs + 2), extraargs);
 	auto result = false;
 	if(call_lua(current_state, 1 + extraargs, 1) != LUA_OK) {
-		print_stacktrace(current_state);
 		pduel->handle_message(lua_get_string_or_empty(current_state, -1), OCG_LOG_TYPE_ERROR);
 	} else
 		result = lua_toboolean(current_state, -1);
@@ -413,7 +438,6 @@ bool interpreter::check_matching_table(card* pcard, int32_t findex, int32_t tabl
 	int extraargs = pushExpandedTable(current_state, table_index);
 	auto result = false;
 	if(call_lua(current_state, 1 + extraargs, 1) != LUA_OK) {
-		print_stacktrace(current_state);
 		pduel->handle_message(lua_get_string_or_empty(current_state, -1), OCG_LOG_TYPE_ERROR);
 	} else
 		result = lua_toboolean(current_state, -1);
@@ -429,7 +453,6 @@ lua_Integer interpreter::get_operation_value(card* pcard, int32_t findex, int32_
 	push_range_of_values(current_state, -(extraargs + 2), extraargs);
 	lua_Integer result = 0;
 	if(call_lua(current_state, 1 + extraargs, 1) != LUA_OK) {
-		print_stacktrace(current_state);
 		pduel->handle_message(lua_get_string_or_empty(current_state, -1), OCG_LOG_TYPE_ERROR);
 	} else
 		result = lua_get<lua_Integer>(current_state, -1);
@@ -446,7 +469,6 @@ bool interpreter::get_operation_value(card* pcard, int32_t findex, int32_t extra
 	push_range_of_values(current_state, -(extraargs + 2), extraargs);
 	auto ret = call_lua(current_state, extraargs, LUA_MULTRET) == LUA_OK;
 	if(!ret) {
-		print_stacktrace(current_state);
 		pduel->handle_message(lua_get_string_or_empty(current_state, -1), OCG_LOG_TYPE_ERROR);
 		lua_pop(current_state, 1);
 	} else {

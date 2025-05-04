@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
- * Copyright (c) 2016-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
+ * Copyright (c) 2016-2025, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -2044,7 +2044,7 @@ LUA_STATIC_FUNCTION(GetChainInfo) {
 	if(!ch)
 		return 0;
 	auto top = lua_gettop(L);
-	uint32_t args = static_cast<uint32_t>(lua_istable(L, 2) ? lua_rawlen(L, 2) : top - 1);
+	auto args = static_cast<int32_t>(lua_istable(L, 2) ? lua_rawlen(L, 2) : top - 1);
 	luaL_checkstack(L, args, nullptr);
 	lua_iterate_table_or_stack(L, 2, top, [L, ch, pduel]() -> int {
 		auto flag = lua_get<CHAININFO>(L, -1);
@@ -3271,7 +3271,7 @@ LUA_STATIC_FUNCTION(Hint) {
 LUA_STATIC_FUNCTION(HintSelection) {
 	check_param_count(L, 1);
 	auto [pcard, pgroup] = lua_get_card_or_group(L, 1);
-	bool selection = lua_get<bool, false>(L, 2);
+	bool selection = lua_get<bool, true>(L, 2);
 	auto message = pduel->new_message(selection ? MSG_CARD_SELECTED : MSG_BECOME_TARGET);
 	if(pcard) {
 		message->write<uint32_t>(1);
