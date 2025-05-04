@@ -2960,14 +2960,65 @@ LUA_STATIC_FUNCTION(SetTargetCard) {
 				_pcard->create_relation(*ch);
 		}
 		if(peffect->is_flag(EFFECT_FLAG_CARD_TARGET)) {
-			auto message = pduel->new_message(MSG_BECOME_TARGET);
-			if(pcard) {
-				message->write<uint32_t>(1);
-				message->write(pcard->get_info_location());
-			} else {
-				message->write<uint32_t>(pgroup->container.size());
-				for(auto& _pcard : pgroup->container)
-					message->write(_pcard->get_info_location());
+			bool ingame = true;
+			if (pcard) {
+				if (!pcard->current.location)
+					ingame = false;
+			}
+			else {
+				for (auto& _pcard : pgroup->container) {
+					if (!(_pcard->current.location)) {
+						ingame = false;
+						break;
+					}
+				}
+			}
+			if (ingame) {
+				auto message = pduel->new_message(MSG_BECOME_TARGET);
+				if (pcard) {
+					message->write<uint32_t>(1);
+					message->write(pcard->get_info_location());
+				}
+				else {
+					message->write<uint32_t>(pgroup->container.size());
+					for (auto& _pcard : pgroup->container)
+						message->write(_pcard->get_info_location());
+				}
+			}
+			else {
+				if (pcard) {
+					for (int p = 0; p < 2; p++) {
+						auto message = pduel->new_message(MSG_CONFIRM_CARDS);
+						message->write<uint8_t>(p);
+						message->write<uint32_t>(1);
+						message->write<uint32_t>(pcard->data.code);
+						message->write<uint8_t>(pcard->current.controler);
+						message->write<uint8_t>(pcard->current.location);
+						message->write<uint32_t>(pcard->current.sequence);
+					}
+				}
+				else {
+					//temp
+					for (auto& _pcard : pgroup->container) {
+						if (_pcard->current.location)
+						{
+							auto message = pduel->new_message(MSG_BECOME_TARGET);
+							message->write<uint32_t>(1);
+							message->write(_pcard->get_info_location());
+						}
+						else {
+							for (int p = 0; p < 2; p++) {
+								auto message = pduel->new_message(MSG_CONFIRM_CARDS);
+								message->write<uint8_t>(p);
+								message->write<uint32_t>(1);
+								message->write<uint32_t>(_pcard->data.code);
+								message->write<uint8_t>(_pcard->current.controler);
+								message->write<uint8_t>(_pcard->current.location);
+								message->write<uint32_t>(_pcard->current.sequence);
+							}
+						}
+					}
+				}
 			}
 		}
 	}

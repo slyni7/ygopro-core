@@ -2269,8 +2269,11 @@ int32_t card::leave_field_redirect(uint32_t reason) {
 		else if((redirect & LOCATION_REMOVED) && !is_affected_by_effect(EFFECT_CANNOT_REMOVE) && pduel->game_field->is_player_can_remove(peff->get_handler_player(), this, REASON_EFFECT))
 			redirects |= redirect;
 	}
-	if(redirects & LOCATION_REMOVED)
+	if (redirects & LOCATION_REMOVED) {
+		if ((redirects & LOCATION_REMOVED_FACEDOWN) == LOCATION_REMOVED_FACEDOWN)
+			return LOCATION_REMOVED_FACEDOWN;
 		return LOCATION_REMOVED;
+	}
 	// the ruling for the priority of the following redirects can't be confirmed for now
 	if(redirects & LOCATION_DECK) {
 		if((redirects & LOCATION_DECKBOT) == LOCATION_DECKBOT)

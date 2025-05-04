@@ -4393,10 +4393,17 @@ bool field::process(Processors::SendTo& arg) {
 				pcard->sendto_param.sequence = redirect_seq;
 				dest = redirect;
 				if(dest == LOCATION_REMOVED) {
-					if(pcard->sendto_param.position & POS_FACEDOWN_ATTACK)
-						pcard->sendto_param.position = (pcard->sendto_param.position & ~POS_FACEDOWN_ATTACK) | POS_FACEUP_ATTACK;
-					if(pcard->sendto_param.position & POS_FACEDOWN_DEFENSE)
-						pcard->sendto_param.position = (pcard->sendto_param.position & ~POS_FACEDOWN_DEFENSE) | POS_FACEUP_DEFENSE;
+					if (redirect_seq) {
+						redirect_seq = 0;
+						pcard->sendto_param.sequence = 0;
+						pcard->sendto_param.position = POS_FACEDOWN;
+					}
+					else {
+						if (pcard->sendto_param.position & POS_FACEDOWN_ATTACK)
+							pcard->sendto_param.position = (pcard->sendto_param.position & ~POS_FACEDOWN_ATTACK) | POS_FACEUP_ATTACK;
+						if (pcard->sendto_param.position & POS_FACEDOWN_DEFENSE)
+							pcard->sendto_param.position = (pcard->sendto_param.position & ~POS_FACEDOWN_DEFENSE) | POS_FACEUP_DEFENSE;
+					}
 				}
 			}
 			redirect = pcard->destination_redirect(dest, pcard->current.reason);

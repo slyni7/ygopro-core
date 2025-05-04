@@ -91,6 +91,8 @@ interpreter::interpreter(duel* pd, const OCG_DuelOptions& options): coroutines(2
 	lua_setglobal(lua_state, "EFFECT_RIKKA_CROSSED");
 	lua_pushinteger(lua_state, EFFECT_KYRIE_ELEISON);
 	lua_setglobal(lua_state, "EFFECT_KYRIE_ELEISON");
+	lua_pushinteger(lua_state, LOCATION_REMOVED_FACEDOWN);
+	lua_setglobal(lua_state, "LOCATION_REMOVED_FACEDOWN");
 }
 interpreter::~interpreter() {
 	lua_close(lua_state);
