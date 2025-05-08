@@ -1090,38 +1090,15 @@ namespace {
 					return false;
 				list.push_back(select_cards[idx]);
 			}
-			auto& list = return_cards.list;
-			if (type == 3) {
-				for (size_t i = 0; i < select_cards.size(); ++i) {
-					if (returns.bitGet(i + (sizeof(uint32_t) * 8)))
-						list.push_back(select_cards[i]);
-				}
-			}
-			else {
-				try {
-					auto size = returns.at<uint32_t>(1);
-					for (uint32_t i = 0; i < size; ++i) {
-						list.push_back(select_cards.at(
-							(type == 0) ? returns.at<uint32_t>(i + 2) :
-							(type == 1) ? returns.at<uint16_t>(i + 4) :
-							returns.at<uint8_t>(i + 8)
-						)
-						);
-					}
-				}
-				catch (...) {
-					return false;
-				}
-			}
-			if (std::is_same<ReturnType, card*>::value) {
-				std::sort(list.begin(), list.end());
-				auto ip = std::unique(list.begin(), list.end());
-				bool res = (ip == list.end());
-				list.resize(std::distance(list.begin(), ip));
-				return res;
-			}
-			return true;
 		}
+		if (std::is_same_v<ReturnType, card*>) {
+			std::sort(list.begin(), list.end());
+			auto ip = std::unique(list.begin(), list.end());
+			bool res = (ip == list.end());
+			list.resize(std::distance(list.begin(), ip));
+			return res;
+		}
+		return true;
 	}
 }
 bool inline field::parse_response_cards(bool cancelable) {
