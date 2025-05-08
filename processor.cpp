@@ -1209,6 +1209,20 @@ bool field::process(Processors::PhaseEvent& arg) {
 				core.select_chains.back().triggering_effect = peffect;
 				++fc_count;
 			}
+			pr = effects.continuous_effect.equal_range(EVENT_PURE_BLOOD);
+			for (auto eit = pr.first; eit != pr.second;) {
+				effect* peffect = eit->second;
+				++eit;
+				if (peffect->get_handler_player() != check_player || !peffect->is_activateable(check_player, nil_event))
+					continue;
+				peffect->id = infos.field_id++;
+				core.select_chains.emplace_back();
+				core.select_chains.back().triggering_effect = peffect;
+				if ((phase > PHASE_MAIN1) && (phase < PHASE_BATTLE))
+					++fc_count;
+				else
+					++cn_count;
+			}
 		}
 		auto ar = effects.continuous_effect.equal_range(EVENT_ANYCALL);
 		for (auto eit = ar.first; eit != ar.second;) {
@@ -1713,6 +1727,16 @@ bool field::process(Processors::PointEvent& arg) {
 				++core.spe_effect[check_player];
 			}
 		}
+		pr = effects.continuous_effect.equal_range(EVENT_PURE_BLOOD);
+		for (auto eit = pr.first; eit != pr.second;) {
+			effect* peffect = eit->second;
+			++eit;
+			if (peffect->get_handler_player() == check_player && peffect->is_activateable(check_player, nil_event)) {
+				core.select_chains.emplace_back();
+				core.select_chains.back().triggering_effect = peffect;
+				++core.spe_effect[check_player];
+			}
+		}
 		if(!core.select_chains.empty())
 			emplace_process<Processors::SelectChain>(check_player, core.spe_effect[check_player], false);
 		else
@@ -1744,6 +1768,16 @@ bool field::process(Processors::PointEvent& arg) {
 			}
 		}
 		pr = effects.continuous_effect.equal_range(EVENT_ANYTIME);
+		for (auto eit = pr.first; eit != pr.second;) {
+			effect* peffect = eit->second;
+			++eit;
+			if (peffect->get_handler_player() == check_player && peffect->is_activateable(check_player, nil_event)) {
+				core.select_chains.emplace_back();
+				core.select_chains.back().triggering_effect = peffect;
+				++core.spe_effect[check_player];
+			}
+		}
+		pr = effects.continuous_effect.equal_range(EVENT_PURE_BLOOD);
 		for (auto eit = pr.first; eit != pr.second;) {
 			effect* peffect = eit->second;
 			++eit;
@@ -1929,6 +1963,7 @@ bool field::process(Processors::QuickEffect& arg) {
 			}
 		}
 		core.spe_effect[priority] = static_cast<int32_t>(core.select_chains.size());
+		bool pureblood = false;
 		if(!skip_freechain) {
 			nil_event.event_code = EVENT_FREE_CHAIN;
 			auto pr = effects.activate_effect.equal_range(EVENT_FREE_CHAIN);
@@ -2005,6 +2040,28 @@ bool field::process(Processors::QuickEffect& arg) {
 						++core.spe_effect[priority];
 				}
 			}
+			pr = effects.continuous_effect.equal_range(EVENT_PURE_BLOOD);
+			for (auto eit = pr.first; eit != pr.second;) {
+				effect* peffect = eit->second;
+				++eit;
+				peffect->set_activate_location();
+				if (peffect->is_activateable(priority, nil_event)) {
+					card* phandler = peffect->get_handler();
+					core.select_chains.emplace_back();
+					chain& newchain = core.select_chains.back();
+					newchain.flag = 0;
+					newchain.chain_id = infos.field_id++;
+					newchain.evt = nil_event;
+					newchain.triggering_effect = peffect;
+					newchain.set_triggering_state(phandler);
+					newchain.triggering_player = priority;
+					if (check_hint_timing(peffect))
+						++core.spe_effect[priority];
+					if (((core.hint_timing[priority] & TIMING_MAIN_END) || (core.hint_timing[1 - priority] & TIMING_MAIN_END))
+						&& !core.current_chain.size())
+						pureblood = true;
+				}
+			}
 		}
 		if(core.current_chain.size() || (core.hint_timing[0] & TIMING_ATTACK) || (core.hint_timing[1] & TIMING_ATTACK))
 			core.spe_effect[priority] = static_cast<int32_t>(core.select_chains.size());
@@ -2024,7 +2081,7 @@ bool field::process(Processors::QuickEffect& arg) {
 				++eit;
 			}
 		}
-		emplace_process<Processors::SelectChain>(priority, core.spe_effect[priority], false);
+		emplace_process<Processors::SelectChain>(priority, core.spe_effect[priority], pureblood);
 		return FALSE;
 	}
 	case 3: {
@@ -2446,6 +2503,16 @@ bool field::process(Processors::IdleCommand& arg) {
 				core.select_chains.back().triggering_effect = peffect;
 			}
 		}
+		pr = effects.continuous_effect.equal_range(EVENT_PURE_BLOOD);
+		for (auto eit = pr.first; eit != pr.second; eit++) {
+			effect* peffect = eit->second;
+			if (peffect->get_handler_player() == idle_player && peffect->is_activateable(idle_player, nil_event)) {
+				core.select_chains.emplace_back();
+				core.select_chains.back().triggering_effect = peffect;
+				core.to_bp = false;
+				core.to_ep = false;
+			}
+		}
 		for(auto& eit : effects.ignition_effect) {
 			effect* peffect = eit.second;
 			peffect->set_activate_location();
@@ -2836,6 +2903,12 @@ bool field::process(Processors::BattleCommand& arg) {
 		for (auto eit = pr.first; eit != pr.second; eit++) {
 			auto peffect = eit->second;
 			if(peffect->get_handler_player() == btl_player && peffect->is_activateable(btl_player, nil_event))
+				core.select_chains.emplace_back().triggering_effect = peffect;
+		}
+		pr = effects.continuous_effect.equal_range(EVENT_PURE_BLOOD);
+		for (auto eit = pr.first; eit != pr.second; eit++) {
+			auto peffect = eit->second;
+			if (peffect->get_handler_player() == btl_player && peffect->is_activateable(btl_player, nil_event))
 				core.select_chains.emplace_back().triggering_effect = peffect;
 		}
 		pr = effects.continuous_effect.equal_range(EFFECT_KYRIE_ELEISON);
