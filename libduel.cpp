@@ -4381,6 +4381,7 @@ LUA_STATIC_FUNCTION(SetSkipAnnounce) {
 	auto skip = lua_get<bool>(L, 1);
 	pduel->game_field->core.skip_announce = skip;
 	return 0;
+}
 LUA_STATIC_FUNCTION(GetReasonPlayer) {
 	lua_pushinteger(L, pduel->game_field->core.reason_player);
 	return 1;
