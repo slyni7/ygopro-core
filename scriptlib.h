@@ -22,7 +22,7 @@ class effect;
 class group;
 class duel;
 
-static_assert(LUA_VERSION_NUM == 503 || LUA_VERSION_NUM == 504, "Lua 5.3 or 5.4 is required, the core won't work with other lua versions");
+static_assert(LUA_VERSION_NUM >= 503 && LUA_VERSION_NUM <= 505, "Lua 5.3, 5.4 or 5.5 is required, the core won't work with other lua versions");
 static_assert(LUA_MAXINTEGER >= INT64_MAX, "Lua has to support 64 bit integers");
 static_assert(LUA_EXTRASPACE >= sizeof(duel*), "LUA_EXTRASPACE needs to be big enough to hold a pointer to the duel object");
 
@@ -70,6 +70,12 @@ namespace scriptlib {
 	inline constexpr bool IsFunction = std::is_same_v<T, function>;
 
 	template<typename T>
+	inline constexpr bool IsOwnedObject = false;
+
+	template<typename T>
+	inline constexpr bool IsOwnedObject<owned_lua<T>> = true;
+
+	template<typename T>
 	using EnableIfIntegral = std::enable_if_t<IsInteger<T> || IsBool<T>, T>;
 
 	template<LuaParam param_type, bool retfalse = false, typename ReturnType = std::conditional_t<retfalse, bool, void>>
@@ -79,7 +85,9 @@ namespace scriptlib {
 
 	template<typename T>
 	inline constexpr auto get_lua_param_type() {
-		if constexpr(IsCard<T>)
+		if constexpr(IsOwnedObject<T>)
+			return get_lua_param_type<typename T::lua_type>();
+		else if constexpr(IsCard<T>)
 			return LuaParam::CARD;
 		else if constexpr(IsGroup<T>)
 			return LuaParam::GROUP;
@@ -187,7 +195,7 @@ namespace scriptlib {
 	}
 
 	template<bool nil_allowed = false>
-	inline std::pair<card*, group*> lua_get_card_or_group(lua_State* L, int idx) {
+	inline std::pair<card*, owned_lua<group>> lua_get_card_or_group(lua_State* L, int idx) {
 		if constexpr(nil_allowed) {
 			if(lua_isnoneornil(L, idx))
 				return { nullptr, nullptr };
@@ -198,7 +206,7 @@ namespace scriptlib {
 			case LuaParam::CARD:
 				return { reinterpret_cast<card*>(obj), nullptr };
 			case LuaParam::GROUP:
-				return{ nullptr, reinterpret_cast<group*>(obj) };
+				return{ nullptr, owned_lua<group>{reinterpret_cast<group*>(obj)} };
 			default: break;
 			}
 		}

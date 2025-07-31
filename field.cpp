@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 #include <algorithm> //std::sort, std::swap, std::find, std::find_if, std::min, std::none_of
-#include <cstring> //std::memcmp
+#include <tuple> //std::tie
 #include <utility> //std::move
 #include <vector>
 #include "card.h"
@@ -53,8 +53,13 @@ void chain::set_triggering_state(card* pcard) {
 	setcode.clear();
 	pcard->get_set_card(setcode);
 }
-bool tevent::operator< (const tevent& v) const {
-	return std::memcmp(this, &v, sizeof(tevent)) < 0;
+bool tevent::operator< (const tevent& rhs) const {
+	return std::tie(trigger_card, event_cards, reason_effect,
+					event_code, event_value, reason,
+					event_player, reason_player, global_id) <
+		std::tie(rhs.trigger_card, rhs.event_cards, rhs.reason_effect,
+				 rhs.event_code, rhs.event_value, rhs.reason,
+				 rhs.event_player, rhs.reason_player, rhs.global_id);
 }
 field::field(duel* _pduel, const OCG_DuelOptions& options) :pduel(_pduel), player({ {options.team1, options.team2} }) {
 	core.duel_options = options.flags;
@@ -582,6 +587,32 @@ card* field::get_field_card(uint32_t playerid, uint32_t location, uint32_t seque
 	}
 	}
 	return nullptr;
+}
+int32_t field::is_field_location_valid(uint32_t location, uint32_t sequence) {
+	if(location == LOCATION_EMZONE) {
+		sequence += 5;
+		location = LOCATION_MZONE;
+	}
+	if(location == LOCATION_MMZONE) {
+		location = LOCATION_MZONE;
+		sequence += 1 * is_flag(DUEL_3_COLUMNS_FIELD);
+	}
+	if(location == LOCATION_STZONE) {
+		location = LOCATION_SZONE;
+		sequence += 1 * is_flag(DUEL_3_COLUMNS_FIELD);
+	}
+	if((location & LOCATION_ONFIELD) == 0)
+		return TRUE;
+	if(location == LOCATION_MZONE) {
+		return sequence < 7;
+	} else if(location == LOCATION_SZONE) {
+		return sequence < 8;
+	} else if(location == LOCATION_FZONE) {
+		return sequence < 2;
+	} else if(location == LOCATION_PZONE) {
+		return sequence < 3;
+	}
+	return TRUE;
 }
 // return: the given slot in LOCATION_MZONE or all LOCATION_SZONE is available or not
 int32_t field::is_location_useable(uint32_t playerid, uint32_t location, uint32_t sequence) {
@@ -1397,7 +1428,7 @@ void field::remove_oath_effect(effect* reason_effect) {
 void field::release_oath_relation(effect* reason_effect) {
 	for(auto& oeit : effects.oath)
 		if(oeit.second == reason_effect)
-			oeit.second = 0;
+			oeit.second = nullptr;
 }
 void field::reset_phase(uint32_t phase) {
 	for(auto eit = effects.pheff.begin(); eit != effects.pheff.end();) {
