@@ -82,7 +82,8 @@ void duel::dummy() {
 	cards.clear();
 	groups.clear();
 	effects.clear();
-	lua = new interpreter(this, default_options);
+	bool valid_lua_lib = true;
+	lua = new interpreter(this, default_options, valid_lua_lib);
 	game_field = new field(this, default_options);
 	random = std::array<uint64_t, 4>{ { playerop_seed[0], playerop_seed[1], playerop_seed[2], playerop_seed[3] } };
 	game_field->temp_card = new_card(0);
@@ -113,13 +114,15 @@ void duel::shahrazad_out() {
 	for (auto& pcard : cards)
 		delete pcard;
 	for (auto& pgroup : groups) {
-		lua->unregister_group(pgroup);
-		delete pgroup;
+		pgroup->container.clear();
+		pgroup->is_iterator_dirty = true;
 	}
 	for (auto& peffect : effects) {
 		lua->unregister_effect(peffect);
 		delete peffect;
 	}
+	for (auto& pgroup : groups)
+		delete pgroup;
 	delete game_field;
 	cards.clear();
 	groups.clear();

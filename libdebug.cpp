@@ -361,7 +361,8 @@ LUA_STATIC_FUNCTION(Sandevistan) {
 	options.payload3 = pduel->handle_message_payload;
 	options.payload4 = pduel->read_card_done_payload;
 	options.enableUnsafeLibraries = 1;
-	auto* qduel = new duel(options);
+	bool valid_lua_lib = true;
+	auto* qduel = new duel(options, valid_lua_lib);
 	qduel->game_field->core.duel_options = pduel->game_field->core.duel_options;
 	qduel->read_script("constant.lua");
 	qduel->read_script("utility.lua");
@@ -600,7 +601,7 @@ LUA_STATIC_FUNCTION(FromVirtualToReal) {
 	uint64_t duop = pduel->game_field->core.duel_options;
 	pduel->dummy();
 	//pduel->game_field->infos.field_id++;
-	pduel->loaded_scripts.clear();
+	//pduel->loaded_scripts.clear(); /*important*/
 	pduel->read_script("constant.lua");
 	pduel->read_script("utility.lua");
 	pduel->read_script("init.lua");
@@ -1059,7 +1060,8 @@ LUA_STATIC_FUNCTION(NewTsukasaDuel) {
 	options.payload2 = pduel->read_script_payload;
 	options.payload3 = pduel->handle_message_payload;
 	options.payload4 = pduel->read_card_done_payload;
-	auto* qduel = new duel(options);
+	bool valid_lua_lib = true;
+	auto* qduel = new duel(options, valid_lua_lib);
 	qduel->read_script("constant.lua");
 	qduel->read_script("utility.lua");
 	delete qduel;
@@ -1115,7 +1117,8 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelAlpha) {
 	options.payload3 = pduel->handle_message_payload;
 	options.payload4 = pduel->read_card_done_payload;
 	options.enableUnsafeLibraries = 1;
-	auto* qduel = new duel(options);
+	bool valid_lua_lib = true;
+	auto* qduel = new duel(options, valid_lua_lib);
 	qduel->game_field->core.duel_options = pduel->game_field->core.duel_options;
 	qduel->read_script("constant.lua");
 	qduel->read_script("utility.lua");
@@ -1371,7 +1374,8 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelBeta) {
 	options.payload3 = pduel->handle_message_payload;
 	options.payload4 = pduel->read_card_done_payload;
 	options.enableUnsafeLibraries = 1;
-	auto* qduel = new duel(options);
+	bool valid_lua_lib = true;
+	auto* qduel = new duel(options, valid_lua_lib);
 	qduel->game_field->core.duel_options = pduel->game_field->core.duel_options;
 	qduel->read_script("constant.lua");
 	qduel->read_script("utility.lua");
@@ -1593,7 +1597,8 @@ LUA_STATIC_FUNCTION(NewTsukasaDuelGamma) {
 	options.payload3 = pduel->handle_message_payload;
 	options.payload4 = pduel->read_card_done_payload;
 	options.enableUnsafeLibraries = 1;
-	auto* qduel = new duel(options);
+	bool valid_lua_lib = true;
+	auto* qduel = new duel(options, valid_lua_lib);
 	qduel->game_field->core.duel_options = pduel->game_field->core.duel_options;
 	qduel->read_script("constant.lua");
 	qduel->read_script("utility.lua");
