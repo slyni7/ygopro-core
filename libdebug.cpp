@@ -287,6 +287,12 @@ LUA_STATIC_FUNCTION(GetPlayerOpLine) {
 	lua_pushinteger(L, pduel->playerop_line);
 	return 1;
 }
+LUA_STATIC_FUNCTION(SetPlayerOpLine) {
+	check_param_count(L, 1);
+	auto pol = lua_get<uint64_t>(L, 1);
+	pduel->playerop_line = pol;
+	return 0;
+}
 LUA_STATIC_FUNCTION(GetQlayerOpLine) {
 	lua_pushinteger(L, pduel->qlayerop_line);
 	return 1;
