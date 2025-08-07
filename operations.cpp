@@ -1851,9 +1851,14 @@ bool field::process(Processors::SummonRule& arg) {
 		target->filter_effect(EFFECT_EXTRA_SUMMON_COUNT, &eset);
 		if(target->current.location == LOCATION_MZONE) {
 			arg.step = 4;
-			if(!ignore_count && !core.extra_summon[sumplayer]) {
-				if(!eset.empty()) {
-					arg.extra_summon_effect = eset.front();
+			if(!ignore_count) {
+				for(const auto& peff : eset) {
+					std::vector<lua_Integer> retval;
+					peff->get_value(target, 0, retval);
+					uint32_t extra_summon = retval.size() > 3 ? static_cast<uint32_t>(retval[3]) : 1;
+					if (extra_summon <= core.extra_summon[sumplayer])
+						continue;
+					arg.extra_summon_effect = peff;
 					return FALSE;
 				}
 			}

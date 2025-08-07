@@ -3235,7 +3235,7 @@ int32_t card::is_can_be_summoned(uint8_t playerid, uint8_t ignore_count, effect*
 		if(reason_effect && reason_effect->get_handler() == this)
 			reason_effect->status |= EFFECT_STATUS_SUMMON_SELF;
 	}
-	if(!ignore_count && (pduel->game_field->core.extra_summon[playerid] || !is_affected_by_effect(EFFECT_EXTRA_SUMMON_COUNT))
+	if(!ignore_count && !is_affected_by_effect(EFFECT_EXTRA_SUMMON_COUNT)
 					&& pduel->game_field->core.summon_count[playerid] >= pduel->game_field->get_summon_count_limit(playerid))
 		return FALSE;
 	if(is_status(STATUS_FORBIDDEN))
