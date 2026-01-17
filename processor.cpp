@@ -1626,7 +1626,7 @@ bool field::process(Processors::PointEvent& arg) {
 		return FALSE;
 	}
 	case 8: {
-		if(!(is_flag(DUEL_OCG_OBSOLETE_IGNITION) || is_flag(DUEL_TCG_FAST_EFFECT_IGNITION)) || (infos.phase != PHASE_MAIN1 && infos.phase != PHASE_MAIN2))
+		if(skip_freechain || !(is_flag(DUEL_OCG_OBSOLETE_IGNITION) || is_flag(DUEL_TCG_FAST_EFFECT_IGNITION)) || (infos.phase != PHASE_MAIN1 && infos.phase != PHASE_MAIN2))
 			return FALSE;
 		// Obsolete ignition effect ruling
 		auto check_events_ocg = [&] {
@@ -3203,8 +3203,8 @@ bool field::process(Processors::BattleCommand& arg) {
 				++count;
 			return count;
 		}();
-
-		if((atype == 3 && differentMustAttackMonsterEffects != 1) || is_player_affected_by_effect(btl_player, EFFECT_PATRICIAN_OF_DARKNESS)) {
+		auto patrician = is_player_affected_by_effect(infos.turn_player, EFFECT_PATRICIAN_OF_DARKNESS) != nullptr;
+		if(patrician || (atype == 3 && differentMustAttackMonsterEffects != 1)) {
 			if(core.select_cards.size() == 1)
 				return_cards.list.push_back(core.select_cards.front());
 			else {
@@ -3215,8 +3215,8 @@ bool field::process(Processors::BattleCommand& arg) {
 				message->write<uint8_t>(HINT_SELECTMSG);
 				message->write<uint8_t>(1 - btl_player);
 				message->write<uint64_t>(549);
-				emplace_process<Processors::SelectCard>(1 - btl_player, false, 1, 1);
-				if(atype == 3 && arg.must_attack_map.size() != differentMustAttackMonsterEffects) {
+				emplace_process<Processors::SelectCard>(1 - infos.turn_player, false, 1, 1);
+				if(!patrician && atype == 3 && arg.must_attack_map.size() != differentMustAttackMonsterEffects) {
 					arg.step = 15;
 					return FALSE;
 				}

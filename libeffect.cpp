@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2010-2015, Argon Sun (Fluorohydride)
- * Copyright (c) 2017-2024, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
+ * Copyright (c) 2017-2026, Edoardo Lolletti (edo9300) <edoardo762@gmail.com>
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -108,19 +108,13 @@ LUA_FUNCTION(SetCountLimit) {
 	uint8_t hopt_index = 0;
 	uint32_t code = 0;
 	if(lua_istable(L, 3)) {
-		lua_pushnil(L);
-		if(lua_next(L, 3) != 0) {
-			code = lua_get<uint32_t>(L, -1);
-			lua_pop(L, 1);
-			if(!code) {
-				hopt_index = 0;
-				lua_pop(L, 1); //manually pop the key from the stack as there won't be a next iteration
-			} else if(lua_next(L, 3) != 0) {
-				hopt_index = lua_get<uint8_t>(L, -1);
-				lua_pop(L, 1);
-				lua_pop(L, 1); //manually pop the key from the stack as there won't be a next iteration
-			}
+		auto top = lua_gettop(L);
+		lua_rawgeti(L, 3, 1);
+		code = lua_get<uint32_t>(L, -1);
+		if(code != 0 && lua_rawgeti(L, 3, 2) != LUA_TNIL) {
+			hopt_index = lua_get<uint8_t>(L, -1);
 		}
+		lua_settop(L, top);
 	} else
 		code = lua_get<uint32_t, 0>(L, 3);
 	uint8_t flag = lua_get<uint8_t, 0>(L, 4);
@@ -201,7 +195,7 @@ LUA_FUNCTION(SetLabelObject) {
 }
 LUA_FUNCTION(SetCategory) {
 	check_param_count(L, 2);
-	auto v = lua_get<uint32_t>(L, 2);
+	auto v = lua_get<uint64_t>(L, 2);
 	self->category = v;
 	return 0;
 }
@@ -409,7 +403,7 @@ LUA_FUNCTION(IsHasProperty) {
 }
 LUA_FUNCTION(IsHasCategory) {
 	check_param_count(L, 2);
-	lua_pushboolean(L, (self->category & lua_get<uint32_t>(L, 2)) != 0);
+	lua_pushboolean(L, (self->category & lua_get<uint64_t>(L, 2)) != 0);
 	return 1;
 }
 LUA_FUNCTION(IsHasType) {
